@@ -1,18 +1,3 @@
-#!/usr/bin/env Rscript
-# =============================================================================
-# Test Script for Clean FIA-NEFIN Pipeline
-# =============================================================================
-# Tests Phases A, B, C (skips Phase D hex assignment)
-#
-# Run from project root: Rscript test_pipeline.R
-# =============================================================================
-#!/usr/bin/env Rscript
-# =============================================================================
-# Enhanced Test Script - Extract Column Information for Phases A & B
-# =============================================================================
-# Comprehensive pre-flight check that tells you exactly what you have
-# and what needs to be customized
-# =============================================================================
 
 cat("\n")
 cat("╔══════════════════════════════════════════════════════════════════╗\n")

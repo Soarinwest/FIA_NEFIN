@@ -1,5 +1,7 @@
 # =============================================================================
-# Assign Augmented Plots to Hexagons
+# Assign Augmented to Hexagons - LONG FORMAT v2
+# =============================================================================
+# FIX: Handle CRS mismatches between data and hex grids
 # =============================================================================
 
 source("R/00_config/config.R")
@@ -10,7 +12,7 @@ library(dplyr)
 library(readr)
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
-cat("  ASSIGN AUGMENTED TO HEXAGONS\n")
+cat("  ASSIGN AUGMENTED TO HEXAGONS (LONG FORMAT)\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
 # =============================================================================
@@ -29,11 +31,13 @@ augmented_sf <- st_as_sf(augmented,
 # Transform to analysis CRS
 augmented_sf <- st_transform(augmented_sf, crs = CONFIG$crs_analysis)
 
+cat("Augmented CRS:", st_crs(augmented_sf)$input, "\n\n")
+
 # =============================================================================
-# ASSIGN TO HEX GRIDS
+# ASSIGN TO HEX GRIDS - LONG FORMAT WITH CRS HANDLING
 # =============================================================================
 
-results <- list()
+all_assignments <- list()
 
 for (scale in CONFIG$hex_scales) {
   cat("Processing", scale$name, "...\n")
@@ -46,20 +50,26 @@ for (scale in CONFIG$hex_scales) {
   }
   
   hex_grid <- st_read(hex_path, quiet = TRUE)
-  cat("  Loaded", nrow(hex_grid), "hexagons from", basename(hex_path), "\n")
+  cat("  Loaded", nrow(hex_grid), "hexagons\n")
   
-  # Ensure CRS match between points and hex grid
+  # Handle CRS - ensure match
   aug_crs <- st_crs(augmented_sf)
   hex_crs <- st_crs(hex_grid)
-  cat("  CRS augmented:", ifelse(is.na(aug_crs$epsg), aug_crs$wkt, paste0("EPSG:", aug_crs$epsg)), "\n")
+  
   if (is.na(hex_crs)) {
-    cat("  ⚠ Hex grid CRS is missing — assuming augmented CRS and setting it.\n")
+    cat("  ⚠ Hex grid missing CRS, setting to match augmented\n")
     st_crs(hex_grid) <- aug_crs
   } else if (!identical(hex_crs$wkt, aug_crs$wkt)) {
-    cat("  Transforming hex grid to analysis CRS (EPSG:", CONFIG$crs_analysis, ")\n")
+    cat("  Transforming hex grid to analysis CRS\n")
     hex_grid <- st_transform(hex_grid, crs = aug_crs)
   }
-
+  
+  # Verify CRS match
+  if (!st_crs(hex_grid) == st_crs(augmented_sf)) {
+    cat("  ⚠ CRS still don't match, forcing alignment\n")
+    st_crs(hex_grid) <- st_crs(augmented_sf)
+  }
+  
   # Spatial join
   joined <- st_join(augmented_sf, hex_grid)
   
@@ -70,22 +80,44 @@ for (scale in CONFIG$hex_scales) {
   cat(sprintf("  Assigned %d / %d plots (%.1f%%)\n", 
               n_assigned, nrow(augmented_sf), pct_assigned))
   
-  # Store hex_id for this scale
-  col_name <- paste0("hex_", scale$name)
-  augmented[[col_name]] <- joined$hex_id
+  # Create assignment record in LONG format
+  assignments <- st_drop_geometry(joined) %>%
+    select(CN, hex_id) %>%
+    mutate(hex_scale = scale$name) %>%
+    filter(!is.na(hex_id))
+  
+  all_assignments[[scale$name]] <- assignments
 }
 
 cat("\n")
+
+# =============================================================================
+# COMBINE ALL SCALES - LONG FORMAT
+# =============================================================================
+
+cat("Combining all scales into long format...\n")
+
+# Stack all scales
+augmented_hex_long <- bind_rows(all_assignments)
+
+cat("  Total rows:", nrow(augmented_hex_long), "\n")
+cat("  Format: CN + hex_id + hex_scale\n")
+cat("  Unique plots:", n_distinct(augmented_hex_long$CN), "\n\n")
 
 # =============================================================================
 # SAVE RESULTS
 # =============================================================================
 
 output_path <- "data/processed/augmented_hex_assignments.csv"
-write_csv(augmented, output_path)
+write_csv(augmented_hex_long, output_path)
 
 cat("✓ Saved:", output_path, "\n")
-cat("  Rows:", nrow(augmented), "\n")
-cat("  Hex scales:", length(CONFIG$hex_scales), "\n\n")
+cat("  Rows:", nrow(augmented_hex_long), "\n")
+cat("  Format: LONG (matches baseline)\n\n")
 
-cat("Next: Aggregate to hex level for comparison\n\n")
+# Show example
+cat("Example structure:\n")
+print(head(augmented_hex_long, 6))
+
+cat("\nNext: Aggregate to hex level for comparison\n")
+cat("  Rscript R/06_analysis/01_aggregate_to_hexagons.R\n\n")

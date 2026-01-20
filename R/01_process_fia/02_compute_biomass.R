@@ -140,14 +140,6 @@ cat("Validating...\n")
 
 n_before <- nrow(plot_complete)
 
-plot_complete <- plot_complete %>%
-  filter(
-    !is.na(lat), !is.na(lon),
-    lat >= 40, lat <= 48,
-    lon >= -75, lon <= -66,
-    !is.na(biomass), biomass >= 0
-  )
-
 n_after <- nrow(plot_complete)
 
 if (n_before > n_after) {

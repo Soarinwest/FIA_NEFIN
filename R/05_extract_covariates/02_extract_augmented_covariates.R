@@ -134,7 +134,7 @@ if (file.exists(ppt_path)) {
 
 cat("Saving enriched augmented dataset...\n")
 
-output_path <- "data/processed/augmented_covariates.csv"
+output_path <- "data/processed/augmented_with_covariates.csv"
 write_csv(augmented, output_path)
 
 cat("  ✓ Saved:", output_path, "\n")
