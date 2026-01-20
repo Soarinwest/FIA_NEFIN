@@ -1,80 +1,76 @@
 # =============================================================================
-# Load and Clean NEFIN Data
-# =============================================================================
-# Loads NEFIN raw data and performs initial cleaning
-#
-# INPUTS:
-#   - data/raw/nefin/TREE_PLOT_DATA.csv
-#
-# OUTPUTS:
-#   - data/interim/nefin/cleaned/plots.csv
-#   - data/interim/nefin/cleaned/trees.csv
-#
-# Author: Soren Donisvitch
-# Updated: January 2026
+# Load and Join NEFIN Data - FINAL
 # =============================================================================
 
 source("R/00_config/config.R")
 source("R/utils/file_utils.R")
-source("R/utils/validation_utils.R")
 
 library(dplyr)
 library(readr)
 
-cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  PHASE B - STEP 1: LOAD NEFIN DATA\n")
+cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("  PHASE B - STEP 1: LOAD AND JOIN NEFIN DATA\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-# Output directory
 output_dir <- file.path(CONFIG$paths$interim_nefin, "cleaned")
 ensure_dir(output_dir)
 
-# =============================================================================
-# LOAD RAW NEFIN DATA
-# =============================================================================
+# Load biomass data
+cat("Loading", CONFIG$nefin$main_file, "...\n")
+biomass_path <- file.path(CONFIG$paths$raw_nefin, CONFIG$nefin$main_file)
+tree_plot_data <- read_csv(biomass_path, show_col_types = FALSE)
+cat("  ", nrow(tree_plot_data), "rows,", n_distinct(tree_plot_data$`_nefin_plotID`), "unique plots\n\n")
 
-cat("Loading NEFIN raw data...\n\n")
+# Load coordinate data
+cat("Loading", CONFIG$nefin$plots_file, "...\n")
+coord_path <- file.path(CONFIG$paths$raw_nefin, CONFIG$nefin$plots_file)
+nefin_plots <- read_csv(coord_path, show_col_types = FALSE)
+cat("  ", nrow(nefin_plots), "rows,", n_distinct(nefin_plots$`_nefin_plotID`), "unique plots\n\n")
 
-# TODO: Adjust path based on your NEFIN file structure
-nefin_path <- "data/raw/nefin/TREE_PLOT_DATA.csv"
+# Join on _nefin_plotID
+cat("Joining on _nefin_plotID...\n")
+nefin_joined <- tree_plot_data %>%
+  left_join(
+    nefin_plots %>% select(`_nefin_plotID`, lat, long, NAME),
+    by = "_nefin_plotID"
+  )
 
-if (!file.exists(nefin_path)) {
-  stop("NEFIN data not found: ", nefin_path)
+# Check for missing coordinates
+missing <- sum(is.na(nefin_joined$lat) | is.na(nefin_joined$long))
+if (missing > 0) {
+  cat("  ⚠ ", missing, "rows missing coordinates - removing\n")
+  nefin_joined <- nefin_joined %>% filter(!is.na(lat), !is.na(long))
 }
 
-nefin_raw <- read_csv(nefin_path, show_col_types = FALSE)
+cat("  ", nrow(nefin_joined), "rows after join\n\n")
 
-cat("Loaded:", nrow(nefin_raw), "rows\n")
-cat("Columns:", paste(names(nefin_raw), collapse = ", "), "\n")
+# Filter to analysis years
+cat("Filtering to", CONFIG$year_start, "-", CONFIG$year_end, "...\n")
+nefin_filtered <- nefin_joined %>%
+  filter(treeSampleYear >= CONFIG$year_start, 
+         treeSampleYear <= CONFIG$year_end)
 
-# =============================================================================
-# IDENTIFY PLOT VS TREE DATA
-# =============================================================================
+cat("  ", nrow(nefin_filtered), "rows\n")
+cat("  ", n_distinct(nefin_filtered$`_nefin_plotID`), "unique plots\n\n")
 
-# TODO: Separate plot-level from tree-level data
-# This depends on your NEFIN file structure
+# Rename columns
+nefin_clean <- nefin_filtered %>%
+  rename(
+    plot_id = `_nefin_plotID`,
+    state = `_nefin_state`,
+    year = treeSampleYear,
+    biomass_kg_ha = AGB_kgPH,
+    latitude = lat,
+    longitude = long
+  )
 
-# Example if data is already at plot level:
-# plots <- nefin_raw %>% distinct(plot_id, lat, lon, year, ...)
+# Save
+output_path <- file.path(output_dir, "nefin_joined.csv")
+write_csv(nefin_clean, output_path)
 
-# Example if data needs tree → plot aggregation:
-# trees <- nefin_raw
-# plots <- trees %>% group_by(plot_id) %>% ...
+cat("✓ Saved:", output_path, "\n")
+cat("  Rows:", nrow(nefin_clean), "\n")
+cat("  States:", paste(sort(unique(nefin_clean$state)), collapse=", "), "\n")
+cat("  Year range:", min(nefin_clean$year), "-", max(nefin_clean$year), "\n\n")
 
-cat("\nNEFIN data structure identified:\n")
-cat("  Plot-level columns: [list them]\n")
-cat("  Tree-level columns: [list them]\n")
-
-# =============================================================================
-# SAVE CLEANED DATA
-# =============================================================================
-
-# Save plots
-# write_csv(plots, file.path(output_dir, "plots.csv"))
-
-# Save trees (if separate)
-# write_csv(trees, file.path(output_dir, "trees.csv"))
-
-cat("\n✓ Phase B Step 1 complete\n")
 cat("Next: R/02_process_nefin/02_compute_biomass.R\n\n")

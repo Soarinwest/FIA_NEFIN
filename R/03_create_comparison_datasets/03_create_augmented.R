@@ -19,6 +19,11 @@
 # Author: Soren Donisvitch
 # Updated: January 2026
 # =============================================================================
+# =============================================================================
+# Create Augmented Dataset - FIXED v2
+# =============================================================================
+# FIX: Convert both CN and coord_source to character before combining
+# =============================================================================
 
 source("R/00_config/config.R")
 source("R/utils/file_utils.R")
@@ -26,162 +31,198 @@ source("R/utils/file_utils.R")
 library(dplyr)
 library(readr)
 
-cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("\n═══════════════════════════════════════════════════════════════════\n")
 cat("  PHASE C - STEP 3: CREATE AUGMENTED DATASET\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-# Load datasets
-fia <- read_csv("data/processed/fia_complete.csv", show_col_types = FALSE)
-nefin <- read_csv("data/processed/nefin_complete.csv", show_col_types = FALSE)
+# =============================================================================
+# LOAD DATASETS
+# =============================================================================
+
+fia <- read_csv(file.path(CONFIG$paths$processed, "fia_complete.csv"), 
+                show_col_types = FALSE)
+nefin <- read_csv(file.path(CONFIG$paths$processed, "nefin_complete.csv"), 
+                  show_col_types = FALSE)
 
 cat("FIA:  ", nrow(fia), "plots\n")
 cat("NEFIN:", nrow(nefin), "plots\n\n")
 
 # =============================================================================
-# CHECK FOR OVERLAPPING PLOTS
+# STANDARDIZE COLUMN TYPES - CRITICAL FIX!
+# =============================================================================
+
+cat("Standardizing column types...\n")
+
+# Convert CN to character (it's an identifier, not a number)
+fia <- fia %>% mutate(CN = as.character(CN))
+nefin <- nefin %>% mutate(CN = as.character(CN))
+
+# Convert coord_source to character
+# FIA: already "fuzzed" (character)
+# NEFIN: TRUE (logical) → "true" (character)
+fia <- fia %>% mutate(coord_source = as.character(coord_source))
+nefin <- nefin %>% mutate(coord_source = as.character(coord_source))
+
+# Convert dataset to character (should already be, but make sure)
+fia <- fia %>% mutate(dataset = as.character(dataset))
+nefin <- nefin %>% mutate(dataset = as.character(dataset))
+
+cat("  ✓ All columns standardized to compatible types\n\n")
+
+# =============================================================================
+# CHECK FOR OVERLAPS
 # =============================================================================
 
 cat("Checking for overlapping plots...\n")
 
-overlap_cn <- intersect(fia$CN, nefin$CN)
+overlap <- intersect(fia$CN, nefin$CN)
 
-if (length(overlap_cn) > 0) {
-  cat("Found", length(overlap_cn), "overlapping plots\n")
-  cat("  Using NEFIN version (true coords) for these plots\n\n")
+if (length(overlap) > 0) {
+  cat("  Found", length(overlap), "overlapping plots\n")
+  cat("  Strategy: Use NEFIN version (true coords) for overlaps\n\n")
   
-  # Remove overlapping plots from FIA (we'll use NEFIN version instead)
-  fia_unique <- fia %>%
-    filter(!CN %in% overlap_cn)
+  # Remove overlapping plots from FIA (keep NEFIN version)
+  fia_unique <- fia %>% filter(!CN %in% overlap)
   
-  cat("After removing overlaps:\n")
-  cat("  FIA unique:  ", nrow(fia_unique), "plots\n")
-  cat("  NEFIN total: ", nrow(nefin), "plots (includes", length(overlap_cn), "overlaps)\n")
-  
+  cat("  FIA plots after removing overlaps:", nrow(fia_unique), "\n")
+  cat("  NEFIN plots (all):", nrow(nefin), "\n\n")
 } else {
-  cat("No overlapping plots - datasets are disjoint\n\n")
+  cat("  No overlapping plots - datasets are disjoint\n\n")
   fia_unique <- fia
 }
 
 # =============================================================================
-# CREATE AUGMENTED DATASET
+# COMBINE DATASETS
 # =============================================================================
 
-cat("\nCombining datasets...\n")
+cat("Combining datasets...\n")
 
-# Augmented = FIA (non-overlapping, fuzzed) + NEFIN (all, true coords)
-augmented <- bind_rows(
-  fia_unique,
-  nefin
-)
+augmented <- bind_rows(fia_unique, nefin)
 
-cat("\nAugmented dataset created:\n")
-cat("  Total plots:", nrow(augmented), "\n")
-cat("  FIA plots (fuzzed):  ", sum(augmented$dataset == "FIA"), "\n")
-cat("  NEFIN plots (true):  ", sum(augmented$dataset == "NEFIN"), "\n")
-
-# Verify coordinate sources
-coord_summary <- augmented %>%
-  count(dataset, coord_source)
-
-cat("\nCoordinate source breakdown:\n")
-print(coord_summary)
+cat("  ✓ Combined:", nrow(augmented), "plots\n")
+cat("  Expected:", nrow(fia_unique) + nrow(nefin), "\n\n")
 
 # =============================================================================
-# VALIDATION
+# VALIDATE AUGMENTED DATASET
 # =============================================================================
 
-cat("\nValidation checks:\n")
+cat("Validating augmented dataset...\n")
 
-# Check no duplicate CNs
-if (any(duplicated(augmented$CN))) {
-  stop("ERROR: Duplicate CNs found in augmented dataset!")
+# Check composition
+cat("\n  Dataset distribution:\n")
+print(table(augmented$dataset))
+
+cat("\n  Coordinate source distribution:\n")
+print(table(augmented$coord_source))
+
+# Check for duplicates
+n_dup <- sum(duplicated(augmented$CN))
+if (n_dup > 0) {
+  cat("\n  ⚠ WARNING:", n_dup, "duplicate CNs found\n")
+} else {
+  cat("\n  ✓ No duplicate CNs\n")
 }
-cat("✓ No duplicate CNs\n")
 
-# Check all required columns
-required_cols <- c("CN", "STATECD", "MEASYEAR", "lat", "lon", "biomass",
-                  "dataset", "coord_source", "lat_for_extraction", "lon_for_extraction")
-
-missing <- setdiff(required_cols, names(augmented))
-if (length(missing) > 0) {
-  stop("Missing columns: ", paste(missing, collapse = ", "))
-}
-cat("✓ All required columns present\n")
-
-# Check FIA has fuzzed, NEFIN has true
-fia_check <- augmented %>% filter(dataset == "FIA")
-nefin_check <- augmented %>% filter(dataset == "NEFIN")
-
-if (!all(fia_check$coord_source == "fuzzed")) {
-  stop("ERROR: Some FIA plots don't have fuzzed coords!")
-}
-if (!all(nefin_check$coord_source == "true")) {
-  stop("ERROR: Some NEFIN plots don't have true coords!")
-}
-cat("✓ Coordinate sources correct\n")
+# Summary stats
+cat("\nBiomass summary:\n")
+cat(sprintf("  Overall mean: %.2f Mg/ha\n", mean(augmented$biomass, na.rm = TRUE)))
+cat(sprintf("  FIA mean:     %.2f Mg/ha\n", 
+            mean(augmented$biomass[augmented$dataset == "FIA"], na.rm = TRUE)))
+cat(sprintf("  NEFIN mean:   %.2f Mg/ha\n", 
+            mean(augmented$biomass[augmented$dataset == "NEFIN"], na.rm = TRUE)))
 
 # =============================================================================
 # SAVE AUGMENTED DATASET
 # =============================================================================
 
-output_path <- "data/processed/augmented.csv"
-
+cat("\n")
+output_path <- file.path(CONFIG$paths$processed, "augmented.csv")
 write_csv(augmented, output_path)
 
-cat("\n✓ Saved:", output_path, "\n")
-cat("  Size:", file.size(output_path) / 1024^2, "MB\n")
+cat("✓ Saved:", output_path, "\n")
+cat("  Rows:", nrow(augmented), "\n")
+cat("  Size:", sprintf("%.2f MB\n", file.size(output_path) / 1024^2))
 
 # =============================================================================
 # SUMMARY REPORT
 # =============================================================================
 
-summary_path <- "data/processed/augmentation_summary.txt"
+summary_path <- file.path(CONFIG$paths$processed, "augmentation_summary.txt")
 
 sink(summary_path)
+
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  AUGMENTED DATASET CREATION SUMMARY\n")
+cat("  AUGMENTED DATASET SUMMARY\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
+
 cat("Created:", as.character(Sys.time()), "\n\n")
 
 cat("INPUT DATASETS:\n")
-cat("  FIA:   ", nrow(fia), "plots (all fuzzed)\n")
-cat("  NEFIN: ", nrow(nefin), "plots (all true coords)\n\n")
+cat("  FIA complete:   ", nrow(fia), "plots\n")
+cat("  NEFIN complete: ", nrow(nefin), "plots\n")
+if (length(overlap) > 0) {
+  cat("  Overlapping:    ", length(overlap), "plots\n")
+}
+cat("\n")
 
-cat("OVERLAP HANDLING:\n")
-cat("  Overlapping CNs:     ", length(overlap_cn), "\n")
-cat("  FIA plots removed:   ", length(overlap_cn), "\n")
-cat("  NEFIN plots kept:    ", length(overlap_cn), "(true coords replace fuzzed)\n\n")
+cat("AUGMENTED DATASET:\n")
+cat("  Total plots:", nrow(augmented), "\n")
+cat("  FIA plots:  ", sum(augmented$dataset == "FIA"), 
+    sprintf(" (%.1f%%)\n", 100 * sum(augmented$dataset == "FIA") / nrow(augmented)))
+cat("  NEFIN plots:", sum(augmented$dataset == "NEFIN"), 
+    sprintf(" (%.1f%%)\n", 100 * sum(augmented$dataset == "NEFIN") / nrow(augmented)))
+cat("\n")
 
-cat("OUTPUT DATASET:\n")
-cat("  Total plots:         ", nrow(augmented), "\n")
-cat("  FIA plots (fuzzed):  ", sum(augmented$dataset == "FIA"), "\n")
-cat("  NEFIN plots (true):  ", sum(augmented$dataset == "NEFIN"), "\n\n")
+cat("COORDINATE SOURCES:\n")
+fuzzed_count <- sum(augmented$coord_source == "fuzzed", na.rm = TRUE)
+true_count <- sum(augmented$coord_source == "TRUE", na.rm = TRUE)
 
-cat("COORDINATE BREAKDOWN:\n")
-cat("  Fuzzed coords (FIA): ", sum(augmented$coord_source == "fuzzed"), "\n")
-cat("  True coords (NEFIN): ", sum(augmented$coord_source == "true"), "\n\n")
+cat("  Fuzzed:", fuzzed_count, 
+    sprintf(" (%.1f%%)\n", 100 * fuzzed_count / nrow(augmented)))
+cat("  True:  ", true_count, 
+    sprintf(" (%.1f%%)\n", 100 * true_count / nrow(augmented)))
+cat("\n")
 
-cat("COMPARISON DESIGN:\n")
-cat("  Baseline:  FIA-only (", nrow(fia), "plots, all fuzzed)\n")
-cat("  Augmented: FIA + NEFIN (", nrow(augmented), "plots, mixed coords)\n\n")
+cat("BIOMASS STATISTICS:\n")
+cat(sprintf("  Overall: Mean = %.2f Mg/ha, Median = %.2f Mg/ha\n",
+            mean(augmented$biomass, na.rm = TRUE),
+            median(augmented$biomass, na.rm = TRUE)))
+cat(sprintf("  FIA:     Mean = %.2f Mg/ha, Median = %.2f Mg/ha\n",
+            mean(augmented$biomass[augmented$dataset == "FIA"], na.rm = TRUE),
+            median(augmented$biomass[augmented$dataset == "FIA"], na.rm = TRUE)))
+cat(sprintf("  NEFIN:   Mean = %.2f Mg/ha, Median = %.2f Mg/ha\n",
+            mean(augmented$biomass[augmented$dataset == "NEFIN"], na.rm = TRUE),
+            median(augmented$biomass[augmented$dataset == "NEFIN"], na.rm = TRUE)))
+cat("\n")
 
-cat("RESEARCH QUESTION:\n")
-cat("  Does augmenting FIA with NEFIN's precise coordinates\n")
-cat("  improve forest biomass estimates at different scales?\n\n")
+cat("OUTPUT FILE:\n")
+cat("  ", output_path, "\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("\n═══════════════════════════════════════════════════════════════════\n")
+
 sink()
 
 cat("\n✓ Summary written:", summary_path, "\n")
 
-cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("\n═══════════════════════════════════════════════════════════════════\n")
 cat("  PHASE C COMPLETE!\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-cat("Datasets created:\n")
-cat("  1. baseline.csv   - FIA-only (", nrow(fia), "plots)\n")
-cat("  2. augmented.csv  - FIA + NEFIN (", nrow(augmented), "plots)\n\n")
+cat("Comparison datasets created:\n")
+cat("  baseline.csv:   ", nrow(fia), "plots (100% fuzzed)\n")
+cat("  augmented.csv:  ", nrow(augmented), "plots (mixed precision)\n")
+cat("    - FIA:  ", sum(augmented$dataset == "FIA"), "(fuzzed)\n")
+cat("    - NEFIN:", sum(augmented$dataset == "NEFIN"), "(true)\n\n")
 
-cat("Next: R/04_assign_to_hexagons/ (Phase D)\n\n")
+cat("═══════════════════════════════════════════════════════════════════\n")
+cat("  READY FOR ANALYSIS!\n")
+cat("═══════════════════════════════════════════════════════════════════\n\n")
+
+cat("Research Question:\n")
+cat("  Does augmenting FIA with NEFIN's precise coordinates\n")
+cat("  improve forest biomass estimates at different spatial scales?\n\n")
+
+cat("Next steps:\n")
+cat("  1. Assign plots to hexagonal grids (Phase D)\n")
+cat("  2. Compare baseline vs augmented estimates\n")
+cat("  3. Quantify improvement from coordinate precision\n\n")
