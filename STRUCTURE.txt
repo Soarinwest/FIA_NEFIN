@@ -1,0 +1,15 @@
+.
+./R
+./R/utils
+./R/04_assign_to_hexagons
+./R/00_config
+./R/03_create_comparison_datasets
+./R/{00_config,utils,01_process_fia,02_process_nefin,03_create_comparison_datasets,04_assign_to_hexagons,05_extract_covariates}
+./R/02_process_nefin
+./R/05_extract_covariates
+./R/01_process_fia
+./run_scripts
+./data
+./data/{raw
+./data/{raw/{fia_sqlite,nefin},interim
+./data/{raw/{fia_sqlite,nefin},interim/{fia,nefin},processed}
