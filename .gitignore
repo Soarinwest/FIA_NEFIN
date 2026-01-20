@@ -36,6 +36,7 @@ po/*~
 rsconnect/
 # data files
 data/*
+outputs/*
 runs/*
 reporting/NEFIN vs FIA Hexagon Method Impact Comparison.docx
 reporting/Summary_proj.docx
