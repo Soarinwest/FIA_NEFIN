@@ -95,10 +95,16 @@ uncertainty <- jittered %>%
   )
 
 # Join with baseline to get original values
+baseline_original <- baseline %>%
+  select(CN, 
+         ndvi_modis_original = ndvi_modis,
+         ndvi_s2_original = ndvi_s2,
+         tmean_original = tmean,
+         ppt_original = ppt,
+         biomass_original = biomass)
+
 uncertainty <- uncertainty %>%
-  left_join(baseline %>% select(CN, biomass, ndvi_modis, ndvi_s2, tmean, ppt),
-            by = "CN",
-            suffix = c("", "_original")) %>%
+  left_join(baseline_original, by = "CN") %>%
   mutate(
     # Calculate error from original
     ndvi_modis_error = abs(ndvi_modis_mean - ndvi_modis_original),

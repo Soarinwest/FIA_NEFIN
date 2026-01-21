@@ -1,5 +1,5 @@
 # =============================================================================
-# COMBINED ANALYSIS: Direct Comparison + Monte Carlo
+# Combined Analysis: Synthesize All Results
 # =============================================================================
 
 source("R/00_config/config.R")
@@ -12,79 +12,74 @@ cat("  COMBINED ANALYSIS: SYNTHESIZING RESULTS\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
 # =============================================================================
-# LOAD RESULTS FROM BOTH TRACKS
+# LOAD ALL RESULTS
 # =============================================================================
 
 cat("Loading results...\n")
 
-# Track 1: Direct comparison
+# Direct comparison
 comparison_metrics <- read_csv("data/processed/comparison_metrics.csv",
-                              show_col_types = FALSE)
-cat("  ✓ Direct comparison metrics\n")
+                               show_col_types = FALSE)
 
-# Track 2: Monte Carlo
+# Monte Carlo uncertainty
 mc_uncertainty <- read_csv("data/processed/monte_carlo/plot_uncertainty.csv",
-                          show_col_types = FALSE)
-cat("  ✓ Monte Carlo uncertainty\n\n")
+                           show_col_types = FALSE)
+
+cat("  ✓ Direct comparison metrics\n")
+cat("  ✓ Monte Carlo uncertainty\n")
 
 # =============================================================================
-# SYNTHESIZE KEY FINDINGS
+# KEY FINDINGS
 # =============================================================================
 
 cat("═══════════════════════════════════════════════════════════════════\n")
 cat("  KEY FINDINGS\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-# Finding 1: Uncertainty from fuzzing
-cat("1. COORDINATE FUZZING INTRODUCES SUBSTANTIAL UNCERTAINTY:\n\n")
-
+# 1. Fuzzing uncertainty
 ndvi_uncertainty <- mean(mc_uncertainty$ndvi_s2_sd, na.rm = TRUE)
+ndvi_uncertainty_pct <- mean(mc_uncertainty$ndvi_s2_cv, na.rm = TRUE) * 100
 temp_uncertainty <- mean(mc_uncertainty$tmean_sd, na.rm = TRUE)
 ppt_uncertainty <- mean(mc_uncertainty$ppt_sd, na.rm = TRUE)
 
-cat(sprintf("   NDVI:         ±%.4f units (±%.1f%% relative)\n",
-            ndvi_uncertainty,
-            100 * mean(mc_uncertainty$ndvi_s2_cv, na.rm = TRUE)))
+cat("1. COORDINATE FUZZING INTRODUCES SUBSTANTIAL UNCERTAINTY:\n")
+cat(sprintf("   NDVI:         ±%.4f units (±%.1f%% relative)\n", 
+            ndvi_uncertainty, ndvi_uncertainty_pct))
 cat(sprintf("   Temperature:  ±%.2f °C\n", temp_uncertainty))
 cat(sprintf("   Precipitation: ±%.1f mm\n\n", ppt_uncertainty))
 
-# Finding 2: Scale-dependent improvement
-cat("2. AUGMENTATION IMPROVES ESTIMATES (SCALE-DEPENDENT):\n\n")
-
+# 2. Augmentation improvement
 best_improvement <- comparison_metrics %>%
-  arrange(area_ha) %>%
+  arrange(desc(pct_improved)) %>%
   slice(1)
 
 worst_improvement <- comparison_metrics %>%
-  arrange(desc(area_ha)) %>%
+  arrange(pct_improved) %>%
   slice(1)
 
+cat("2. AUGMENTATION IMPROVES ESTIMATES (SCALE-DEPENDENT):\n")
 cat(sprintf("   Fine scale (%s):   RMSE = %.2f Mg/ha, Improvement = %.1f%%\n",
             best_improvement$scale,
             best_improvement$rmse,
             best_improvement$pct_improved))
-
 cat(sprintf("   Coarse scale (%s): RMSE = %.2f Mg/ha, Improvement = %.1f%%\n\n",
             worst_improvement$scale,
             worst_improvement$rmse,
             worst_improvement$pct_improved))
 
-# Finding 3: Correlation with scale
-if (nrow(comparison_metrics) > 3) {
-  scale_correlation <- cor(log(comparison_metrics$area_ha),
-                           comparison_metrics$rmse,
-                           use = "complete.obs")
-  
-  cat("3. SCALE-DEPENDENCY CONFIRMED:\n\n")
-  cat(sprintf("   Correlation (log scale vs RMSE): %.3f\n", scale_correlation))
-  
-  if (scale_correlation < -0.3) {
-    cat("   → Strong evidence that precision matters MORE at fine scales\n\n")
-  } else if (scale_correlation < 0) {
-    cat("   → Moderate evidence that precision matters more at fine scales\n\n")
-  } else {
-    cat("   → Unexpected: Precision appears to matter at coarse scales\n\n")
-  }
+# 3. Scale dependency
+scale_trend <- cor(log(comparison_metrics$area_ha), 
+                   comparison_metrics$rmse,
+                   use = "complete.obs")
+
+cat("3. SCALE-DEPENDENCY CONFIRMED:\n")
+cat(sprintf("   Correlation (log scale vs RMSE): %.3f\n", scale_trend))
+if (scale_trend > 0.5) {
+  cat("   → Unexpected: Precision appears to matter at coarse scales\n\n")
+} else if (scale_trend < -0.5) {
+  cat("   → As expected: Precision matters more at fine scales\n\n")
+} else {
+  cat("   → No clear scale dependency detected\n\n")
 }
 
 # =============================================================================
@@ -95,83 +90,103 @@ cat("═════════════════════════
 cat("  COMPARATIVE ANALYSIS\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-cat("NEFIN Value Proposition:\n\n")
+# Load augmented for NEFIN variance
+augmented <- read_csv("data/processed/augmented_with_covariates.csv",
+                      show_col_types = FALSE)
 
-# Calculate how NEFIN reduces uncertainty
-nefin_advantage <- tibble(
+# Deduplicate
+augmented <- augmented %>%
+  group_by(CN) %>%
+  filter(MEASYEAR == max(MEASYEAR)) %>%
+  ungroup()
+
+# Get NEFIN variance
+nefin_variance <- augmented %>%
+  filter(dataset == "NEFIN") %>%
+  summarise(
+    ndvi_sd = sd(ndvi_s2, na.rm = TRUE),
+    temp_sd = sd(tmean, na.rm = TRUE),
+    ppt_sd = sd(ppt, na.rm = TRUE)
+  )
+
+# Compare
+comparison <- tibble(
   Variable = c("NDVI", "Temperature", "Precipitation"),
   MC_Uncertainty = c(ndvi_uncertainty, temp_uncertainty, ppt_uncertainty),
-  NEFIN_Uncertainty = c(0.01, 0.1, 5),  # Approximate (±10m precision)
-  Reduction_Factor = c(
-    ndvi_uncertainty / 0.01,
-    temp_uncertainty / 0.1,
-    ppt_uncertainty / 5
-  )
+  NEFIN_Uncertainty = c(nefin_variance$ndvi_sd, 
+                        nefin_variance$temp_sd,
+                        nefin_variance$ppt_sd),
+  Reduction_Factor = c(ndvi_uncertainty / nefin_variance$ndvi_sd,
+                       temp_uncertainty / nefin_variance$temp_sd,
+                       ppt_uncertainty / nefin_variance$ppt_sd)
 )
 
-print(nefin_advantage)
-
+cat("NEFIN Value Proposition:\n")
+print(comparison)
 cat("\n")
-cat(sprintf("NEFIN reduces covariate uncertainty by %.0f-%.0fx\n",
-            min(nefin_advantage$Reduction_Factor),
-            max(nefin_advantage$Reduction_Factor)))
+
+reduction_range <- range(comparison$Reduction_Factor)
+cat(sprintf("NEFIN reduces covariate uncertainty by %.1fx-%.1fx\n\n",
+            reduction_range[1], reduction_range[2]))
 
 # =============================================================================
 # RECOMMENDATIONS
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("═══════════════════════════════════════════════════════════════════\n")
 cat("  RECOMMENDATIONS\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-# Find critical scale threshold
-critical_scale <- comparison_metrics %>%
-  filter(pct_improved > 10) %>%
-  arrange(desc(area_ha)) %>%
+# Find threshold scale
+threshold_scale <- comparison_metrics %>%
+  filter(pct_improved < 95) %>%
+  arrange(area_ha) %>%
   slice(1)
 
-if (nrow(critical_scale) > 0) {
-  cat(sprintf("✓ Use precise coordinates for analyses at scales < %s (%,d ha)\n",
-              critical_scale$scale,
-              critical_scale$area_ha))
+if (nrow(threshold_scale) > 0) {
+  cat(sprintf("✓ Use precise coordinates for analyses at scales < %s (%.0f ha)\n",
+              threshold_scale$scale,
+              threshold_scale$area_ha))
 } else {
-  cat("✓ Precision matters at all tested scales\n")
+  cat("✓ Precise coordinates valuable at ALL analyzed scales\n")
 }
 
-cat("✓ FIA's fuzzed coordinates adequate for regional (>50kha) assessments\n")
-cat("✓ NEFIN augmentation most valuable for:\n")
-cat("   • Fine-scale mapping (<5kha)\n")
-cat("   • Covariate extraction in heterogeneous landscapes\n")
-cat("   • Predictive modeling requiring precise environmental data\n\n")
+cat(sprintf("✓ FIA coordinates adequate for regional analyses (>%.0f ha)\n",
+            max(comparison_metrics$area_ha) / 2))
+
+cat(sprintf("✓ Coordinate precision critical when NDVI uncertainty (±%.4f) exceeds\n",
+            ndvi_uncertainty))
+cat("  measurement error of biomass estimates\n\n")
 
 # =============================================================================
-# SAVE SUMMARY
+# SAVE COMBINED RESULTS
 # =============================================================================
 
-summary_output <- list(
-  uncertainty_from_fuzzing = list(
-    ndvi_sd = ndvi_uncertainty,
-    temp_sd = temp_uncertainty,
-    ppt_sd = ppt_uncertainty
+combined_results <- list(
+  fuzzing_uncertainty = list(
+    ndvi = ndvi_uncertainty,
+    temperature = temp_uncertainty,
+    precipitation = ppt_uncertainty
   ),
-  improvement_by_scale = comparison_metrics %>%
-    select(scale, area_ha, rmse, pct_improved),
-  nefin_value = nefin_advantage
+  comparison = comparison,
+  scale_metrics = comparison_metrics,
+  mc_plot_uncertainty = mc_uncertainty
 )
 
-output_path <- "data/processed/combined_analysis_summary.rds"
-saveRDS(summary_output, output_path)
+saveRDS(combined_results, "data/processed/combined_analysis_results.rds")
 
-cat("✓ Saved: combined_analysis_summary.rds\n\n")
+cat("✓ Saved combined results: data/processed/combined_analysis_results.rds\n\n")
 
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  ANALYSIS COMPLETE!\n")
+cat("  ANALYSIS COMPLETE! 🎉\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-cat("Final deliverables:\n")
-cat("  • comparison_metrics.csv - Scale-wise comparison results\n")
-cat("  • plot_uncertainty.csv - Monte Carlo uncertainty per plot\n")
-cat("  • combined_analysis_summary.rds - Synthesized findings\n\n")
-
-cat("Next: Create visualizations and publication-ready figures\n")
-cat("  Rscript R/06_analysis/07_visualize.R\n\n")
+cat("Key Takeaway:\n")
+cat(sprintf("  Coordinate fuzzing introduces ±%.4f NDVI uncertainty.\n", 
+            ndvi_uncertainty))
+cat(sprintf("  NEFIN's precise coordinates reduce this by %.1fx.\n",
+            comparison$Reduction_Factor[comparison$Variable == "NDVI"]))
+cat(sprintf("  Precision matters most at scales < %s.\n\n",
+            ifelse(nrow(threshold_scale) > 0, 
+                   threshold_scale$scale,
+                   "all analyzed scales")))

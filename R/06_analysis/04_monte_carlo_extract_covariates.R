@@ -1,8 +1,7 @@
 # =============================================================================
-# Monte Carlo: Extract Covariates from Jitter Library (Production Version)
+# Monte Carlo: Extract Covariates - NO CONFIRMATION (v4)
 # =============================================================================
-# Processes individual replicate files
-# Resume capability if extraction crashes
+# Runs without asking - user is okay with long runtime!
 # =============================================================================
 
 source("R/00_config/config.R")
@@ -13,11 +12,11 @@ library(dplyr)
 library(readr)
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
-cat("  MONTE CARLO: EXTRACT COVARIATES FROM JITTER LIBRARY\n")
+cat("  MONTE CARLO: EXTRACT COVARIATES (v4 - AUTO-RUN)\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
 # =============================================================================
-# CHECK JITTER LIBRARY EXISTS
+# LOAD JITTER LIBRARY
 # =============================================================================
 
 replicates_dir <- "data/processed/monte_carlo/replicates"
@@ -29,25 +28,18 @@ if (!file.exists(manifest_file)) {
 
 manifest <- readRDS(manifest_file)
 
-cat("Jitter library info:\n")
-cat("  Created:", manifest$created, "\n")
+cat("Jitter library:\n")
 cat("  Replicates:", manifest$n_replicates, "\n")
 cat("  Plots per replicate:", manifest$n_plots, "\n")
 cat("  Total locations:", manifest$n_replicates * manifest$n_plots, "\n\n")
 
 # =============================================================================
-# CHECK WHICH REPLICATES NEED PROCESSING
+# CHECK PROGRESS
 # =============================================================================
 
-# Find jittered files (input)
 jitter_files <- list.files(replicates_dir, pattern = "^rep_\\d{4}\\.csv$",
                            full.names = TRUE)
 
-if (length(jitter_files) == 0) {
-  stop("No replicate files found in:", replicates_dir)
-}
-
-# Check for already extracted files (output)
 extracted_dir <- "data/processed/monte_carlo/extracted"
 dir.create(extracted_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -67,70 +59,93 @@ cat("  Already extracted:", length(extracted_reps), "\n")
 cat("  Remaining:", length(remaining_reps), "\n\n")
 
 if (length(remaining_reps) == 0) {
-  cat("✓ All replicates already extracted!\n")
-  cat("  Delete", extracted_dir, "to re-extract\n\n")
+  cat("✓ All replicates already extracted!\n\n")
   quit(save = "no")
 }
 
 # =============================================================================
-# CONFIRM LONG RUN
+# SPEED TEST (INFORMATIONAL ONLY)
 # =============================================================================
 
-total_extractions <- length(remaining_reps) * manifest$n_plots
-est_hours <- total_extractions / 3600  # ~1 extraction per second
+cat("Running speed test on 10 plots...\n")
 
-cat("⚠ WARNING: This will take approximately", round(est_hours, 1), "hours\n")
-cat("  Processing", length(remaining_reps), "replicates ×",
-    manifest$n_plots, "plots =", total_extractions, "extractions\n\n")
+# Load first replicate for testing
+test_file <- jitter_files[1]
+test_data <- read_csv(test_file, show_col_types = FALSE, n_max = 10)
 
-response <- readline("Continue? (yes/no): ")
-if (tolower(response) != "yes") {
-  cat("Aborted.\n")
-  quit(save = "no")
-}
+# Convert to spatial
+test_sf <- st_as_sf(test_data,
+                    coords = c("lon_jittered", "lat_jittered"),
+                    crs = 4326)
+test_proj <- st_transform(test_sf, crs = CONFIG$crs_analysis)
+
+# Load rasters
+modis <- suppressWarnings(rast("data/raw/ndvi/modis/MODIS_NDVI_5yr_blocked_2020_2024.tif"))
+s2 <- suppressWarnings(rast("data/raw/ndvi/s2/S2_NDVI_10m_2020_2025.tif"))
+tmean <- suppressWarnings(rast("data/raw/prism/prism_tmean_ne_2020_2024.tif"))
+ppt <- suppressWarnings(rast("data/raw/prism/prism_ppt_ne_2020_2024.tif"))
+
+# Time 10 extractions
+test_start <- Sys.time()
+suppressWarnings({
+  test_modis <- terra::extract(modis, vect(test_proj), method = "bilinear")
+  test_s2 <- terra::extract(s2, vect(test_proj), method = "bilinear")
+  test_tmean <- terra::extract(tmean, vect(test_proj), method = "bilinear")
+  test_ppt <- terra::extract(ppt, vect(test_proj), method = "bilinear")
+})
+test_elapsed <- as.numeric(difftime(Sys.time(), test_start, units = "secs"))
+
+# Calculate rate
+plots_per_sec <- 10 / test_elapsed
+
+# Estimate total time
+total_plots <- length(remaining_reps) * manifest$n_plots
+est_seconds <- total_plots / plots_per_sec
+est_hours <- est_seconds / 3600
+
+cat(sprintf("  Speed: ~%.1f plots/sec\n", plots_per_sec))
+cat(sprintf("  Estimated time: %.1f hours for %d replicates\n\n",
+            est_hours, length(remaining_reps)))
 
 # =============================================================================
-# LOAD RASTERS
+# START EXTRACTION (NO CONFIRMATION)
 # =============================================================================
 
-cat("\nLoading rasters...\n")
+cat("Starting extraction...\n")
+cat("  (This will take ~", round(est_hours, 1), "hours - grab coffee!) ☕\n\n")
 
-modis <- rast("data/raw/ndvi/modis/MODIS_NDVI_5yr_blocked_2020_2024.tif")
+# Rasters already loaded
+cat("Using loaded rasters:\n")
 cat("  ✓ MODIS NDVI\n")
-
-s2 <- rast("data/raw/ndvi/s2/S2_NDVI_10m_2020_2025.tif")
 cat("  ✓ Sentinel-2 NDVI\n")
-
-tmean <- rast("data/raw/prism/prism_tmean_ne_2020_2024.tif")
 cat("  ✓ PRISM temperature\n")
-
-ppt <- rast("data/raw/prism/prism_ppt_ne_2020_2024.tif")
 cat("  ✓ PRISM precipitation\n\n")
-
-# =============================================================================
-# PROCESS REPLICATES
-# =============================================================================
-
-cat("Processing replicates...\n\n")
 
 start_time <- Sys.time()
 
 for (idx in seq_along(remaining_reps)) {
   rep_id <- remaining_reps[idx]
   
-  # Progress report
-  if (idx %% 10 == 0 || idx == 1) {
+  # Progress every 5 replicates OR every 10 minutes
+  show_progress <- (idx %% 5 == 0 || idx == 1)
+  
+  if (show_progress) {
     elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
     if (idx > 1) {
       rate <- idx / elapsed
       eta <- (length(remaining_reps) - idx) / rate
-      cat(sprintf("Progress: %d/%d (%.1f%%) - ETA: %.1f hours\n",
+      pct_complete <- 100 * idx / length(remaining_reps)
+      
+      cat(sprintf("[%s] %d/%d (%.1f%%) | ETA: %.1f hrs | Speed: %.1f rep/min\n",
+                  format(Sys.time(), "%H:%M:%S"),
                   idx, length(remaining_reps),
-                  100 * idx / length(remaining_reps),
-                  eta / 3600))
+                  pct_complete,
+                  eta / 3600,
+                  rate * 60))
     } else {
-      cat(sprintf("Starting replicate %04d (%d/%d)\n", 
-                  rep_id, idx, length(remaining_reps)))
+      cat(sprintf("[%s] Starting replicate %04d (1/%d)\n",
+                  format(Sys.time(), "%H:%M:%S"),
+                  rep_id, length(remaining_reps)))
     }
   }
   
@@ -142,49 +157,51 @@ for (idx in seq_along(remaining_reps)) {
   jittered_sf <- st_as_sf(jittered,
                           coords = c("lon_jittered", "lat_jittered"),
                           crs = 4326)
-  
-  # Transform to match raster CRS
   jittered_proj <- st_transform(jittered_sf, crs = CONFIG$crs_analysis)
+  jittered_vect <- vect(jittered_proj)
   
-  # Extract covariates
-  ndvi_modis <- terra::extract(modis, vect(jittered_proj), method = "bilinear")
+  # Extract all covariates (suppress CRS warnings)
+  suppressWarnings({
+    ndvi_modis <- terra::extract(modis, jittered_vect, method = "bilinear")
+    ndvi_s2 <- terra::extract(s2, jittered_vect, method = "bilinear")
+    tmean_vals <- terra::extract(tmean, jittered_vect, method = "bilinear")
+    ppt_vals <- terra::extract(ppt, jittered_vect, method = "bilinear")
+  })
+  
+  # Add to dataframe
   jittered$ndvi_modis <- ndvi_modis[[2]]
-  
-  ndvi_s2 <- terra::extract(s2, vect(jittered_proj), method = "bilinear")
   jittered$ndvi_s2 <- ndvi_s2[[2]]
-  
-  tmean_vals <- terra::extract(tmean, vect(jittered_proj), method = "bilinear")
   jittered$tmean <- tmean_vals[[2]]
-  
-  ppt_vals <- terra::extract(ppt, vect(jittered_proj), method = "bilinear")
   jittered$ppt <- ppt_vals[[2]]
   
-  # Save extracted data
-  output_file <- file.path(extracted_dir, 
+  # Save
+  output_file <- file.path(extracted_dir,
                            sprintf("rep_%04d_covariates.csv", rep_id))
   write_csv(jittered, output_file)
 }
 
 elapsed <- difftime(Sys.time(), start_time, units = "hours")
-cat(sprintf("\n✓ Extraction complete in %.2f hours\n\n", elapsed))
+cat(sprintf("\n✓ Extraction complete in %.2f hours\n", elapsed))
+cat(sprintf("  Actual speed: %.1f replicates/hour\n\n", 
+            length(remaining_reps) / as.numeric(elapsed)))
 
 # =============================================================================
-# COMBINE ALL REPLICATES (OPTIONAL)
+# SUMMARY
 # =============================================================================
 
-cat("Combining all extracted replicates...\n")
+cat("═══════════════════════════════════════════════════════════════════\n")
+cat("  EXTRACTION COMPLETE! 🎉\n")
+cat("═══════════════════════════════════════════════════════════════════\n\n")
 
 all_extracted <- list.files(extracted_dir, pattern = "^rep_\\d{4}_covariates\\.csv$",
                             full.names = TRUE)
 
-# For memory efficiency, we'll save summary stats per replicate
-# rather than one giant file
-
-cat("  Found", length(all_extracted), "extracted files\n")
-cat("  Total size:", 
-    round(sum(file.size(all_extracted)) / 1024^2, 1), "MB\n\n")
-
-cat("Files saved in:", extracted_dir, "\n\n")
+cat("Output:\n")
+cat("  Location:", extracted_dir, "\n")
+cat("  Files:", length(all_extracted), "\n")
+cat("  Total size:", round(sum(file.size(all_extracted)) / 1024^2, 1), "MB\n\n")
 
 cat("Next: Analyze uncertainty distributions\n")
 cat("  Rscript R/06_analysis/05_monte_carlo_analyze_uncertainty_v2.R\n\n")
+
+cat("Great work! Time to see if coordinate precision matters! 🚀\n\n")
