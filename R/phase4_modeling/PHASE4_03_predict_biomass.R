@@ -1,0 +1,468 @@
+# =============================================================================
+# PHASE 4: PREDICT BIOMASS RASTERS
+# =============================================================================
+# Generates wall-to-wall biomass predictions using trained models
+# 
+# Features:
+# - Predicts for configurable extent (county, state, region)
+# - Uses best model from CV or specified models
+# - Creates difference maps (NEFIN vs FIA)
+# - Memory-efficient chunk processing
+# - Parallel processing support
+#
+# Usage:
+#   Rscript R/phase4_modeling/PHASE4_03_predict_biomass.R
+# =============================================================================
+
+source("R/00_config/PHASE4_config.R")
+source("R/00_config/PHASE4_config_covariates.R")
+
+library(terra)
+library(dplyr)
+library(readr)
+library(randomForest)
+library(xgboost)
+library(sf)
+
+cat("\n")
+cat("═══════════════════════════════════════════════════════════════════\n")
+cat("  PHASE 4: BIOMASS PREDICTION\n")
+cat("  Generate Wall-to-Wall Biomass Maps\n")
+cat("═══════════════════════════════════════════════════════════════════\n\n")
+
+# Create output directory
+dir.create(PHASE4_CONFIG$prediction$output$dir, 
+           showWarnings = FALSE, recursive = TRUE)
+
+# =============================================================================
+# STEP 1: DEFINE PREDICTION EXTENT
+# =============================================================================
+
+cat("Step 1: Defining prediction extent...\n")
+
+extent_type <- PHASE4_CONFIG$prediction$extent$type
+cat("  Extent type:", extent_type, "\n")
+
+if (extent_type == "chittenden_county") {
+  
+  cat("  County: Chittenden, Vermont\n")
+  
+  # Option 1: Use tigris package to get county boundary
+  if (require(tigris, quietly = TRUE)) {
+    county_boundary <- counties(state = "VT", cb = TRUE) %>%
+      filter(NAME == "Chittenden") %>%
+      st_transform(4326)
+    
+    # Add buffer if specified
+    buffer_km <- PHASE4_CONFIG$prediction$extent$county$buffer_km
+    if (buffer_km > 0) {
+      county_boundary <- county_boundary %>%
+        st_transform(5070) %>%  # Project to meters
+        st_buffer(buffer_km * 1000) %>%
+        st_transform(4326)
+      cat("  Buffer:", buffer_km, "km\n")
+    }
+    
+  } else {
+    # Option 2: Manual bounding box for Chittenden County
+    cat("  Using manual bounding box (install 'tigris' package for exact boundary)\n")
+    bbox <- c(xmin = -73.3, xmax = -72.9, ymin = 44.35, ymax = 44.65)
+    county_boundary <- st_as_sfc(st_bbox(bbox, crs = 4326))
+  }
+  
+  prediction_extent <- county_boundary
+  
+} else if (extent_type == "vermont") {
+  
+  cat("  State: Vermont\n")
+  
+  if (require(tigris, quietly = TRUE)) {
+    state_boundary <- states(cb = TRUE) %>%
+      filter(NAME == "Vermont") %>%
+      st_transform(4326)
+    prediction_extent <- state_boundary
+  } else {
+    # Vermont bounding box
+    bbox <- c(xmin = -73.5, xmax = -71.5, ymin = 42.7, ymax = 45.0)
+    prediction_extent <- st_as_sfc(st_bbox(bbox, crs = 4326))
+  }
+  
+} else if (extent_type == "full_region") {
+  
+  cat("  Full northeastern region\n")
+  bbox <- c(xmin = -74.5, xmax = -66.5, ymin = 41.0, ymax = 47.5)
+  prediction_extent <- st_as_sfc(st_bbox(bbox, crs = 4326))
+  
+} else if (extent_type == "custom") {
+  
+  cat("  Custom bounding box\n")
+  custom <- PHASE4_CONFIG$prediction$extent$custom
+  bbox <- c(xmin = custom$xmin, xmax = custom$xmax, 
+            ymin = custom$ymin, ymax = custom$ymax)
+  prediction_extent <- st_as_sfc(st_bbox(bbox, crs = custom$crs))
+}
+
+cat("  ✓ Extent defined\n\n")
+
+# =============================================================================
+# STEP 2: LOAD COVARIATE RASTERS
+# =============================================================================
+
+cat("\nStep 2: Loading and cropping covariate rasters...\n")
+
+# Get active covariates
+active_covs <- get_active_covariates()
+active_names <- sapply(active_covs, function(x) x$name)
+
+cat("  Loading", length(active_covs), "covariate rasters...\n")
+
+# Convert extent to terra format (in WGS84)
+extent_vect <- vect(prediction_extent)
+
+cat("  Extent bounding box (WGS84):\n")
+cat("    xmin:", ext(extent_vect)[1], "xmax:", ext(extent_vect)[2], "\n")
+cat("    ymin:", ext(extent_vect)[3], "ymax:", ext(extent_vect)[4], "\n")
+
+# Load and crop each raster (will transform extent to match raster CRS)
+covariate_rasters <- list()
+
+# Get CRS from first raster to standardize
+first_raster <- NULL
+target_crs <- NULL
+
+for (cov_name in active_names) {
+  cov_info <- COVARIATES[[cov_name]]
+  
+  if (!file.exists(cov_info$path)) {
+    cat("  ⚠ Skipping", cov_info$display_name, "- file not found\n")
+    next
+  }
+  
+  cat("  Loading", cov_info$display_name, "...\n")
+  
+  # Load raster
+  r <- rast(cov_info$path)
+  
+  # Use first raster's CRS as target
+  if (is.null(target_crs)) {
+    target_crs <- crs(r)
+    cat("    Raster CRS:", target_crs, "\n")
+    
+    # Transform extent to match raster CRS
+    extent_vect_proj <- project(extent_vect, target_crs)
+    extent_bbox <- ext(extent_vect_proj)
+    
+    cat("    Transformed extent:\n")
+    cat("      xmin:", extent_bbox[1], "xmax:", extent_bbox[2], "\n")
+    cat("      ymin:", extent_bbox[3], "ymax:", extent_bbox[4], "\n")
+    
+    # Check if extents overlap
+    raster_bbox <- ext(r)
+    cat("    Raster extent:\n")
+    cat("      xmin:", raster_bbox[1], "xmax:", raster_bbox[2], "\n")
+    cat("      ymin:", raster_bbox[3], "ymax:", raster_bbox[4], "\n")
+    
+    # Check overlap
+    if (extent_bbox[2] < raster_bbox[1] || extent_bbox[1] > raster_bbox[2] ||
+        extent_bbox[4] < raster_bbox[3] || extent_bbox[3] > raster_bbox[4]) {
+      stop("ERROR: Prediction extent does not overlap with rasters!\n",
+           "  Check that your extent is within the raster coverage area.")
+    }
+    
+    cat("    ✓ Extents overlap - proceeding with crop\n")
+  }
+  
+  # Reproject raster to target CRS if needed
+  if (crs(r) != target_crs) {
+    cat("    Reprojecting to target CRS...\n")
+    r <- project(r, target_crs)
+  }
+  
+  # Crop to extent
+  r_crop <- crop(r, extent_bbox)
+  
+  covariate_rasters[[cov_name]] <- r_crop
+}
+
+cat("  ✓ Loaded", length(covariate_rasters), "covariates\n\n")
+
+# =============================================================================
+# STEP 3: DETERMINE WHICH MODELS TO USE
+# =============================================================================
+
+cat("Step 3: Selecting models for prediction...\n")
+
+if (PHASE4_CONFIG$prediction$models$use_best) {
+  cat("  Using best model from CV results...\n")
+  
+  best_model_info <- get_best_model()
+  models_to_predict <- list(best_model_info$model_name)
+  
+} else {
+  cat("  Using specified models...\n")
+  models_to_predict <- PHASE4_CONFIG$prediction$models$specific_models
+  cat("  Models:", paste(models_to_predict, collapse = ", "), "\n")
+}
+
+cat("\n")
+
+# =============================================================================
+# STEP 4: PREDICT FOR EACH MODEL
+# =============================================================================
+
+cat("Step 4: Generating predictions...\n\n")
+
+for (model_id in models_to_predict) {
+  
+  cat("───────────────────────────────────────────────────────────────\n")
+  cat("  Model:", model_id, "\n")
+  cat("───────────────────────────────────────────────────────────────\n\n")
+  
+  # Parse model ID to get components
+  parts <- strsplit(model_id, "_")[[1]]
+  model_type <- parts[1]  # rf or xgb
+  scale <- parts[2]       # fine or coarse
+  scenario <- paste(parts[3:length(parts)], collapse = "_")
+  
+  cat("  Type:", model_type, "\n")
+  cat("  Scale:", scale, "\n")
+  cat("  Scenario:", scenario, "\n\n")
+  
+  # Get covariates for this scale
+  scale_covs <- get_scale_covariates(scale)
+  scale_covs <- intersect(scale_covs, active_names)
+  
+  cat("  Using", length(scale_covs), "covariates:\n")
+  cat("   ", paste(scale_covs, collapse = ", "), "\n\n")
+  
+  # Check that we have all needed covariates
+  missing <- setdiff(scale_covs, names(covariate_rasters))
+  if (length(missing) > 0) {
+    cat("  ⚠ Missing covariates:", paste(missing, collapse = ", "), "\n")
+    cat("  Skipping this model\n\n")
+    next
+  }
+  
+  # Stack the needed rasters
+  cat("  Stacking covariates...\n")
+  cov_stack <- rast(covariate_rasters[scale_covs])
+  names(cov_stack) <- scale_covs
+  
+  # Resample to target resolution if needed
+  target_res <- if (scale == "fine") {
+    PHASE4_CONFIG$prediction$output$resolution$fine
+  } else {
+    PHASE4_CONFIG$prediction$output$resolution$coarse
+  }
+  
+  current_res <- res(cov_stack)[1]
+  if (abs(current_res - target_res) > 1) {
+    cat("  Resampling from", round(current_res), "m to", target_res, "m...\n")
+    
+    # Create template at target resolution
+    template <- rast(ext(cov_stack), resolution = target_res, crs = crs(cov_stack))
+    cov_stack <- resample(cov_stack, template, method = "bilinear")
+  }
+  
+  cat("  Final resolution:", round(res(cov_stack)[1]), "m\n")
+  cat("  Raster dimensions:", paste(dim(cov_stack)[1:2], collapse = " x "), "\n\n")
+  
+  # -------------------------------------------------------------------------
+  # TRAIN MODEL (using all data for final prediction)
+  # -------------------------------------------------------------------------
+  
+  cat("  Training model on full dataset...\n")
+  
+  # Load data
+  full_data <- read_csv("data/processed/augmented_with_covariates.csv",
+                        show_col_types = FALSE) %>%
+    filter(!is.na(biomass), biomass > 0)
+  
+  # Filter by scenario
+  if (scenario == "fia_only") {
+    model_data <- full_data %>% filter(dataset == "FIA")
+  } else if (scenario == "nefin_only") {
+    model_data <- full_data %>% filter(dataset == "NEFIN")
+  } else {
+    model_data <- full_data  # pooled
+  }
+  
+  # Remove NAs in covariates
+  model_data <- model_data %>%
+    filter(if_all(all_of(scale_covs), ~ !is.na(.)))
+  
+  cat("    Training data:", nrow(model_data), "plots\n")
+  
+  # Standardize covariates
+  means <- colMeans(model_data[, scale_covs], na.rm = TRUE)
+  sds <- apply(model_data[, scale_covs], 2, sd, na.rm = TRUE)
+  
+  for (cov in scale_covs) {
+    model_data[[cov]] <- (model_data[[cov]] - means[cov]) / sds[cov]
+  }
+  
+  # Train model
+  set.seed(PHASE4_CONFIG$cv$seed)
+  
+  if (model_type == "rf") {
+    
+    formula_reg <- as.formula(paste("biomass ~", paste(scale_covs, collapse = " + ")))
+    mtry_val <- floor(sqrt(length(scale_covs)))
+    
+    model <- randomForest(
+      formula = formula_reg,
+      data = model_data,
+      ntree = PHASE4_CONFIG$models$rf$params$ntree,
+      mtry = mtry_val,
+      nodesize = PHASE4_CONFIG$models$rf$params$nodesize,
+      importance = FALSE
+    )
+    
+    cat("    Random Forest trained (", PHASE4_CONFIG$models$rf$params$ntree, " trees)\n")
+    
+  } else if (model_type == "xgb") {
+    
+    train_matrix <- as.matrix(model_data[, scale_covs])
+    
+    model <- xgboost(
+      data = train_matrix,
+      label = model_data$biomass,
+      nrounds = PHASE4_CONFIG$models$xgb$params$nrounds,
+      max_depth = PHASE4_CONFIG$models$xgb$params$max_depth,
+      eta = PHASE4_CONFIG$models$xgb$params$eta,
+      objective = "reg:squarederror",
+      verbose = 0
+    )
+    
+    cat("    XGBoost trained (", PHASE4_CONFIG$models$xgb$params$nrounds, " rounds)\n")
+  }
+  
+  # -------------------------------------------------------------------------
+  # PREDICT OVER RASTER
+  # -------------------------------------------------------------------------
+  
+  cat("\n  Predicting biomass...\n")
+  
+  # Define prediction function that handles standardization
+  predict_biomass <- function(model, newdata, model_type, means, sds, scale_covs) {
+    
+    # Standardize input
+    for (cov in scale_covs) {
+      newdata[[cov]] <- (newdata[[cov]] - means[cov]) / sds[cov]
+    }
+    
+    # Predict
+    if (model_type == "rf") {
+      pred <- predict(model, newdata = newdata)
+    } else if (model_type == "xgb") {
+      pred_matrix <- as.matrix(newdata[, scale_covs])
+      pred <- predict(model, newdata = pred_matrix)
+    }
+    
+    return(pred)
+  }
+  
+  # Predict using terra::predict (handles large rasters efficiently)
+  biomass_pred <- predict(
+    cov_stack,
+    model,
+    fun = function(model, ...) {
+      predict_biomass(model, data.frame(...), model_type, means, sds, scale_covs)
+    },
+    na.rm = TRUE
+  )
+  
+  names(biomass_pred) <- "biomass"
+  
+  cat("    ✓ Prediction complete\n")
+  cat("    Range:", round(minmax(biomass_pred)[1], 1), "to", 
+      round(minmax(biomass_pred)[2], 1), "Mg/ha\n\n")
+  
+  # -------------------------------------------------------------------------
+  # SAVE OUTPUT
+  # -------------------------------------------------------------------------
+  
+  cat("  Saving output...\n")
+  
+  output_file <- file.path(
+    PHASE4_CONFIG$prediction$output$dir,
+    paste0("biomass_", model_id, ".tif")
+  )
+  
+  writeRaster(
+    biomass_pred,
+    output_file,
+    overwrite = TRUE,
+    gdal = c("COMPRESS=LZW", "TILED=YES")
+  )
+  
+  cat("    ✓ Saved:", output_file, "\n\n")
+}
+
+# =============================================================================
+# STEP 5: CREATE DIFFERENCE MAPS
+# =============================================================================
+
+if (PHASE4_CONFIG$prediction$output$create_difference_maps) {
+  
+  cat("\n")
+  cat("═══════════════════════════════════════════════════════════════\n")
+  cat("  CREATING DIFFERENCE MAPS (NEFIN - FIA)\n")
+  cat("═══════════════════════════════════════════════════════════════\n\n")
+  
+  # Find matching FIA and NEFIN predictions
+  pred_files <- list.files(
+    PHASE4_CONFIG$prediction$output$dir,
+    pattern = "biomass_.*\\.tif$",
+    full.names = TRUE
+  )
+  
+  # Group by scale
+  for (scale in c("fine", "coarse")) {
+    
+    fia_file <- grep(paste0(scale, "_fia_only"), pred_files, value = TRUE)
+    nefin_file <- grep(paste0(scale, "_nefin_only"), pred_files, value = TRUE)
+    
+    if (length(fia_file) == 1 && length(nefin_file) == 1) {
+      
+      cat("  Scale:", scale, "\n")
+      
+      fia_rast <- rast(fia_file)
+      nefin_rast <- rast(nefin_file)
+      
+      # Calculate difference
+      diff_rast <- nefin_rast - fia_rast
+      names(diff_rast) <- "biomass_diff"
+      
+      # Save
+      diff_file <- file.path(
+        PHASE4_CONFIG$prediction$output$dir,
+        paste0("difference_", scale, "_nefin_minus_fia.tif")
+      )
+      
+      writeRaster(diff_rast, diff_file, overwrite = TRUE,
+                  gdal = c("COMPRESS=LZW", "TILED=YES"))
+      
+      cat("    ✓ Saved:", basename(diff_file), "\n")
+      cat("    Difference range:", round(minmax(diff_rast)[1], 1), "to",
+          round(minmax(diff_rast)[2], 1), "Mg/ha\n\n")
+    }
+  }
+}
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+cat("═══════════════════════════════════════════════════════════════════\n")
+cat("  PREDICTION COMPLETE!\n")
+cat("═══════════════════════════════════════════════════════════════════\n\n")
+
+cat("Output directory:", PHASE4_CONFIG$prediction$output$dir, "\n")
+cat("Extent:", extent_type, "\n")
+cat("Models predicted:", length(models_to_predict), "\n\n")
+
+cat("Next steps:\n")
+cat("  1. Visualize predictions in QGIS/ArcGIS\n")
+cat("  2. Create publication-quality maps\n")
+cat("  3. Analyze difference maps to assess fuzzing impacts\n\n")

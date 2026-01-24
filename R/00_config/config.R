@@ -87,6 +87,7 @@ CONFIG <- list(
     list(name = "100ha",  path = "data/hex/hex_grid_100ha.geojson",  area_ha = 100),
     list(name = "500ha",  path = "data/hex/hex_grid_500ha.geojson",  area_ha = 500),
     list(name = "1kha",   path = "data/hex/hex_grid_1kha.geojson",   area_ha = 1000),
+    list(name = "2_4kha", path = "data/hex/hex_grid_2_4kha.geojson", area_ha = 2428),
     list(name = "5kha",   path = "data/hex/hex_grid_5kha.geojson",   area_ha = 5000),
     list(name = "10kha",  path = "data/hex/hex_grid_10kha.geojson",  area_ha = 10000),
     list(name = "50kha",  path = "data/hex/hex_grid_50kha.geojson",  area_ha = 50000),

@@ -60,9 +60,9 @@ if (file.exists(modis_path)) {
 # EXTRACT NDVI - SENTINEL-2
 # =============================================================================
 
-cat("Extracting Sentinel-2 NDVI (10m, 2020-2025)...\n")
+cat("Extracting Sentinel-2 NDVI (10m, 2020-2024)...\n")
 
-s2_path <- "data/raw/ndvi/s2/S2_NDVI_10m_2020_2025.tif"
+s2_path <- "data/raw/ndvi/s2/S2_NDVI_10m_2020_2024.tif"
 
 if (file.exists(s2_path)) {
 	s2 <- rast(s2_path)

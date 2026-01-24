@@ -81,7 +81,7 @@ test_proj <- st_transform(test_sf, crs = CONFIG$crs_analysis)
 
 # Load rasters
 modis <- suppressWarnings(rast("data/raw/ndvi/modis/MODIS_NDVI_5yr_blocked_2020_2024.tif"))
-s2 <- suppressWarnings(rast("data/raw/ndvi/s2/S2_NDVI_10m_2020_2025.tif"))
+s2 <- suppressWarnings(rast("data/raw/ndvi/s2/S2_NDVI_10m_2020_2024.tif"))
 tmean <- suppressWarnings(rast("data/raw/prism/prism_tmean_ne_2020_2024.tif"))
 ppt <- suppressWarnings(rast("data/raw/prism/prism_ppt_ne_2020_2024.tif"))
 

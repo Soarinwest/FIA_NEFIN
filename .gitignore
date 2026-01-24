@@ -35,9 +35,12 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 # data files
+*.pdf
+manuscript_figures/*
 data/*
 outputs/*
 runs/*
 reporting/NEFIN vs FIA Hexagon Method Impact Comparison.docx
 reporting/Summary_proj.docx
 FIA_NEFIN.Rproj
+ArcProject
