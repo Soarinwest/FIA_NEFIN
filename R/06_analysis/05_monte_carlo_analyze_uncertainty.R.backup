@@ -63,33 +63,33 @@ uncertainty <- jittered %>%
   group_by(CN) %>%
   summarise(
     # NDVI MODIS uncertainty
-    ndvi_modis_mean = mean(ndvi_modis_250m, na.rm = TRUE),
-    ndvi_modis_sd = sd(ndvi_modis_250m, na.rm = TRUE),
-    ndvi_modis_min = min(ndvi_modis_250m, na.rm = TRUE),
-    ndvi_modis_max = max(ndvi_modis_250m, na.rm = TRUE),
-    ndvi_modis_range = max(ndvi_modis_250m, na.rm = TRUE) - min(ndvi_modis_250m, na.rm = TRUE),
-    ndvi_modis_cv = sd(ndvi_modis_250m, na.rm = TRUE) / abs(mean(ndvi_modis_250m, na.rm = TRUE)),
+    ndvi_modis_mean = mean(ndvi_modis, na.rm = TRUE),
+    ndvi_modis_sd = sd(ndvi_modis, na.rm = TRUE),
+    ndvi_modis_min = min(ndvi_modis, na.rm = TRUE),
+    ndvi_modis_max = max(ndvi_modis, na.rm = TRUE),
+    ndvi_modis_range = max(ndvi_modis, na.rm = TRUE) - min(ndvi_modis, na.rm = TRUE),
+    ndvi_modis_cv = sd(ndvi_modis, na.rm = TRUE) / abs(mean(ndvi_modis, na.rm = TRUE)),
     
     # NDVI S2 uncertainty
-    ndvi_s2_mean = mean(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_sd = sd(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_min = min(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_max = max(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_range = max(ndvi_s2_10m, na.rm = TRUE) - min(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_cv = sd(ndvi_s2_10m, na.rm = TRUE) / abs(mean(ndvi_s2_10m, na.rm = TRUE)),
+    ndvi_s2_mean = mean(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_sd = sd(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_min = min(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_max = max(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_range = max(ndvi_s2, na.rm = TRUE) - min(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_cv = sd(ndvi_s2, na.rm = TRUE) / abs(mean(ndvi_s2, na.rm = TRUE)),
     
     # Temperature uncertainty
-    tmean_mean = mean(tmean_250m, na.rm = TRUE),
-    tmean_sd = sd(tmean_250m, na.rm = TRUE),
-    tmean_range = max(tmean_250m, na.rm = TRUE) - min(tmean_250m, na.rm = TRUE),
+    tmean_mean = mean(tmean, na.rm = TRUE),
+    tmean_sd = sd(tmean, na.rm = TRUE),
+    tmean_range = max(tmean, na.rm = TRUE) - min(tmean, na.rm = TRUE),
     
     # Precipitation uncertainty
-    ppt_mean = mean(ppt_250m, na.rm = TRUE),
-    ppt_sd = sd(ppt_250m, na.rm = TRUE),
-    ppt_range = max(ppt_250m, na.rm = TRUE) - min(ppt_250m, na.rm = TRUE),
+    ppt_mean = mean(ppt, na.rm = TRUE),
+    ppt_sd = sd(ppt, na.rm = TRUE),
+    ppt_range = max(ppt, na.rm = TRUE) - min(ppt, na.rm = TRUE),
     
     # Sample size
-    n_valid = sum(!is.na(ndvi_s2_10m)),
+    n_valid = sum(!is.na(ndvi_s2)),
     
     .groups = "drop"
   )
@@ -97,10 +97,10 @@ uncertainty <- jittered %>%
 # Join with baseline to get original values
 baseline_original <- baseline %>%
   select(CN, 
-         ndvi_modis_original = ndvi_modis_250m,
-         ndvi_s2_original = ndvi_s2_10m,
-         tmean_original = tmean_250m,
-         ppt_original = ppt_250m,
+         ndvi_modis_original = ndvi_modis,
+         ndvi_s2_original = ndvi_s2,
+         tmean_original = tmean,
+         ppt_original = ppt,
          biomass_original = biomass)
 
 uncertainty <- uncertainty %>%
@@ -186,9 +186,9 @@ augmented <- augmented %>%
 variance_by_dataset <- augmented %>%
   group_by(dataset) %>%
   summarise(
-    ndvi_s2_sd = sd(ndvi_s2_10m, na.rm = TRUE),
-    tmean_sd = sd(tmean_250m, na.rm = TRUE),
-    ppt_sd = sd(ppt_250m, na.rm = TRUE),
+    ndvi_s2_sd = sd(ndvi_s2, na.rm = TRUE),
+    tmean_sd = sd(tmean, na.rm = TRUE),
+    ppt_sd = sd(ppt, na.rm = TRUE),
     .groups = "drop"
   )
 

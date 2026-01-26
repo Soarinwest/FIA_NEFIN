@@ -1,255 +1,307 @@
 # =============================================================================
-# PHASE 4 - STEP 1: Data Preparation for Predictive Modeling (CONFIG-BASED)
+# PHASE 4 - STEP 1: Data Preparation (CORRECTED RESEARCH DESIGN)
 # =============================================================================
-# Prepares data for model training:
-# - Loads baseline and augmented datasets
-# - Checks available covariates against config
-# - Creates train/test splits (70/30)
-# - DOES NOT standardize (done within CV folds instead)
-# - Saves prepared datasets for each scenario
+# DESIGN FOR FUZZING COMPARISON:
 #
-# ADAPTIVE: Works with any number of covariates defined in config!
+# TEST SET (same for ALL models):
+#   - 30% of NEFIN (precise coordinates)
+#   - Ensures fair comparison across all scenarios
+#
+# TRAINING SETS (vary by scenario):
+#   - FIA-only: Train on ALL FIA (fuzzed coords), test on 30% NEFIN
+#   - NEFIN-only: Train on 70% NEFIN (precise coords), test on 30% NEFIN
+#   - Pooled: Train on ALL FIA + 70% NEFIN, test on 30% NEFIN
+#
+# This isolates the effect of coordinate fuzzing!
 # =============================================================================
 
-# Load configuration
+source("R/00_config/config.R")
 source("R/00_config/PHASE4_config.R")
+source("R/00_config/PHASE4_config_covariates.R")
 
 library(dplyr)
 library(readr)
-library(caret)  # For data splitting
+library(caret)
 
 cat("\n")
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  PHASE 4 - STEP 1: DATA PREPARATION\n")
+cat("  PHASE 4 - STEP 1: DATA PREPARATION (FIXED)\n")
+cat("  TEST: 30% NEFIN (same for all models)\n")
+cat("  TRAIN: Varies by scenario\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-# Print configuration
-print_phase4_config()
-
-# Create output directories
+# Create output directory
 dir.create("data/processed/phase4_modeling", showWarnings = FALSE, recursive = TRUE)
-output_dir <- "data/processed/phase4_modeling"
 
 # =============================================================================
-# LOAD DATA
+# STEP 1: LOAD DATASETS
 # =============================================================================
 
 cat("Step 1: Loading datasets...\n")
 
-baseline <- read_csv("data/processed/baseline_with_covariates.csv", 
-                     show_col_types = FALSE)
-augmented <- read_csv("data/processed/augmented_with_covariates.csv",
-                      show_col_types = FALSE)
+baseline <- read_csv(
+  "data/processed/baseline_with_covariates.csv",
+  show_col_types = FALSE
+)
 
-cat("  ✓ Baseline:", nrow(baseline), "plots\n")
-cat("  ✓ Augmented:", nrow(augmented), "plots\n\n")
+augmented <- read_csv(
+  "data/processed/augmented_with_covariates.csv",
+  show_col_types = FALSE
+)
+
+cat("  ✓ Baseline (FIA):", nrow(baseline), "plots\n")
+cat("  ✓ Augmented (FIA + NEFIN):", nrow(augmented), "plots\n\n")
+
+# Fix data type mismatches
+cat("  Converting CN columns to character...\n")
+baseline <- baseline %>%
+  mutate(CN = as.character(CN))
+
+augmented <- augmented %>%
+  mutate(CN = as.character(CN))
+
+cat("  ✓ Data types standardized\n\n")
 
 # =============================================================================
-# CHECK AVAILABLE COVARIATES
+# STEP 2: IDENTIFY COVARIATES WITH SCALE-SPECIFIC NAMES
 # =============================================================================
 
 cat("Step 2: Checking available covariates...\n")
 
-# Get active covariates from config
-source("R/00_config/PHASE4_config_covariates.R")
-
+# Get active covariates
 active_covs <- Filter(function(x) !is.null(x$active) && x$active, COVARIATES)
 
-# Extract just the names (not the full list objects)
-active_cov_names <- sapply(active_covs, function(x) x$name)
-
-# Check which are actually in the data
-available_covs <- intersect(active_cov_names, names(augmented))
-missing_covs <- setdiff(active_cov_names, names(augmented))
+# CRITICAL FIX: Create scale-specific names
+covariates_to_use <- sapply(active_covs, function(x) {
+  paste0(x$name, "_", gsub("m", "", x$resolution), "m")
+})
 
 cat("  Active covariates:", length(active_covs), "\n")
-cat("  Available in data:", length(available_covs), "\n")
 
-if (length(missing_covs) > 0) {
-  cat("  ⚠ Missing covariates:", paste(missing_covs, collapse = ", "), "\n")
-  cat("    These will be added when layers are processed\n")
+# Check which are available in the data
+available_in_data <- covariates_to_use[covariates_to_use %in% names(augmented)]
+
+if (length(available_in_data) == 0) {
+  stop("ERROR: No covariates found in data! Check covariate extraction.")
 }
 
-cat("\n  Using covariates:\n")
-for (cov in available_covs) {
-  meta <- COVARIATES[[cov]]
-  if (!is.null(meta)) {
-    cat(sprintf("    • %s (%s, %s)\n", 
-                meta$name, meta$resolution, meta$type))
-  } else {
-    cat(sprintf("    • %s\n", cov))
-  }
+cat("  Available in data:", length(available_in_data), "\n")
+
+if (length(available_in_data) < length(covariates_to_use)) {
+  missing <- setdiff(covariates_to_use, available_in_data)
+  cat("  ⚠ Missing covariates:", paste(head(missing, 5), collapse = ", "))
+  if (length(missing) > 5) cat(", ...")
+  cat("\n")
 }
-cat("\n")
 
-# Update active covariates to only available ones
-covariates_to_use <- available_covs
+cat("\n  Using covariates:\n   ")
+cat(paste(head(available_in_data, 5), collapse = ", "))
+if (length(available_in_data) > 5) {
+  cat("\n    ... (", length(available_in_data) - 5, "more)")
+}
+cat("\n\n")
 
-# =============================================================================
-# PREPARE FULL DATASET
-# =============================================================================
-
-cat("Step 3: Preparing full dataset...\n")
-
-# Add dataset identifier to baseline
-baseline <- baseline %>%
-  mutate(dataset = "FIA")
-
-# Combine into single dataset
-full_data <- augmented %>%
-  select(CN, dataset, biomass, lon, lat, all_of(covariates_to_use)) %>%
-  filter(!is.na(biomass), biomass > 0)
-
-cat("  ✓ Combined dataset:", nrow(full_data), "plots\n")
-cat("    FIA:", sum(full_data$dataset == "FIA"), "\n")
-cat("    NEFIN:", sum(full_data$dataset == "NEFIN"), "\n\n")
+# Update to only use available covariates
+covariates_to_use <- available_in_data
 
 # =============================================================================
-# CREATE TRAIN/TEST SPLITS (STRATIFIED BY DATASET)
+# STEP 3: SEPARATE FIA AND NEFIN
 # =============================================================================
 
-cat("Step 4: Creating train/test splits (70/30)...\n")
+cat("Step 3: Separating FIA and NEFIN datasets...\n")
+
+# FIA data (from baseline - all fuzzed coordinates)
+fia <- baseline %>%
+  filter(dataset == "FIA")
+
+# NEFIN data (from augmented - precise coordinates)
+nefin <- augmented %>%
+  filter(dataset == "NEFIN")
+
+cat("  ✓ FIA plots:", nrow(fia), "\n")
+cat("  ✓ NEFIN plots:", nrow(nefin), "\n\n")
+
+# =============================================================================
+# STEP 4: CREATE UNIVERSAL TEST SET (30% NEFIN)
+# =============================================================================
+
+cat("Step 4: Creating universal test set...\n")
+cat("  Using 30% of NEFIN data (same for ALL models)\n\n")
 
 set.seed(PHASE4_CONFIG$cv$seed)
 
-# Stratified split to maintain FIA/NEFIN proportions
-trainIndex <- createDataPartition(
-  full_data$dataset, 
-  p = 0.70,
-  list = FALSE,
-  times = 1
+# Split NEFIN: 30% test, 70% train
+test_indices <- createDataPartition(
+  nefin$biomass,
+  p = 0.30,
+  list = FALSE
 )
 
-train_data <- full_data[trainIndex, ]
-test_data <- full_data[-trainIndex, ]
+nefin_test <- nefin[test_indices, ]
+nefin_train <- nefin[-test_indices, ]
 
-cat("  Training set:", nrow(train_data), "plots\n")
-cat("    FIA:", sum(train_data$dataset == "FIA"), "\n")
-cat("    NEFIN:", sum(train_data$dataset == "NEFIN"), "\n")
-cat("  Test set:", nrow(test_data), "plots\n")
-cat("    FIA:", sum(test_data$dataset == "FIA"), "\n")
-cat("    NEFIN:", sum(test_data$dataset == "NEFIN"), "\n\n")
+cat("  ✓ Test set created:\n")
+cat("    Plots:", nrow(nefin_test), "\n")
+cat("    Source: NEFIN only (precise coordinates)\n")
+cat("    Biomass range:", round(min(nefin_test$biomass), 1), "to", 
+    round(max(nefin_test$biomass), 1), "Mg/ha\n\n")
 
 # =============================================================================
-# SKIP GLOBAL STANDARDIZATION (done within CV folds instead)
+# STEP 5: CREATE SCENARIO-SPECIFIC TRAINING SETS
 # =============================================================================
 
-cat("Step 5: Skipping global standardization...\n")
-cat("  Covariates will be standardized within each CV fold\n")
-cat("  (Prevents data leakage in spatial cross-validation)\n\n")
+cat("Step 5: Creating scenario-specific training sets...\n\n")
 
-# Calculate raw statistics for reference (not used for standardization)
-scaling_params <- data.frame(
+# Scenario 1: FIA Only (fuzzed coordinates)
+cat("  FIA Only:\n")
+cat("    Train:", nrow(fia), "plots (ALL FIA - fuzzed coords)\n")
+cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
+cat("    → Evaluates: How well do fuzzed coordinates predict true locations?\n\n")
+
+# Scenario 2: NEFIN Only (precise coordinates)
+cat("  NEFIN Only:\n")
+cat("    Train:", nrow(nefin_train), "plots (70% NEFIN - precise coords)\n")
+cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
+cat("    → Evaluates: Best-case scenario with precise coordinates\n\n")
+
+# Scenario 3: Pooled (FIA + NEFIN)
+train_pooled <- bind_rows(fia, nefin_train)
+
+cat("  Pooled:\n")
+cat("    Train:", nrow(train_pooled), "plots\n")
+cat("      - FIA:", nrow(fia), "(fuzzed coords)\n")
+cat("      - NEFIN:", nrow(nefin_train), "(precise coords, 70%)\n")
+cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
+cat("    → Evaluates: Combined dataset performance\n\n")
+
+# =============================================================================
+# STEP 6: CALCULATE REFERENCE STATISTICS
+# =============================================================================
+
+cat("Step 6: Calculating reference statistics...\n")
+cat("  NOTE: Standardization done within CV folds to prevent leakage\n\n")
+
+# Calculate statistics for reference (not actually used for standardization)
+cat("  Pooled training data statistics (reference only):\n")
+
+scaling_stats <- data.frame(
   covariate = covariates_to_use,
-  mean = sapply(train_data[, covariates_to_use], mean, na.rm = TRUE),
-  sd = sapply(train_data[, covariates_to_use], sd, na.rm = TRUE)
+  mean = sapply(train_pooled[, covariates_to_use], mean, na.rm = TRUE),
+  sd = sapply(train_pooled[, covariates_to_use], sd, na.rm = TRUE),
+  min = sapply(train_pooled[, covariates_to_use], min, na.rm = TRUE),
+  max = sapply(train_pooled[, covariates_to_use], max, na.rm = TRUE)
 )
 
-cat("  Raw covariate statistics (for reference only):\n")
-print(scaling_params, row.names = FALSE)
-cat("\n")
-
-# =============================================================================
-# CREATE SCENARIO-SPECIFIC DATASETS
-# =============================================================================
-
-cat("Step 6: Creating scenario-specific datasets...\n")
-
-for (scenario_name in names(PHASE4_CONFIG$scenarios)) {
-  scenario <- PHASE4_CONFIG$scenarios[[scenario_name]]
-  
-  # Filter data based on scenario
-  train_scenario <- train_data %>% filter(eval(parse(text = scenario$filter)))
-  test_scenario <- test_data %>% filter(eval(parse(text = scenario$filter)))
-  
-  cat(sprintf("  %s:\n", scenario$name))
-  cat(sprintf("    Train: %d plots\n", nrow(train_scenario)))
-  cat(sprintf("    Test:  %d plots\n", nrow(test_scenario)))
-  
-  # Save
-  write_csv(train_scenario, 
-            file.path(output_dir, paste0("train_", scenario_name, ".csv")))
-  write_csv(test_scenario, 
-            file.path(output_dir, paste0("test_", scenario_name, ".csv")))
+print(head(scaling_stats, 5))
+if (nrow(scaling_stats) > 5) {
+  cat("    ... (", nrow(scaling_stats) - 5, "more covariates)\n")
 }
-
 cat("\n")
 
 # =============================================================================
-# SAVE COMPLETE DATASETS
+# STEP 7: SAVE DATASETS
 # =============================================================================
 
-cat("Step 7: Saving prepared datasets...\n")
+cat("Step 7: Saving datasets...\n\n")
 
-# Save full train/test
-write_csv(train_data, file.path(output_dir, "train_data.csv"))
-write_csv(test_data, file.path(output_dir, "test_data.csv"))
+# Save test set (same for all scenarios)
+write_csv(
+  nefin_test,
+  "data/processed/phase4_modeling/test_data.csv"
+)
+cat("  ✓ test_data.csv (30% NEFIN, n=", nrow(nefin_test), ")\n")
 
-# Save scaling parameters (for reference, not used for actual standardization)
-write_csv(scaling_params, file.path(output_dir, "scaling_parameters.csv"))
+# Save training sets
+write_csv(
+  fia,
+  "data/processed/phase4_modeling/train_fia_only.csv"
+)
+cat("  ✓ train_fia_only.csv (n=", nrow(fia), ")\n")
+
+write_csv(
+  nefin_train,
+  "data/processed/phase4_modeling/train_nefin_only.csv"
+)
+cat("  ✓ train_nefin_only.csv (n=", nrow(nefin_train), ")\n")
+
+write_csv(
+  train_pooled,
+  "data/processed/phase4_modeling/train_pooled.csv"
+)
+cat("  ✓ train_pooled.csv (n=", nrow(train_pooled), ")\n\n")
+
+# Save scaling parameters (for reference)
+write_csv(
+  scaling_stats,
+  "data/processed/phase4_modeling/scaling_parameters.csv"
+)
+cat("  ✓ scaling_parameters.csv (reference only)\n\n")
 
 # Save metadata
-metadata <- list(
-  creation_date = Sys.time(),
-  n_total = nrow(full_data),
-  n_train = nrow(train_data),
-  n_test = nrow(test_data),
-  train_test_ratio = 0.70,
-  seed = PHASE4_CONFIG$cv$seed,
-  covariates = covariates_to_use,
-  n_covariates = length(covariates_to_use),
-  scenarios = names(PHASE4_CONFIG$scenarios),
-  scaling_method = "within-fold (done in CV script)"
+metadata <- data.frame(
+  item = c(
+    "creation_date",
+    "test_set_size",
+    "test_set_source",
+    "train_fia_size",
+    "train_nefin_size",
+    "train_pooled_size",
+    "n_covariates",
+    "seed"
+  ),
+  value = c(
+    as.character(Sys.time()),
+    nrow(nefin_test),
+    "30% NEFIN (precise coords)",
+    nrow(fia),
+    nrow(nefin_train),
+    nrow(train_pooled),
+    length(covariates_to_use),
+    PHASE4_CONFIG$cv$seed
+  )
 )
 
 write_csv(
-  data.frame(
-    parameter = names(metadata),
-    value = sapply(metadata, function(x) paste(x, collapse = ", "))
-  ),
-  file.path(output_dir, "metadata.csv")
+  metadata,
+  "data/processed/phase4_modeling/metadata.csv"
 )
-
-cat("  ✓ train_data.csv (RAW values - not standardized)\n")
-cat("  ✓ test_data.csv (RAW values - not standardized)\n")
-cat("  ✓ train/test sets for each scenario\n")
-cat("  ✓ scaling_parameters.csv (reference only)\n")
 cat("  ✓ metadata.csv\n\n")
 
 # =============================================================================
-# SUMMARY STATISTICS
+# SUMMARY
 # =============================================================================
 
 cat("═══════════════════════════════════════════════════════════════════\n")
 cat("  DATA PREPARATION SUMMARY\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-cat("Response variable: Aboveground Biomass (Mg/ha)\n")
-cat("  Range:", round(min(full_data$biomass), 1), "to", 
-    round(max(full_data$biomass), 1), "Mg/ha\n")
-cat("  Mean:", round(mean(full_data$biomass), 1), "Mg/ha\n")
-cat("  SD:", round(sd(full_data$biomass), 1), "Mg/ha\n\n")
+cat("RESEARCH DESIGN:\n")
+cat("  Test set: 30% NEFIN (", nrow(nefin_test), "plots) - SAME FOR ALL MODELS\n")
+cat("  Training sets:\n")
+cat("    • FIA-only:", nrow(fia), "plots (fuzzed coords)\n")
+cat("    • NEFIN-only:", nrow(nefin_train), "plots (precise coords, 70%)\n")
+cat("    • Pooled:", nrow(train_pooled), "plots (FIA + 70% NEFIN)\n\n")
 
-cat("Covariates:", length(covariates_to_use), "\n")
-for (cov in covariates_to_use) {
-  cat("  •", cov, "\n")
-}
-cat("\n")
+cat("BIOMASS DISTRIBUTION:\n")
+cat("  Test set:\n")
+cat("    Range:", round(min(nefin_test$biomass), 1), "to", 
+    round(max(nefin_test$biomass), 1), "Mg/ha\n")
+cat("    Mean:", round(mean(nefin_test$biomass), 1), "Mg/ha\n")
+cat("    SD:", round(sd(nefin_test$biomass)), "Mg/ha\n\n")
 
-cat("Datasets created:\n")
-cat("  • Full (FIA + NEFIN):", nrow(train_data), "train,", nrow(test_data), "test\n")
-for (scenario_name in names(PHASE4_CONFIG$scenarios)) {
-  scenario <- PHASE4_CONFIG$scenarios[[scenario_name]]
-  n_train <- nrow(train_data %>% filter(eval(parse(text = scenario$filter))))
-  n_test <- nrow(test_data %>% filter(eval(parse(text = scenario$filter))))
-  cat("  •", scenario$name, ":", n_train, "train,", n_test, "test\n")
-}
-cat("\n")
+cat("COVARIATES:\n")
+cat("  Using", length(covariates_to_use), "covariates\n")
+cat("  Standardization: Within-fold (in CV script)\n\n")
 
-cat("Output directory:", output_dir, "\n")
-cat("Files ready for model training!\n\n")
+cat("OUTPUT FILES:\n")
+cat("  • test_data.csv - Universal test set (30% NEFIN)\n")
+cat("  • train_fia_only.csv - FIA training data\n")
+cat("  • train_nefin_only.csv - NEFIN training data (70%)\n")
+cat("  • train_pooled.csv - Combined training data\n")
+cat("  • scaling_parameters.csv - Reference statistics\n")
+cat("  • metadata.csv - Run metadata\n\n")
 
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  NEXT STEP: Spatial cross-validation (with within-fold scaling)\n")
+cat("  NEXT STEP: Spatial cross-validation\n")
 cat("  Rscript R/phase4_modeling/PHASE4_02b_spatial_cv.R\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")

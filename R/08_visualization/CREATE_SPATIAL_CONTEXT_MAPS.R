@@ -1,252 +1,288 @@
 # =============================================================================
-# Create Essential Spatial Maps (SIMPLIFIED)
+# CREATE SPATIAL CONTEXT MAPS (UPDATED - Reads Hex from GeoJSON)
+# =============================================================================
+# UPDATED: Reads hexagon centroids from GeoJSON files instead of CSV
 # =============================================================================
 
-suppressPackageStartupMessages({
-  library(sf)
-  library(ggplot2)
-  library(dplyr)
-  library(readr)
-})
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(sf)
 
 cat("\n══════════════════════════════════════════════════════════════════\n")
-cat("  CREATING SPATIAL CONTEXT MAPS (SIMPLIFIED)\n")
+cat("  CREATING SPATIAL CONTEXT MAPS (UPDATED)\n")
 cat("══════════════════════════════════════════════════════════════════\n\n")
 
 # Create output directory
-dir.create("data/processed/figures/spatial_context", 
-           showWarnings = FALSE, recursive = TRUE)
+out_dir <- "data/processed/figures/spatial_context"
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # =============================================================================
-# LOAD DATA
+# STEP 1: LOAD PLOT DATA
 # =============================================================================
 
 cat("Step 1: Loading plot data...\n")
 
-# Try multiple file locations for FIA
-fia_files <- c(
-  "data/processed/fia_complete.csv",
-  "data/interim/fia/biomass/fia_plot_biomass.csv",
-  "data/processed/baseline_with_covariates.csv"
-)
-fia_file <- fia_files[file.exists(fia_files)][1]
-if (is.na(fia_file)) {
-  cat("  ⚠ FIA file not found, tried:\n")
-  for (f in fia_files) cat("    ", f, "\n")
-  stop("FIA plot file not found!")
+# Try both locations for FIA data
+if (file.exists("data/processed/fia_complete.csv")) {
+  fia <- read_csv("data/processed/fia_complete.csv", show_col_types = FALSE)
+  cat("  ✓ FIA loaded:", nrow(fia), "plots from fia_complete.csv\n")
+} else if (file.exists("data/processed/baseline.csv")) {
+  fia <- read_csv("data/processed/baseline.csv", show_col_types = FALSE)
+  cat("  ✓ FIA loaded:", nrow(fia), "plots from baseline.csv\n")
+} else {
+  stop("FIA data not found!")
 }
 
-fia_plots <- read_csv(fia_file, show_col_types = FALSE)
-cat("  ✓ FIA loaded:", nrow(fia_plots), "plots from", basename(fia_file), "\n")
-
-# Try multiple file locations for NEFIN
-nefin_files <- c(
-  "data/processed/nefin_complete.csv",
-  "data/interim/nefin/biomass/nefin_plot_biomass.csv",
-  "data/raw/nefin/TREE_PLOT_DATA.csv",
-  "data/raw/nefin/NEFIN_plots.csv",
-  "data/processed/augmented_with_covariates.csv"
-)
-nefin_file <- nefin_files[file.exists(nefin_files)][1]
-if (is.na(nefin_file)) {
-  cat("  ⚠ NEFIN file not found, tried:\n")
-  for (f in nefin_files) cat("    ", f, "\n")
-  stop("NEFIN plot file not found!")
+# Try both locations for NEFIN data
+if (file.exists("data/processed/nefin_complete.csv")) {
+  nefin <- read_csv("data/processed/nefin_complete.csv", show_col_types = FALSE)
+  cat("  ✓ NEFIN loaded:", nrow(nefin), "plots from nefin_complete.csv\n")
+} else if (file.exists("data/processed/nefin.csv")) {
+  nefin <- read_csv("data/processed/nefin.csv", show_col_types = FALSE) %>%
+    group_by(CN) %>%
+    filter(MEASYEAR == max(MEASYEAR)) %>%
+    ungroup()
+  cat("  ✓ NEFIN loaded:", nrow(nefin), "plots from nefin.csv (deduplicated)\n")
+} else {
+  cat("  ⚠ NEFIN data not found, using FIA only\n")
+  nefin <- data.frame()
 }
 
-nefin_plots <- read_csv(nefin_file, show_col_types = FALSE)
-cat("  ✓ NEFIN loaded:", nrow(nefin_plots), "plots from", basename(nefin_file), "\n\n")
+cat("\n")
 
 # =============================================================================
-# IDENTIFY COORDINATE COLUMNS
+# STEP 2: COMBINE AND CONVERT TO SPATIAL
 # =============================================================================
 
-cat("Step 2: Identifying coordinate columns...\n")
+cat("Step 2: Converting to spatial objects...\n")
 
-# Find lon/lat columns in FIA
-fia_lon_col <- intersect(names(fia_plots), c("lon", "LON", "longitude", "x", "X"))[1]
-fia_lat_col <- intersect(names(fia_plots), c("lat", "LAT", "latitude", "y", "Y"))[1]
-
-if (is.na(fia_lon_col) || is.na(fia_lat_col)) {
-  cat("  Available FIA columns:\n")
-  print(names(fia_plots))
-  stop("Could not find lon/lat columns in FIA data")
+# Detect coordinate columns
+detect_coords <- function(df) {
+  lon_col <- names(df)[grepl("^lon", names(df), ignore.case = TRUE)][1]
+  lat_col <- names(df)[grepl("^lat", names(df), ignore.case = TRUE)][1]
+  list(lon = lon_col, lat = lat_col)
 }
 
-cat("  FIA coordinates: lon =", fia_lon_col, ", lat =", fia_lat_col, "\n")
-
-# Find lon/lat columns in NEFIN
-nefin_lon_col <- intersect(names(nefin_plots), c("lon", "LON", "longitude", "x", "X"))[1]
-nefin_lat_col <- intersect(names(nefin_plots), c("lat", "LAT", "latitude", "y", "Y"))[1]
-
-if (is.na(nefin_lon_col) || is.na(nefin_lat_col)) {
-  cat("  Available NEFIN columns:\n")
-  print(names(nefin_plots))
-  stop("Could not find lon/lat columns in NEFIN data")
-}
-
-cat("  NEFIN coordinates: lon =", nefin_lon_col, ", lat =", nefin_lat_col, "\n\n")
-
-# =============================================================================
-# PREPARE SPATIAL DATA
-# =============================================================================
-
-cat("Step 3: Converting to spatial objects...\n")
-
-# Prepare FIA spatial data
-fia_spatial <- fia_plots %>%
-  select(lon = !!sym(fia_lon_col), lat = !!sym(fia_lat_col)) %>%
-  filter(!is.na(lon), !is.na(lat), is.finite(lon), is.finite(lat)) %>%
+fia_coords <- detect_coords(fia)
+fia_sf <- st_as_sf(fia, 
+                   coords = c(fia_coords$lon, fia_coords$lat),
+                   crs = 4326,
+                   remove = FALSE) %>%
   mutate(dataset = "FIA")
 
-# Prepare NEFIN spatial data  
-nefin_spatial <- nefin_plots %>%
-  select(lon = !!sym(nefin_lon_col), lat = !!sym(nefin_lat_col)) %>%
-  filter(!is.na(lon), !is.na(lat), is.finite(lon), is.finite(lat)) %>%
-  mutate(dataset = "NEFIN")
-
-# Combine
-all_plots <- bind_rows(fia_spatial, nefin_spatial)
-
-cat("  ✓ Combined:", nrow(all_plots), "plots\n")
-cat("    FIA:", sum(all_plots$dataset == "FIA"), "\n")
-cat("    NEFIN:", sum(all_plots$dataset == "NEFIN"), "\n\n")
-
-# =============================================================================
-# FIGURE 1: STUDY AREA MAP (SIMPLE VERSION)
-# =============================================================================
-
-cat("Step 4: Creating study area map...\n")
-
-# Simple version without state boundaries (in case download fails)
-fig1 <- ggplot(all_plots, aes(x = lon, y = lat, color = dataset)) +
-  geom_point(alpha = 0.5, size = 0.8) +
-  scale_color_manual(
-    values = c("FIA" = "#d62728", "NEFIN" = "#1f77b4"),
-    labels = c("FIA (fuzzed ±1.6 km)", "NEFIN (true location)")
-  ) +
-  coord_fixed(ratio = 1.3) +
-  labs(
-    title = "Study Area: FIA vs NEFIN Forest Inventory Plots",
-    subtitle = paste0("Northeastern United States: FIA n=", 
-                      sum(all_plots$dataset == "FIA"), 
-                      ", NEFIN n=", sum(all_plots$dataset == "NEFIN")),
-    x = "Longitude",
-    y = "Latitude",
-    color = "Dataset"
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    plot.title = element_text(size = 14, face = "bold"),
-    panel.grid = element_line(color = "gray90", size = 0.2)
+if (nrow(nefin) > 0) {
+  nefin_coords <- detect_coords(nefin)
+  nefin_sf <- st_as_sf(nefin,
+                       coords = c(nefin_coords$lon, nefin_coords$lat),
+                       crs = 4326,
+                       remove = FALSE) %>%
+    mutate(dataset = "NEFIN")
+  
+  combined_sf <- rbind(
+    fia_sf %>% select(dataset, geometry),
+    nefin_sf %>% select(dataset, geometry)
   )
-
-output_file <- "data/processed/figures/spatial_context/fig1_study_area_simple.png"
-ggsave(output_file, fig1, width = 10, height = 8, dpi = 300)
-
-cat("  ✓ Saved:", output_file, "\n\n")
-
-# =============================================================================
-# FIGURE 2: HEXAGON DISTRIBUTION (if hex data available)
-# =============================================================================
-
-cat("Step 5: Creating hexagon map (if available)...\n")
-
-# Try to load 1kha hex data
-hex_files <- c(
-  "data/processed/hex_aggregated/baseline_hex_1kha.csv",
-  "data/processed/hex_aggregated/augmented_hex_1kha.csv"
-)
-
-hex_file <- hex_files[file.exists(hex_files)][1]
-
-if (!is.na(hex_file)) {
-  hex_data <- read_csv(hex_file, show_col_types = FALSE) %>%
-    filter(n_plots > 0)
-  
-  # Check for centroid columns
-  has_centroids <- all(c("centroid_lon", "centroid_lat") %in% names(hex_data))
-  
-  if (has_centroids) {
-    fig2 <- ggplot(hex_data, aes(x = centroid_lon, y = centroid_lat)) +
-      geom_point(aes(fill = biomass_mean, size = n_plots), 
-                 shape = 21, alpha = 0.7) +
-      scale_fill_viridis_c(option = "viridis", name = "Biomass\n(Mg/ha)") +
-      scale_size_continuous(range = c(0.5, 3), name = "Plots") +
-      coord_fixed(ratio = 1.3) +
-      labs(
-        title = "Hexagonal Aggregation: 1,000 ha Scale",
-        subtitle = paste0(nrow(hex_data), " hexagons with plots"),
-        x = "Longitude",
-        y = "Latitude"
-      ) +
-      theme_minimal() +
-      theme(plot.title = element_text(size = 14, face = "bold"))
-    
-    output_file2 <- "data/processed/figures/spatial_context/fig2_hex_1kha.png"
-    ggsave(output_file2, fig2, width = 10, height = 8, dpi = 300)
-    
-    cat("  ✓ Saved:", output_file2, "\n\n")
-  } else {
-    cat("  ⚠ Centroid columns not found, skipping hexagon map\n\n")
-  }
 } else {
-  cat("  ⚠ Hex data not found, skipping hexagon map\n\n")
+  combined_sf <- fia_sf %>% select(dataset, geometry)
 }
 
+cat("  ✓ Combined:", nrow(combined_sf), "plots\n")
+cat("    FIA:", sum(combined_sf$dataset == "FIA"), "\n")
+if (nrow(nefin) > 0) {
+  cat("    NEFIN:", sum(combined_sf$dataset == "NEFIN"), "\n")
+}
+cat("\n")
+
 # =============================================================================
-# FIGURE 3: FUZZING CONCEPTUAL DIAGRAM
+# STEP 3: STUDY AREA MAP
 # =============================================================================
 
-cat("Step 6: Creating fuzzing visualization...\n")
+cat("Step 3: Creating study area map...\n")
 
-# Conceptual diagram (doesn't need real data)
-set.seed(42)
-example_lon <- -72.5
-example_lat <- 44.0
-fuzzing_radius_km <- 1.6
-fuzzing_radius_deg <- fuzzing_radius_km / 111
+# Get plot coordinates for map
+plot_coords <- st_coordinates(combined_sf)
+combined_df <- combined_sf %>%
+  st_drop_geometry() %>%
+  mutate(lon = plot_coords[, 1],
+         lat = plot_coords[, 2])
 
-# Create circle
-theta <- seq(0, 2*pi, length.out = 100)
-circle_x <- example_lon + fuzzing_radius_deg * cos(theta)
-circle_y <- example_lat + fuzzing_radius_deg * sin(theta) * 1.3
-
-circle_df <- data.frame(lon = circle_x, lat = circle_y)
-
-fig3 <- ggplot() +
-  geom_polygon(data = circle_df, aes(x = lon, y = lat), 
-               fill = "red", alpha = 0.2, color = "red", size = 1) +
-  geom_point(aes(x = example_lon, y = example_lat), 
-             color = "blue", size = 4, shape = 3) +
-  geom_point(aes(x = example_lon + 0.01, y = example_lat + 0.008), 
-             color = "red", size = 3, shape = 16) +
-  annotate("text", x = example_lon, y = example_lat - 0.02, 
-           label = "True Location\n(precise)", color = "blue", size = 5) +
-  annotate("text", x = example_lon + 0.01, y = example_lat + 0.008 + 0.015, 
-           label = "Fuzzed Location\n(±1.6 km uncertainty)", 
-           color = "red", size = 4) +
-  coord_fixed(ratio = 1.3, xlim = c(example_lon - 0.03, example_lon + 0.03),
-              ylim = c(example_lat - 0.025, example_lat + 0.025)) +
+p1 <- ggplot() +
+  geom_point(data = combined_df,
+             aes(x = lon, y = lat, color = dataset),
+             size = 1, alpha = 0.4) +
+  scale_color_manual(values = c("FIA" = "#D32F2F", "NEFIN" = "#1976D2"),
+                     name = "Dataset") +
+  coord_sf(crs = 4326) +
   labs(
-    title = "FIA Coordinate Fuzzing Explained",
-    subtitle = "Privacy protection introduces spatial uncertainty",
+    title = "Study Area: Forest Inventory Plot Locations",
+    subtitle = "FIA (fuzzed coordinates) and NEFIN (precise coordinates) in Northeastern US",
     x = "Longitude",
     y = "Latitude"
   ) +
-  theme_minimal() +
+  theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank()
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "bottom"
   )
 
-output_file3 <- "data/processed/figures/spatial_context/fig3_fuzzing_concept.png"
-ggsave(output_file3, fig3, width = 8, height = 8, dpi = 300)
+ggsave(
+  file.path(out_dir, "fig1_study_area.png"),
+  p1,
+  width = 10,
+  height = 8,
+  dpi = 300
+)
 
-cat("  ✓ Saved:", output_file3, "\n\n")
+cat("  ✓ Saved: fig1_study_area.png\n\n")
+
+# =============================================================================
+# STEP 4: HEXAGON MAP (from GeoJSON)
+# =============================================================================
+
+cat("Step 4: Creating hexagon map from GeoJSON...\n")
+
+# Look for hexagon GeoJSON files
+hex_dir <- "data/hex"
+
+if (!dir.exists(hex_dir)) {
+  cat("  ⚠ Hexagon directory not found, skipping hexagon map\n\n")
+} else {
+  
+  hex_files <- list.files(hex_dir, pattern = "^hex_grid_.*\\.geojson$", full.names = TRUE)
+  
+  if (length(hex_files) == 0) {
+    cat("  ⚠ No hexagon GeoJSON files found, skipping hexagon map\n\n")
+  } else {
+    
+    # Use a medium-sized hex grid (e.g., 1kha or 2_4kha)
+    preferred_scales <- c("1kha", "2_4kha", "5kha", "500ha", "100ha")
+    
+    hex_file <- NULL
+    for (scale in preferred_scales) {
+      candidate <- file.path(hex_dir, paste0("hex_grid_", scale, ".geojson"))
+      if (file.exists(candidate)) {
+        hex_file <- candidate
+        hex_scale_name <- scale
+        break
+      }
+    }
+    
+    if (is.null(hex_file)) {
+      # Just use first available
+      hex_file <- hex_files[1]
+      hex_scale_name <- gsub(".*hex_grid_(.*)\\.geojson", "\\1", hex_file)
+    }
+    
+    cat("  Using hexagon scale:", hex_scale_name, "\n")
+    
+    # Load hexagons
+    hexagons <- st_read(hex_file, quiet = TRUE)
+    
+    # Calculate centroids
+    hex_centroids <- st_centroid(hexagons)
+    hex_coords <- st_coordinates(hex_centroids)
+    
+    hex_df <- hex_centroids %>%
+      st_drop_geometry() %>%
+      mutate(
+        lon = hex_coords[, 1],
+        lat = hex_coords[, 2]
+      )
+    
+    cat("  Loaded:", nrow(hexagons), "hexagons\n")
+    
+    # Create hexagon map
+    p2 <- ggplot() +
+      # Hexagon boundaries (light)
+      geom_sf(data = hexagons, fill = NA, color = "gray70", linewidth = 0.3, alpha = 0.5) +
+      # Plot locations
+      geom_point(data = combined_df,
+                 aes(x = lon, y = lat, color = dataset),
+                 size = 0.8, alpha = 0.5) +
+      scale_color_manual(values = c("FIA" = "#D32F2F", "NEFIN" = "#1976D2"),
+                         name = "Dataset") +
+      coord_sf(crs = 4326) +
+      labs(
+        title = paste("Hexagonal Grid Analysis (", hex_scale_name, ")", sep = ""),
+        subtitle = "Plots aggregated to hexagons for spatial analysis",
+        x = "Longitude",
+        y = "Latitude"
+      ) +
+      theme_minimal(base_size = 12) +
+      theme(
+        plot.title = element_text(face = "bold", size = 14),
+        legend.position = "bottom"
+      )
+    
+    ggsave(
+      file.path(out_dir, "fig2_hexagon_grid.png"),
+      p2,
+      width = 10,
+      height = 8,
+      dpi = 300
+    )
+    
+    cat("  ✓ Saved: fig2_hexagon_grid.png\n\n")
+  }
+}
+
+# =============================================================================
+# STEP 5: FUZZING VISUALIZATION
+# =============================================================================
+
+cat("Step 5: Creating fuzzing visualization...\n")
+
+# Select a few example plots
+set.seed(42)
+if (nrow(nefin) > 0) {
+  example_nefin <- nefin_sf %>%
+    sample_n(min(5, nrow(nefin)))
+  
+  # Get coordinates
+  nefin_coords_ex <- st_coordinates(example_nefin)
+  
+  # Create fuzzing circles (1 mile = 1609.34 meters)
+  nefin_circles <- example_nefin %>%
+    st_buffer(dist = 1609.34)
+  
+  p3 <- ggplot() +
+    # Fuzzing circles
+    geom_sf(data = nefin_circles, fill = "#FFCDD2", color = "#D32F2F", 
+            alpha = 0.3, linewidth = 0.5) +
+    # True locations (NEFIN)
+    geom_point(data = data.frame(lon = nefin_coords_ex[, 1],
+                                 lat = nefin_coords_ex[, 2]),
+               aes(x = lon, y = lat),
+               color = "#1976D2", size = 3, shape = 19) +
+    # Labels
+    annotate("text", x = -Inf, y = Inf, 
+             label = "Blue = Precise NEFIN coordinates\nRed circles = FIA fuzzing radius (~1 mile)",
+             hjust = 0, vjust = 1, size = 3.5, color = "gray20") +
+    coord_sf(crs = 4326) +
+    labs(
+      title = "FIA Coordinate Fuzzing Concept",
+      subtitle = "FIA adds random displacement within ~1 mile radius to protect landowner privacy",
+      x = "Longitude",
+      y = "Latitude"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", size = 14)
+    )
+  
+  ggsave(
+    file.path(out_dir, "fig3_fuzzing_concept.png"),
+    p3,
+    width = 10,
+    height = 8,
+    dpi = 300
+  )
+  
+  cat("  ✓ Saved: fig3_fuzzing_concept.png\n\n")
+} else {
+  cat("  ⚠ NEFIN data not available, skipping fuzzing visualization\n\n")
+}
 
 # =============================================================================
 # SUMMARY
@@ -257,15 +293,16 @@ cat("  SUMMARY\n")
 cat("══════════════════════════════════════════════════════════════════\n\n")
 
 cat("Maps created:\n")
-cat("  1. fig1_study_area_simple.png - Plot locations\n")
-if (!is.na(hex_file) && has_centroids) {
-  cat("  2. fig2_hex_1kha.png - Hexagonal aggregation\n")
+cat("  1. fig1_study_area.png - Plot locations\n")
+
+if (dir.exists(hex_dir) && length(list.files(hex_dir, pattern = "\\.geojson$")) > 0) {
+  cat("  2. fig2_hexagon_grid.png - Hexagonal analysis grid\n")
 }
-cat("  3. fig3_fuzzing_concept.png - Fuzzing visualization\n\n")
 
-cat("Location: data/processed/figures/spatial_context/\n\n")
+if (nrow(nefin) > 0) {
+  cat("  3. fig3_fuzzing_concept.png - Fuzzing visualization\n")
+}
 
-cat("These figures provide essential spatial context!\n")
-cat("More detailed maps with state boundaries can be added later.\n\n")
+cat("\nLocation:", out_dir, "\n\n")
 
-cat("Spatial mapping complete!\n\n")
+cat("These figures provide essential spatial context for your manuscript!\n\n")

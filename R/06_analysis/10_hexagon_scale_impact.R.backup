@@ -311,7 +311,7 @@ cat(sprintf("Coordinate fuzzing uncertainty: ±%.4f NDVI (±%.1f%%)\n",
 cat(sprintf("NEFIN precision advantage: %.1fx reduction\n",
             mean(mc_results$ndvi_s2_sd, na.rm = TRUE) / 
               sd(filter(readRDS("data/processed/summary_statistics/all_metrics.rds")$diagnostic$summary_by_dataset, 
-                        dataset == "NEFIN")$ndvi_s2_10m, na.rm = TRUE)))
+                        dataset == "NEFIN")$ndvi_s2, na.rm = TRUE)))
 cat(sprintf("Critical scale threshold: %s (%.0f ha)\n",
             threshold_95$scale, threshold_95$area_ha))
 cat("\n")

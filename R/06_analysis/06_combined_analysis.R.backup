@@ -104,9 +104,9 @@ augmented <- augmented %>%
 nefin_variance <- augmented %>%
   filter(dataset == "NEFIN") %>%
   summarise(
-    ndvi_sd = sd(ndvi_s2_10m, na.rm = TRUE),
-    temp_sd = sd(tmean_250m, na.rm = TRUE),
-    ppt_sd = sd(ppt_250m, na.rm = TRUE)
+    ndvi_sd = sd(ndvi_s2, na.rm = TRUE),
+    temp_sd = sd(tmean, na.rm = TRUE),
+    ppt_sd = sd(ppt, na.rm = TRUE)
   )
 
 # Compare

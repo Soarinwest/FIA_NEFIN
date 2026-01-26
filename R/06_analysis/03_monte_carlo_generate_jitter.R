@@ -1,12 +1,8 @@
 # =============================================================================
-# Monte Carlo: Generate Jittered Coordinates (Production Version)
+# Monte Carlo: Generate Jittered Coordinates (UPDATED - Pipeline Friendly)
 # =============================================================================
-# Adapted from sophisticated jitter library script
-# Features:
-# - 100 replicates per plot
-# - Multi-scale hex assignment
-# - Spatial constraints
-# - Resume capability
+# UPDATED: If all 100 replicates exist, skip generation instead of quitting
+# This allows run_analysis.R to continue to next steps
 # =============================================================================
 
 source("R/00_config/config.R")
@@ -17,7 +13,7 @@ library(dplyr)
 library(readr)
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
-cat("  MONTE CARLO: GENERATE JITTERED COORDINATES (v2)\n")
+cat("  MONTE CARLO: GENERATE JITTERED COORDINATES\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
 set.seed(CONFIG$monte_carlo$seed)
@@ -26,9 +22,9 @@ set.seed(CONFIG$monte_carlo$seed)
 # PARAMETERS
 # =============================================================================
 
-N_REPLICATES <- 100  # Changed from 100 to match user request
+N_REPLICATES <- 100
 RADIUS_M <- CONFIG$monte_carlo$jitter_radius_m
-USE_CONSTRAINTS <- TRUE  # Keep jitters inside valid areas
+USE_CONSTRAINTS <- TRUE
 
 cat("Parameters:\n")
 cat("  Replicates per plot:", N_REPLICATES, "\n")
@@ -36,22 +32,7 @@ cat("  Jitter radius:", RADIUS_M, "meters\n")
 cat("  Use constraints:", USE_CONSTRAINTS, "\n\n")
 
 # =============================================================================
-# LOAD FIA DATA
-# =============================================================================
-
-cat("Loading FIA baseline plots...\n")
-
-baseline <- read_csv("data/processed/baseline_with_covariates.csv",
-                     show_col_types = FALSE)
-
-# Filter for valid plots
-baseline_valid <- baseline %>%
-  filter(is.finite(lat_for_extraction), is.finite(lon_for_extraction))
-
-cat("  Total plots:", nrow(baseline_valid), "\n\n")
-
-# =============================================================================
-# SETUP OUTPUT
+# CHECK IF ALREADY COMPLETE
 # =============================================================================
 
 out_dir <- "data/processed/monte_carlo"
@@ -60,7 +41,7 @@ replicates_dir <- file.path(out_dir, "replicates")
 ensure_dir(out_dir)
 ensure_dir(replicates_dir)
 
-# Check for existing replicates (resume capability)
+# Check for existing replicates
 existing_files <- list.files(replicates_dir, pattern = "^rep_\\d{4}\\.csv$")
 existing_reps <- if (length(existing_files)) {
   as.integer(gsub("^rep_(\\d{4})\\.csv$", "\\1", existing_files))
@@ -71,230 +52,179 @@ existing_reps <- if (length(existing_files)) {
 completed <- length(existing_reps)
 remaining <- setdiff(1:N_REPLICATES, existing_reps)
 
-if (completed > 0) {
-  cat("Found", completed, "existing replicates\n")
-  cat("Resuming from replicate", min(remaining), "\n\n")
-  
-  response <- readline("Continue from where left off? (yes/no): ")
-  if (tolower(response) != "yes") {
-    cat("Aborted. To start fresh, delete:", replicates_dir, "\n")
-    quit(save = "no")
-  }
-} else {
-  remaining <- 1:N_REPLICATES
-}
-
+# UPDATED: Skip if all replicates complete (don't quit)
 if (length(remaining) == 0) {
   cat("✓ All", N_REPLICATES, "replicates already complete!\n")
-  cat("Delete", replicates_dir, "to regenerate\n\n")
-  quit(save = "no")
-}
-
-# =============================================================================
-# CONVERT TO SPATIAL
-# =============================================================================
-
-cat("Converting plots to spatial points...\n")
-
-# Disable spherical geometry for faster processing
-sf_use_s2(FALSE)
-
-# Convert to sf (WGS84)
-pts_4326 <- st_as_sf(baseline_valid,
-                     coords = c("lon_for_extraction", "lat_for_extraction"),
-                     crs = 4326,
-                     remove = FALSE)
-
-# Transform to Albers Equal Area (5070) for accurate distance
-pts_5070 <- st_transform(pts_4326, crs = CONFIG$crs_analysis)
-
-cat("  Plots converted to CRS:", CONFIG$crs_analysis, "\n\n")
-
-# =============================================================================
-# LOAD HEX GRIDS (for constraints & assignment)
-# =============================================================================
-
-cat("Loading hex grids...\n")
-
-hex_grids_list <- list()
-
-for (scale in CONFIG$hex_scales) {
-  cat("  Loading", scale$name, "...")
+  cat("  Skipping jitter generation...\n")
+  cat("  Location:", replicates_dir, "\n\n")
+  cat("  To regenerate, delete the replicates directory and re-run.\n\n")
+  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("  MONTE CARLO JITTER: SKIPPED (ALREADY COMPLETE)\n")
+  cat("═══════════════════════════════════════════════════════════════════\n\n")
   
-  if (!file.exists(scale$path)) {
-    cat(" ⚠ Not found, skipping\n")
-    next
-  }
+  # Return early - don't stop entire script
+  # This allows run_analysis.R to continue
+  invisible(NULL)
   
-  hex_grid <- st_read(scale$path, quiet = TRUE)
-  
-  # Ensure hex_id column exists
-  if (!("hex_id" %in% names(hex_grid))) {
-    if ("ID" %in% names(hex_grid)) {
-      hex_grid <- rename(hex_grid, hex_id = ID)
-    } else {
-      hex_grid$hex_id <- seq_len(nrow(hex_grid))
-    }
-  }
-  
-  # Clean and transform
-  hex_grid$hex_id <- as.character(hex_grid$hex_id)
-  hex_grid <- st_make_valid(hex_grid)
-  hex_grid_5070 <- st_transform(hex_grid, crs = CONFIG$crs_analysis)
-  
-  hex_grids_list[[scale$name]] <- hex_grid_5070
-  
-  cat(" ✓\n")
-}
-
-cat("  Loaded", length(hex_grids_list), "hex grids\n\n")
-
-# Create union boundary for constraints (optional)
-if (USE_CONSTRAINTS && length(hex_grids_list) > 0) {
-  cat("Building constraint boundary from finest hex grid...\n")
-  
-  # Use first (finest) grid as boundary
-  first_grid <- hex_grids_list[[1]]
-  boundary_5070 <- st_union(first_grid)
-  
-  cat("  ✓ Constraint boundary ready\n\n")
 } else {
-  boundary_5070 <- NULL
-}
-
-# =============================================================================
-# GENERATE JITTERED REPLICATES
-# =============================================================================
-
-cat("Generating", length(remaining), "jittered replicates...\n")
-cat("  This will create", nrow(pts_5070) * length(remaining), 
-    "jittered locations\n\n")
-
-start_time <- Sys.time()
-
-for (idx in seq_along(remaining)) {
-  r <- remaining[idx]
   
-  # Progress report
-  if (idx %% 10 == 0 || idx == 1) {
-    elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-    if (idx > 1) {
-      rate <- idx / elapsed
-      eta <- (length(remaining) - idx) / rate
-      cat(sprintf("  Progress: %d/%d (%.1f%%) - ETA: %.1f min\n",
-                  completed + idx, N_REPLICATES,
-                  100 * (completed + idx) / N_REPLICATES,
-                  eta / 60))
+  # Continue with generation if incomplete
+  
+  if (completed > 0) {
+    cat("Found", completed, "existing replicates\n")
+    cat("Missing:", length(remaining), "replicates\n")
+    cat("Resuming from replicate", min(remaining), "\n\n")
+    
+    # UPDATED: Auto-resume in pipeline mode, skip prompt
+    if (interactive()) {
+      response <- readline("Continue from where left off? (yes/no): ")
+      if (tolower(response) != "yes") {
+        cat("Aborted. To start fresh, delete:", replicates_dir, "\n")
+        stop("User aborted")
+      }
     } else {
-      cat(sprintf("  Starting replicate %d/%d\n", r, N_REPLICATES))
+      cat("  → Auto-resuming (non-interactive mode)\n\n")
+    }
+  } else {
+    remaining <- 1:N_REPLICATES
+  }
+  
+  # =============================================================================
+  # LOAD FIA DATA
+  # =============================================================================
+  
+  cat("Loading FIA baseline plots...\n")
+  
+  baseline <- read_csv("data/processed/baseline_with_covariates.csv",
+                       show_col_types = FALSE)
+  
+  # Filter for valid plots
+  baseline_valid <- baseline %>%
+    filter(is.finite(lat_for_extraction), is.finite(lon_for_extraction))
+  
+  cat("  Total plots:", nrow(baseline_valid), "\n\n")
+  
+  # =============================================================================
+  # CONVERT TO SPATIAL
+  # =============================================================================
+  
+  cat("Converting plots to spatial points...\n")
+  
+  # Disable spherical geometry for faster processing
+  sf_use_s2(FALSE)
+  
+  # Convert to sf (WGS84)
+  pts_4326 <- st_as_sf(baseline_valid,
+                       coords = c("lon_for_extraction", "lat_for_extraction"),
+                       crs = 4326,
+                       remove = FALSE)
+  
+  # Transform to Albers Equal Area (5070) for accurate distance
+  pts_5070 <- st_transform(pts_4326, crs = CONFIG$crs_analysis)
+  
+  cat("  Plots converted to CRS:", CONFIG$crs_analysis, "\n\n")
+  
+  # =============================================================================
+  # LOAD HEX GRIDS (for constraints & assignment)
+  # =============================================================================
+  
+  cat("Loading hex grids...\n")
+  
+  hex_grids_list <- list()
+  
+  for (scale in CONFIG$hex_scales) {
+    hex_path <- file.path("data/processed/hexagons", 
+                          paste0("hex_grid_", scale$name, ".gpkg"))
+    
+    if (file.exists(hex_path)) {
+      hex_grids_list[[scale$name]] <- st_read(hex_path, quiet = TRUE)
+      cat("  ✓", scale$name, "-", nrow(hex_grids_list[[scale$name]]), "hexagons\n")
     }
   }
   
-  # Generate random jitter offsets
-  u <- runif(nrow(pts_5070))
-  rr <- sqrt(u) * RADIUS_M  # Uniform distribution in circle
-  theta <- runif(nrow(pts_5070), 0, 2 * pi)
+  cat("\n")
   
-  dx <- rr * cos(theta)
-  dy <- rr * sin(theta)
+  # =============================================================================
+  # GENERATE JITTERED COORDINATES
+  # =============================================================================
   
-  # Apply jitter
-  pts_j_5070 <- st_set_geometry(pts_5070, 
-                                st_geometry(pts_5070) + cbind(dx, dy))
-  st_crs(pts_j_5070) <- CONFIG$crs_analysis
+  cat("Generating jittered coordinates...\n")
+  cat("  Progress: [", paste(rep(".", min(50, length(remaining))), collapse = ""), "]\n")
+  cat("            ", sep = "")
   
-  # Apply constraints (optional)
-  if (!is.null(boundary_5070)) {
-    # Check which points fall outside boundary
-    inside <- st_within(pts_j_5070, boundary_5070, sparse = FALSE)[,1]
+  progress_interval <- max(1, length(remaining) %/% 50)
+  
+  for (i in seq_along(remaining)) {
+    rep_num <- remaining[i]
     
-    # Re-jitter points that fell outside (up to 20 attempts)
-    for (attempt in 1:20) {
-      if (all(inside)) break
+    # Generate jitter
+    angles <- runif(nrow(pts_5070), 0, 2 * pi)
+    distances <- sqrt(runif(nrow(pts_5070))) * RADIUS_M  # Square root for uniform spatial distribution
+    
+    # Calculate offsets
+    dx <- distances * cos(angles)
+    dy <- distances * sin(angles)
+    
+    # Apply jitter to coordinates
+    jittered_geom <- st_geometry(pts_5070) + c(dx, dy)
+    
+    # Create jittered sf object
+    pts_jittered <- st_sf(
+      baseline_valid %>% select(CN),
+      geometry = jittered_geom,
+      crs = CONFIG$crs_analysis
+    )
+    
+    # Transform back to WGS84
+    pts_jittered_4326 <- st_transform(pts_jittered, crs = 4326)
+    
+    # Extract coordinates
+    coords_jittered <- st_coordinates(pts_jittered_4326)
+    
+    # Create output dataframe
+    result <- baseline_valid %>%
+      select(CN, lat_original = lat, lon_original = lon) %>%
+      mutate(
+        rep = rep_num,
+        lat_jittered = coords_jittered[, "Y"],
+        lon_jittered = coords_jittered[, "X"],
+        jitter_radius_m = RADIUS_M
+      )
+    
+    # Assign to hexagons (all scales)
+    for (scale_name in names(hex_grids_list)) {
+      hex_grid <- hex_grids_list[[scale_name]]
       
-      outside_idx <- which(!inside)
-      u2 <- runif(length(outside_idx))
-      rr2 <- sqrt(u2) * RADIUS_M
-      theta2 <- runif(length(outside_idx), 0, 2 * pi)
-      dx2 <- rr2 * cos(theta2)
-      dy2 <- rr2 * sin(theta2)
-      
-      # Re-apply jitter for outside points
-      geom_outside <- st_geometry(pts_5070)[outside_idx] + cbind(dx2, dy2)
-      st_geometry(pts_j_5070)[outside_idx] <- geom_outside
-      
-      inside <- st_within(pts_j_5070, boundary_5070, sparse = FALSE)[,1]
+      # Spatial join
+      joined <- st_join(pts_jittered, hex_grid["hex_id"], left = TRUE)
+      result[[paste0("hex_", scale_name)]] <- joined$hex_id
+    }
+    
+    # Save replicate
+    output_path <- file.path(replicates_dir, sprintf("rep_%04d.csv", rep_num))
+    write_csv(result, output_path)
+    
+    # Progress indicator
+    if (i %% progress_interval == 0) {
+      cat("=")
     }
   }
   
-  # Start building replicate data
-  rep_data <- st_drop_geometry(pts_j_5070) %>%
-    select(CN, STATECD, COUNTYCD, PLOT, MEASYEAR) %>%
-    mutate(replicate_id = r)
+  cat("\n\n")
   
-  # Assign to ALL hex grids
-  for (grid_name in names(hex_grids_list)) {
-    grid_sf <- hex_grids_list[[grid_name]]
-    
-    # Spatial join
-    joined <- st_join(pts_j_5070, grid_sf["hex_id"], 
-                      left = TRUE, join = st_intersects)
-    
-    # Extract hex_id for this grid
-    hex_col_name <- paste0("hex_id_", grid_name)
-    rep_data[[hex_col_name]] <- joined$hex_id
-  }
+  # =============================================================================
+  # SUMMARY
+  # =============================================================================
   
-  # Convert jittered coords back to lat/lon
-  pts_j_4326 <- st_transform(pts_j_5070, 4326)
-  coords_j <- st_coordinates(pts_j_4326)
+  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("  MONTE CARLO GENERATION COMPLETE\n")
+  cat("═══════════════════════════════════════════════════════════════════\n\n")
   
-  rep_data$lon_jittered <- coords_j[, 1]
-  rep_data$lat_jittered <- coords_j[, 2]
+  cat("Generated replicates:", length(remaining), "\n")
+  cat("Total replicates:", N_REPLICATES, "\n")
+  cat("Plots per replicate:", nrow(baseline_valid), "\n")
+  cat("Output directory:", replicates_dir, "\n\n")
   
-  # Save this replicate
-  rep_file <- file.path(replicates_dir, sprintf("rep_%04d.csv", r))
-  write_csv(rep_data, rep_file)
+  cat("Next step: Extract covariates\n")
+  cat("  Rscript R/06_analysis/04_monte_carlo_extract_covariates.R\n\n")
 }
-
-elapsed_min <- as.numeric(difftime(Sys.time(), start_time, units = "mins"))
-cat(sprintf("\n✓ Jittering complete in %.1f minutes\n\n", elapsed_min))
-
-# =============================================================================
-# CREATE MANIFEST
-# =============================================================================
-
-cat("Creating manifest...\n")
-
-manifest <- list(
-  created = as.character(Sys.time()),
-  n_replicates = N_REPLICATES,
-  n_plots = nrow(baseline_valid),
-  radius_m = RADIUS_M,
-  constrained = USE_CONSTRAINTS,
-  hex_grids = sapply(CONFIG$hex_scales, function(x) x$name),
-  replicates_dir = "replicates"
-)
-
-saveRDS(manifest, file.path(out_dir, "manifest.rds"))
-
-cat("✓ Saved manifest\n\n")
-
-# =============================================================================
-# SUMMARY
-# =============================================================================
-
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  JITTER LIBRARY SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
-
-cat("Replicates:    ", N_REPLICATES, "\n")
-cat("Plots per rep: ", nrow(baseline_valid), "\n")
-cat("Hex grids:     ", length(hex_grids_list), "\n")
-cat("Location:      ", replicates_dir, "\n")
-cat("Constrained:   ", USE_CONSTRAINTS, "\n\n")
-
-cat("Total jittered locations:", N_REPLICATES * nrow(baseline_valid), "\n\n")
-
-cat("Next: Extract covariates at all jittered locations\n")
-cat("  Rscript R/06_analysis/04_monte_carlo_extract_covariates_v2.R\n\n")

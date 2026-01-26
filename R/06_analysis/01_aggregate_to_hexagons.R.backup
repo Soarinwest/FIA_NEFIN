@@ -101,12 +101,12 @@ for (scale in CONFIG$hex_scales) {
       biomass_max = max(biomass, na.rm = TRUE),
       
       # NDVI
-      ndvi_modis_mean = mean(ndvi_modis_250m, na.rm = TRUE),
-      ndvi_s2_mean = mean(ndvi_s2_10m, na.rm = TRUE),
+      ndvi_modis_mean = mean(ndvi_modis, na.rm = TRUE),
+      ndvi_s2_mean = mean(ndvi_s2, na.rm = TRUE),
       
       # Climate
-      tmean_mean = mean(tmean_250m, na.rm = TRUE),
-      ppt_mean = mean(ppt_250m, na.rm = TRUE),
+      tmean_mean = mean(tmean, na.rm = TRUE),
+      ppt_mean = mean(ppt, na.rm = TRUE),
       
       # Metadata
       n_plots = n(),
@@ -161,12 +161,12 @@ for (scale in CONFIG$hex_scales) {
       biomass_max = max(biomass, na.rm = TRUE),
       
       # NDVI
-      ndvi_modis_mean = mean(ndvi_modis_250m, na.rm = TRUE),
-      ndvi_s2_mean = mean(ndvi_s2_10m, na.rm = TRUE),
+      ndvi_modis_mean = mean(ndvi_modis, na.rm = TRUE),
+      ndvi_s2_mean = mean(ndvi_s2, na.rm = TRUE),
       
       # Climate
-      tmean_mean = mean(tmean_250m, na.rm = TRUE),
-      ppt_mean = mean(ppt_250m, na.rm = TRUE),
+      tmean_mean = mean(tmean, na.rm = TRUE),
+      ppt_mean = mean(ppt, na.rm = TRUE),
       
       # Metadata
       n_plots = n(),

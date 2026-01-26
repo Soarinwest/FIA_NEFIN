@@ -386,15 +386,15 @@ nefin_plots <- augmented %>% filter(dataset == "NEFIN")
 composition_tests <- tibble(
   covariate = c("NDVI (S2)", "Temperature", "Precipitation", "Biomass"),
   ks_statistic = c(
-    ks.test(fia_plots$ndvi_s2_10m, nefin_plots$ndvi_s2_10m)$statistic,
-    ks.test(fia_plots$tmean_250m, nefin_plots$tmean_250m)$statistic,
-    ks.test(fia_plots$ppt_250m, nefin_plots$ppt_250m)$statistic,
+    ks.test(fia_plots$ndvi_s2, nefin_plots$ndvi_s2)$statistic,
+    ks.test(fia_plots$tmean, nefin_plots$tmean)$statistic,
+    ks.test(fia_plots$ppt, nefin_plots$ppt)$statistic,
     ks.test(fia_plots$biomass, nefin_plots$biomass)$statistic
   ),
   p_value = c(
-    ks.test(fia_plots$ndvi_s2_10m, nefin_plots$ndvi_s2_10m)$p.value,
-    ks.test(fia_plots$tmean_250m, nefin_plots$tmean_250m)$p.value,
-    ks.test(fia_plots$ppt_250m, nefin_plots$ppt_250m)$p.value,
+    ks.test(fia_plots$ndvi_s2, nefin_plots$ndvi_s2)$p.value,
+    ks.test(fia_plots$tmean, nefin_plots$tmean)$p.value,
+    ks.test(fia_plots$ppt, nefin_plots$ppt)$p.value,
     ks.test(fia_plots$biomass, nefin_plots$biomass)$p.value
   )
 ) %>%
@@ -420,12 +420,12 @@ summary_stats <- augmented %>%
     n = n(),
     biomass_mean = mean(biomass, na.rm = TRUE),
     biomass_sd = sd(biomass, na.rm = TRUE),
-    ndvi_s2_mean = mean(ndvi_s2_10m, na.rm = TRUE),
-    ndvi_s2_sd = sd(ndvi_s2_10m, na.rm = TRUE),
-    tmean_mean = mean(tmean_250m, na.rm = TRUE),
-    tmean_sd = sd(tmean_250m, na.rm = TRUE),
-    ppt_mean = mean(ppt_250m, na.rm = TRUE),
-    ppt_sd = sd(ppt_250m, na.rm = TRUE),
+    ndvi_s2_mean = mean(ndvi_s2, na.rm = TRUE),
+    ndvi_s2_sd = sd(ndvi_s2, na.rm = TRUE),
+    tmean_mean = mean(tmean, na.rm = TRUE),
+    tmean_sd = sd(tmean, na.rm = TRUE),
+    ppt_mean = mean(ppt, na.rm = TRUE),
+    ppt_sd = sd(ppt, na.rm = TRUE),
     .groups = "drop"
   )
 

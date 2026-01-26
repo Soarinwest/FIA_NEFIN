@@ -276,9 +276,9 @@ cat("    left_join(read_csv('data/processed/max_tree_metrics/plot_max_tree_metri
 cat("              by = 'plot_id')\n\n")
 
 cat("Model formulas:\n")
-cat("  Baseline:  biomass ~ ndvi + tmean_250m + ppt_250m\n")
-cat("  Enhanced:  biomass ~ ndvi + tmean_250m + ppt_250m + max_dbh_cm\n")
-cat("  Full:      biomass ~ ndvi + tmean_250m + ppt_250m + max_dbh_cm + max_ht_m\n\n")
+cat("  Baseline:  biomass ~ ndvi + tmean + ppt\n")
+cat("  Enhanced:  biomass ~ ndvi + tmean + ppt + max_dbh_cm\n")
+cat("  Full:      biomass ~ ndvi + tmean + ppt + max_dbh_cm + max_ht_m\n\n")
 
 cat("Expected benefit:\n")
 cat("  Max tree metrics capture stand development stage\n")

@@ -19,87 +19,103 @@
 
 COVARIATES <- list(
   
+  # ===========================================================================
+  # FINE SCALE (10m) - All covariates at 10m resolution
+  # ===========================================================================
+  
   # ---------------------------------------------------------------------------
-  # SPECTRAL - SENTINEL-2 (10m resolution)
+  # SPECTRAL - SENTINEL-2 (10m native)
   # ---------------------------------------------------------------------------
   
   ndvi_s2 = list(
     name = "ndvi_s2",
     display_name = "NDVI (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_NDVI_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_NDVI_10m_2020_2024.tif",  
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
     scale = "fine",
-    active = TRUE,  # Set to FALSE to exclude from models
-    notes = "Enhanced vegetation index, 10m resolution, 2020-2024 mean"
+    active = TRUE,
+    notes = "Sentinel-2 NDVI"
   ),
   
-  # PLACEHOLDER - Will activate when data ready
   evi_s2 = list(
     name = "evi_s2",
     display_name = "EVI (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_EVI_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_EVI_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
     scale = "fine",
-    active = FALSE,  # Set to TRUE when raster ready
-    notes = "Enhanced Vegetation Index, better in dense forests"
+    active = FALSE,  
+    notes = "Enhanced Vegetation Index "
   ),
   
   nbr_s2 = list(
     name = "nbr_s2",
     display_name = "NBR (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_NBR_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_NBR_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
     scale = "fine",
-    active = FALSE,
-    notes = "Normalized Burn Ratio, moisture/structure indicator"
+    active = TRUE, 
+    notes = "Normalized Burn Ratio"
   ),
   
   ndwi_s2 = list(
     name = "ndwi_s2",
     display_name = "NDWI (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_NDWI_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_NDWI_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
     scale = "fine",
-    active = FALSE,
+    active = TRUE,  
     notes = "Normalized Difference Water Index"
   ),
   
+  # Raw bands
   red_s2 = list(
     name = "red_s2",
     display_name = "Red Band (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_B4_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_B4_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "band",
     scale = "fine",
-    active = FALSE,
-    notes = "Red band (B4), raw reflectance"
+    active = TRUE,  # Available but not active
+    notes = "Red band (B4)"
   ),
   
-  nir_s2 = list(
-    name = "nir_s2",
-    display_name = "NIR Band (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_B8_10m_2020_2024.tif",
+  green_s2 = list(
+    name = "green_s2",
+    display_name = "Green Band (Sentinel-2)",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_B3_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "band",
     scale = "fine",
-    active = FALSE,
-    notes = "Near-infrared band (B8)"
+    active = TRUE,
+    notes = "Green band (B3)"
+  ),
+  
+  blue_s2 = list(
+    name = "blue_s2",
+    display_name = "Blue Band (Sentinel-2)",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_B2_10m_2020_2024.tif",
+    resolution = "10m",
+    type = "spectral",
+    category = "band",
+    scale = "fine",
+    active = TRUE,
+    notes = "Blue band (B2)"
   ),
   
   swir1_s2 = list(
     name = "swir1_s2",
     display_name = "SWIR1 Band (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_B11_10m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/S2_B11_10m_2020_2024.tif",
     resolution = "10m",
     type = "spectral",
     category = "band",
@@ -108,164 +124,257 @@ COVARIATES <- list(
     notes = "Short-wave infrared band (B11)"
   ),
   
-  ndvi_sd_s2 = list(
-    name = "ndvi_sd_s2",
-    display_name = "NDVI Variability (Sentinel-2)",
-    path = "data/raw/ndvi/s2/S2_NDVI_SD_10m_2020_2024.tif",
+  # ---------------------------------------------------------------------------
+  # TOPOGRAPHY (10m native from DEM - need to copy to fine_10m/)
+  # ---------------------------------------------------------------------------
+  
+  elevation_fine = list(
+    name = "elevation",
+    display_name = "Elevation",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/Elevation10m.tif",  # In raw, will copy
     resolution = "10m",
-    type = "spectral",
-    category = "variability",
+    type = "topographic",
+    category = "terrain",
     scale = "fine",
-    active = FALSE,
-    notes = "NDVI standard deviation, disturbance/phenology indicator"
+    active = TRUE,
+    notes = "Copy from raw/DEM/ to fine_10m/"
+  ),
+  
+  slope_fine = list(
+    name = "slope",
+    display_name = "Slope",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/Slope10m.tif",  # In raw, will copy
+    resolution = "10m",
+    type = "topographic",
+    category = "terrain",
+    scale = "fine",
+    active = TRUE,
+    notes = "Copy from raw/DEM/ to fine_10m/"
+  ),
+  
+  aspect_fine = list(
+    name = "aspect",
+    display_name = "Aspect",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/Aspect10m.tif",  # In raw, will copy
+    resolution = "10m",
+    type = "topographic",
+    category = "terrain",
+    scale = "fine",
+    active = TRUE,
+    notes = "Copy from raw/DEM/ to fine_10m/"
   ),
   
   # ---------------------------------------------------------------------------
-  # SPECTRAL - MODIS (250m resolution)
+  # CLIMATE (PRISM resampled to 10m - already created!)
+  # ---------------------------------------------------------------------------
+  
+  tmean_fine = list(
+    name = "tmean",
+    display_name = "Mean Temperature",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/tmean.tif",
+    resolution = "10m",
+    type = "climate",
+    category = "temperature",
+    scale = "fine",
+    active = TRUE,
+    notes = "PRISM resampled to 10m - READY"
+  ),
+  
+  ppt_fine = list(
+    name = "ppt",
+    display_name = "Precipitation",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/ppt.tif",
+    resolution = "10m",
+    type = "climate",
+    category = "precipitation",
+    scale = "fine",
+    active = TRUE,
+    notes = "PRISM resampled to 10m - READY"
+  ),
+  
+  # ===========================================================================
+  # COARSE SCALE (250m) - All covariates at 250m resolution
+  # ===========================================================================
+  
+  # ---------------------------------------------------------------------------
+  # SPECTRAL - MODIS (250m native)
   # ---------------------------------------------------------------------------
   
   ndvi_modis = list(
     name = "ndvi_modis",
     display_name = "NDVI (MODIS)",
-    path = "data/raw/ndvi/modis/MODIS_NDVI_5yr_blocked_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NDVI_5yr_blocked_2020_2024.tif",  # In raw, will copy
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
     scale = "coarse",
     active = TRUE,
-    notes = "MODIS NDVI, 250m resolution, 2020-2024 mean"
+    notes = "Copy to coarse_250m/ when ready"
   ),
   
   evi_modis = list(
     name = "evi_modis",
     display_name = "EVI (MODIS)",
-    path = "data/raw/ndvi/modis/MODIS_EVI_250m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_EVI_250m_2020_2024_NE.tif",
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
     scale = "coarse",
-    active = FALSE,
-    notes = "MODIS Enhanced Vegetation Index"
+    active = TRUE,  
+    notes = "MODIS Enhanced Vegetation Index - READY"
   ),
   
   nbr_modis = list(
     name = "nbr_modis",
     display_name = "NBR (MODIS)",
-    path = "data/raw/ndvi/modis/MODIS_NBR_250m_2020_2024.tif",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NBR_250m_2020_2024_NE.tif",
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
     scale = "coarse",
-    active = FALSE,
-    notes = "MODIS Normalized Burn Ratio"
+    active = TRUE,  
+    notes = "MODIS Normalized Burn Ratio - READY"
+  ),
+  
+  ndwi_modis = list(
+    name = "ndwi_modis",
+    display_name = "NDWI (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NDWI_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "vegetation_index",
+    scale = "coarse",
+    active = TRUE, 
+    notes = "MODIS Normalized Difference Water Index"
+  ),
+  
+  # Raw bands
+  red_modis = list(
+    name = "red_modis",
+    display_name = "Red Band (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_RED_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "band",
+    scale = "coarse",
+    active = TRUE,
+    notes = "MODIS Red band"
+  ),
+  
+  nir_modis = list(
+    name = "nir_modis",
+    display_name = "NIR Band (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NIR_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "band",
+    scale = "coarse",
+    active = TRUE,
+    notes = "MODIS Near-infrared band"
+  ),
+  
+  blue_modis = list(
+    name = "blue_modis",
+    display_name = "Blue Band (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_BLUE_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "band",
+    scale = "coarse",
+    active = TRUE,
+    notes = "MODIS Blue band"
+  ),
+  
+  green_modis = list(
+    name = "green_modis",
+    display_name = "Green Band (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_GREEN_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "band",
+    scale = "coarse",
+    active = TRUE,
+    notes = "MODIS Green band"
+  ),
+  
+  swir1_modis = list(
+    name = "swir1_modis",
+    display_name = "SWIR1 Band (MODIS)",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_SWIR1_250m_2020_2024_NE.tif",
+    resolution = "250m",
+    type = "spectral",
+    category = "band",
+    scale = "coarse",
+    active = TRUE,
+    notes = "MODIS Short-wave infrared band"
   ),
   
   # ---------------------------------------------------------------------------
-  # TOPOGRAPHY (DEM-derived, 10m native)
+  # TOPOGRAPHY (aggregated from 10m to 250m - already done!)
   # ---------------------------------------------------------------------------
   
-  elevation = list(
+  elevation_coarse = list(
     name = "elevation",
     display_name = "Elevation",
-    path = "data/raw/DEM/Elevation10m.tif",
-    resolution = "10m",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/elevation_250m_NE.tif",
+    resolution = "250m",
     type = "topographic",
     category = "terrain",
-    scale = "fine",
-    active = TRUE,  
-    notes = "Elevation above sea level (meters)"
+    scale = "coarse",
+    active = TRUE,
+    notes = "Aggregated to 250m - READY"
   ),
   
-  slope = list(
+  slope_coarse = list(
     name = "slope",
     display_name = "Slope",
-    path = "data/raw/DEM/Slope10m.tif",
-    resolution = "10m",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/slope_250m_NE.tif",
+    resolution = "250m",
     type = "topographic",
     category = "terrain",
-    scale = "fine",
-    active = TRUE,  
-    notes = "Slope in degrees"
+    scale = "coarse",
+    active = TRUE,
+    notes = "Aggregated to 250m - READY"
   ),
   
-  aspect = list(
+  aspect_coarse = list(
     name = "aspect",
     display_name = "Aspect",
-    path = "data/raw/DEM/Aspect10m.tif",
-    resolution = "10m",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/aspect_250m_NE.tif",
+    resolution = "250m",
     type = "topographic",
     category = "terrain",
-    scale = "fine",
-    active = TRUE,  
-    notes = "Aspect in degrees (0-360)"
-  ),
-  
-  tpi = list(
-    name = "tpi",
-    display_name = "Topographic Position Index",
-    path = "data/raw/dem/tpi_10m.tif",
-    resolution = "10m",
-    type = "topography",
-    category = "terrain",
-    scale = "fine",
-    active = FALSE,
-    notes = "TPI, ridge vs valley position"
+    scale = "coarse",
+    active = TRUE,
+    notes = "Aggregated to 250m - READY"
   ),
   
   # ---------------------------------------------------------------------------
-  # CLIMATE (PRISM, 4km resolution)
+  # CLIMATE (PRISM aggregated to 250m )
   # ---------------------------------------------------------------------------
   
-  tmean = list(
+  tmean_coarse = list(
     name = "tmean",
     display_name = "Mean Temperature",
-    path = "data/raw/prism/prism_tmean_ne_2020_2024.tif",
-    resolution = "4km",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/tmean.tif",
+    resolution = "250m",
     type = "climate",
     category = "temperature",
     scale = "coarse",
     active = TRUE,
-    notes = "PRISM mean annual temperature, 2020-2024"
+    notes = "PRISM aggregated to 250m - READY"
   ),
   
-  ppt = list(
+  ppt_coarse = list(
     name = "ppt",
     display_name = "Precipitation",
-    path = "data/raw/prism/prism_ppt_ne_2020_2024.tif",
-    resolution = "4km",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/ppt.tif",
+    resolution = "250m",
     type = "climate",
     category = "precipitation",
     scale = "coarse",
     active = TRUE,
-    notes = "PRISM total annual precipitation, 2020-2024"
-  ),
-  
-  # ---------------------------------------------------------------------------
-  # LAND SURFACE TEMPERATURE (MODIS, 1km)
-  # ---------------------------------------------------------------------------
-  
-  lst_day = list(
-    name = "lst_day",
-    display_name = "LST Day",
-    path = "data/raw/lst/MODIS_LST_day_1km_2020_2024.tif",
-    resolution = "1km",
-    type = "climate",
-    category = "temperature",
-    scale = "coarse",
-    active = FALSE,
-    notes = "MODIS daytime land surface temperature"
-  ),
-  
-  lst_night = list(
-    name = "lst_night",
-    display_name = "LST Night",
-    path = "data/raw/lst/MODIS_LST_night_1km_2020_2024.tif",
-    resolution = "1km",
-    type = "climate",
-    category = "temperature",
-    scale = "coarse",
-    active = FALSE,
-    notes = "MODIS nighttime land surface temperature"
+    notes = "PRISM aggregated to 250m - READY"
   )
 )
 
@@ -273,31 +382,26 @@ COVARIATES <- list(
 # HELPER FUNCTIONS
 # =============================================================================
 
-# Get list of active covariates
 get_active_covariates <- function() {
   active <- Filter(function(x) x$active, COVARIATES)
   return(active)
 }
 
-# Get active covariate names
 get_active_names <- function() {
   active <- get_active_covariates()
   return(sapply(active, function(x) x$name))
 }
 
-# Get covariates by scale
-get_covariates_by_scale <- function(scale = "fine") {
+get_scale_covariates <- function(scale = "fine") {
   covs <- Filter(function(x) x$active && x$scale == scale, COVARIATES)
-  return(covs)
+  return(sapply(covs, function(x) x$name))
 }
 
-# Get covariates by type
 get_covariates_by_type <- function(type = "spectral") {
   covs <- Filter(function(x) x$active && x$type == type, COVARIATES)
   return(covs)
 }
 
-# Check which covariates have data available
 check_covariate_availability <- function() {
   results <- data.frame(
     name = character(),
@@ -319,6 +423,7 @@ check_covariate_availability <- function() {
       path = cov$path,
       resolution = cov$resolution,
       type = cov$type,
+      scale = cov$scale,
       stringsAsFactors = FALSE
     ))
   }
@@ -326,7 +431,6 @@ check_covariate_availability <- function() {
   return(results)
 }
 
-# Print summary of active covariates
 print_active_covariates <- function() {
   active <- get_active_covariates()
   
@@ -334,54 +438,56 @@ print_active_covariates <- function() {
   cat("  ACTIVE COVARIATES FOR MODELING\n")
   cat("═══════════════════════════════════════════════════════════════\n\n")
   
-  # Group by type
-  types <- unique(sapply(active, function(x) x$type))
-  
-  for (type in types) {
-    type_covs <- Filter(function(x) x$type == type, active)
-    cat(toupper(type), "covariates:\n")
+  for (scale in c("fine", "coarse")) {
+    scale_covs <- Filter(function(x) x$scale == scale, active)
     
-    for (cov in type_covs) {
-      status <- if(file.exists(cov$path)) "✓" else "⚠"
-      cat(sprintf("  %s %s (%s, %s)\n", 
-                  status, cov$display_name, cov$resolution, cov$scale))
+    if (length(scale_covs) > 0) {
+      cat(sprintf("──────────────────────────────────────────────────────────────\n"))
+      cat(sprintf("  %s SCALE (%s)\n", 
+                  toupper(scale), 
+                  ifelse(scale == "fine", "10m", "250m")))
+      cat(sprintf("──────────────────────────────────────────────────────────────\n"))
+      
+      types <- unique(sapply(scale_covs, function(x) x$type))
+      
+      for (type in types) {
+        type_covs <- Filter(function(x) x$type == type, scale_covs)
+        cat(sprintf("  %s:\n", toupper(type)))
+        
+        for (cov in type_covs) {
+          status <- if(file.exists(cov$path)) "✓" else "⚠"
+          cat(sprintf("    %s %s\n", status, cov$display_name))
+        }
+      }
+      cat("\n")
     }
-    cat("\n")
   }
   
-  cat("Total active covariates:", length(active), "\n\n")
-}
-
-# =============================================================================
-# COVARIATE SETS FOR DIFFERENT SCALES
-# =============================================================================
-
-# Fine-scale model (10m Sentinel-2 + topography)
-COVARIATE_SET_FINE <- function() {
-  c("ndvi_s2", "evi_s2", "nbr_s2", "ndwi_s2", 
-    "elevation", "slope", "aspect",
-    "tmean", "ppt")
-}
-
-# Coarse-scale model (250m MODIS + aggregated topography)
-COVARIATE_SET_COARSE <- function() {
-  c("ndvi_modis", "evi_modis", "nbr_modis",
-    "elevation", "slope", "aspect",
-    "tmean", "ppt")
-}
-
-# Minimal set (current available data)
-COVARIATE_SET_MINIMAL <- function() {
-  c("ndvi_s2", "ndvi_modis", "tmean", "ppt")
+  cat("Total active covariates:", length(active), "\n")
+  cat("  Fine scale (10m):", length(get_scale_covariates("fine")), "\n")
+  cat("  Coarse scale (250m):", length(get_scale_covariates("coarse")), "\n\n")
 }
 
 # =============================================================================
 # EXPORT
 # =============================================================================
 
-cat("\n✓ Covariate configuration loaded\n")
+cat("\n✓ Covariate configuration loaded (MATCHES YOUR FILE STRUCTURE)\n")
 cat("  Total covariates defined:", length(COVARIATES), "\n")
-cat("  Currently active:", length(get_active_covariates()), "\n\n")
+cat("  Currently active:", length(get_active_covariates()), "\n")
+cat("  Fine scale (10m):", length(get_scale_covariates("fine")), "\n")
+cat("  Coarse scale (250m):", length(get_scale_covariates("coarse")), "\n\n")
 
-# Uncomment to see summary on load
-# print_active_covariates()
+# Show what's ready vs what needs setup
+avail <- check_covariate_availability()
+active_avail <- avail[avail$active, ]
+missing <- active_avail[!active_avail$exists, ]
+
+if (nrow(missing) > 0) {
+  cat("⚠ Active covariates that need file setup:\n")
+  for (i in 1:nrow(missing)) {
+    cat(sprintf("  • %s (%s)\n", missing$display_name[i], missing$scale[i]))
+    cat(sprintf("    Expected: %s\n", missing$path[i]))
+  }
+  cat("\n")
+}

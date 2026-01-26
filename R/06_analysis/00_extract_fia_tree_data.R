@@ -19,13 +19,13 @@ cat("═════════════════════════
 
 # FIA database files
 DB_FILES <- c(
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_VT.db",
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_NH.db",
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_NY.db",
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_ME.db",
+  "data/raw/fia_sqlite/VT/unzipped/SQLite_FIADB_VT.db",
+  "data/raw/fia_sqlite/NH/unzipped/SQLite_FIADB_NH.db",
+  "data/raw/fia_sqlite/NY/unzipped/SQLite_FIADB_NY.db",
+  "data/raw/fia_sqlite/ME/unzipped/SQLite_FIADB_ME.db",
   "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_CT.db",
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_RI.db",
-  "data/raw/fia_sqlite/CT/unzipped/SQLite_FIADB_MA.db"
+  "data/raw/fia_sqlite/RI/unzipped/SQLite_FIADB_RI.db",
+  "data/raw/fia_sqlite/MA/unzipped/SQLite_FIADB_MA.db"
 )
 
 # Status codes for live trees
@@ -51,64 +51,74 @@ cat("\n")
 all_trees <- list()
 
 for (db_file in DB_FILES) {
-  if (!file.exists(db_file)) {
-    cat("Skipping:", db_file, "(not found)\n")
-    next
-  }
   
-  state <- gsub(".*/(\\w+)_FIADB\\.db", "\\1", db_file)
+  # Fix state code extraction for filenames like SQLite_FIADB_VT.db
+  state <- gsub(".*/SQLite_FIADB_(\\w+)\\.db$", "\\1", db_file)
   cat("Processing", state, "...\n")
   
-  # Connect to database
   con <- dbConnect(SQLite(), db_file)
   
-  # Check available tables
+  # required tables
   tables <- dbListTables(con)
-  
-  if (!all(c("TREE", "COND", "PLOT") %in% tables)) {
-    cat("  ⚠ Missing required tables, skipping\n\n")
+  if (!all(c("TREE", "PLOT") %in% tables)) {
+    cat("  ⚠ Missing required tables (TREE/PLOT), skipping\n\n")
     dbDisconnect(con)
     next
   }
   
-  # Extract tree data with plot and condition info
-  query <- "
-    SELECT 
-      t.CN AS TREE_CN,
-      t.PLT_CN,
-      t.CONDID,
-      p.STATECD,
-      p.UNITCD,
-      p.COUNTYCD,
-      p.PLOT,
-      p.INVYR,
-      p.MEASYEAR,
-      t.SUBP,
-      t.TREE,
-      t.STATUSCD,
-      t.SPCD,
-      t.DIA,
-      t.HT,
-      t.ACTUALHT,
-      t.CR,
-      t.CCLCD,
-      t.TREECLCD,
-      t.DAMAGE1,
-      t.DAMAGE2,
-      t.DAMAGE3
-    FROM TREE t
-    JOIN PLOT p ON t.PLT_CN = p.CN
-    WHERE t.STATUSCD IN (1)
-      AND t.DIA >= 5.0
-  "
+  # Inspect TREE columns so we don't select columns that don't exist (e.g., DAMAGE1)
+  tree_cols <- dbGetQuery(con, "PRAGMA table_info(TREE)")$name
+  
+  # Damage column candidates (some FIADB variants differ by name)
+  damage_candidates <- c("DAMAGE1", "DAMAGE2", "DAMAGE3", "DAMAG1", "DAMAG2", "DAMAG3")
+  damage_cols_present <- intersect(damage_candidates, tree_cols)
+  
+  # Build SELECT list dynamically
+  base_select <- c(
+    "t.CN AS TREE_CN",
+    "t.PLT_CN",
+    "t.CONDID",
+    "p.STATECD",
+    "p.UNITCD",
+    "p.COUNTYCD",
+    "p.PLOT",
+    "p.INVYR",
+    "p.MEASYEAR",
+    "t.SUBP",
+    "t.TREE",
+    "t.STATUSCD",
+    "t.SPCD",
+    "t.DIA",
+    "t.HT",
+    "t.ACTUALHT",
+    "t.CR",
+    "t.CCLCD",
+    "t.TREECLCD"
+  )
+  
+  # Add whichever damage cols exist
+  select_list <- c(base_select, paste0("t.", damage_cols_present))
+  
+  # Use your settings in the WHERE clause
+  live_status_sql <- paste(LIVE_STATUS, collapse = ",")
+  query <- sprintf("
+  SELECT %s
+  FROM TREE t
+  JOIN PLOT p ON t.PLT_CN = p.CN
+  WHERE t.STATUSCD IN (%s)
+    AND t.DIA >= %0.2f
+", paste(select_list, collapse = ",\n      "), live_status_sql, MIN_DBH)
   
   trees <- dbGetQuery(con, query)
-  
   cat("  Trees extracted:", nrow(trees), "\n")
   
-  # Add state name
-  trees$STATE <- state
+  # Normalize output columns so downstream code is consistent:
+  # create DAMAGE1/2/3 if missing in this state DB
+  for (nm in c("DAMAGE1", "DAMAGE2", "DAMAGE3")) {
+    if (!nm %in% names(trees)) trees[[nm]] <- NA_integer_
+  }
   
+  trees$STATE <- state
   all_trees[[state]] <- trees
   
   dbDisconnect(con)
