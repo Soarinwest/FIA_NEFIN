@@ -24,6 +24,22 @@ COVARIATES <- list(
   # ===========================================================================
   
   # ---------------------------------------------------------------------------
+  # STRUCTURE - Canopy Height (10m)
+  # ---------------------------------------------------------------------------
+  
+  canopy_height_fine = list(
+    name = "canopy_height",
+    display_name = "Canopy Height",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/canopy_height_10m_2020_NE.tif",
+    resolution = "10m",
+    type = "structure",
+    category = "canopy",
+    scale = "fine",
+    active = TRUE,
+    notes = "ETH Global Canopy Height 2020 - CRITICAL PREDICTOR"
+  ),
+  
+  # ---------------------------------------------------------------------------
   # SPECTRAL - SENTINEL-2 (10m native)
   # ---------------------------------------------------------------------------
   
@@ -47,7 +63,7 @@ COVARIATES <- list(
     type = "spectral",
     category = "vegetation_index",
     scale = "fine",
-    active = FALSE,  
+    active = TRUE,  
     notes = "Enhanced Vegetation Index "
   ),
   
@@ -177,8 +193,34 @@ COVARIATES <- list(
     category = "temperature",
     scale = "fine",
     active = TRUE,
-    notes = "PRISM resampled to 10m - READY"
+    notes = "Daymet V4 resampled to 10m"  # ← Updated note
   ),
+  
+  # === ADD THESE TWO NEW ENTRIES ===
+  tmin_fine = list(
+    name = "tmin",
+    display_name = "Minimum Temperature",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/tmin.tif",
+    resolution = "10m",
+    type = "climate",
+    category = "temperature",
+    scale = "fine",
+    active = TRUE,
+    notes = "Daymet V4 resampled to 10m"
+  ),
+  
+  tmax_fine = list(
+    name = "tmax",
+    display_name = "Maximum Temperature",
+    path = "D:/FIA_NEFIN/data/covariates/fine_10m/tmax.tif",
+    resolution = "10m",
+    type = "climate",
+    category = "temperature",
+    scale = "fine",
+    active = TRUE,
+    notes = "Daymet V4 resampled to 10m"
+  ),
+  # === END NEW ENTRIES ===
   
   ppt_fine = list(
     name = "ppt",
@@ -189,12 +231,28 @@ COVARIATES <- list(
     category = "precipitation",
     scale = "fine",
     active = TRUE,
-    notes = "PRISM resampled to 10m - READY"
+    notes = "Daymet V4 resampled to 10m"  # ← Updated note
   ),
   
   # ===========================================================================
   # COARSE SCALE (250m) - All covariates at 250m resolution
   # ===========================================================================
+  
+  # ---------------------------------------------------------------------------
+  # STRUCTURE - Canopy Height (250m)
+  # ---------------------------------------------------------------------------
+  
+  canopy_height_coarse = list(
+    name = "canopy_height",
+    display_name = "Canopy Height",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/canopy_height_250m_2020_NE.tif",
+    resolution = "250m",
+    type = "structure",
+    category = "canopy",
+    scale = "coarse",
+    active = TRUE,
+    notes = "GEDI/Aggregated canopy height 2020 - CRITICAL PREDICTOR"
+  ),
   
   # ---------------------------------------------------------------------------
   # SPECTRAL - MODIS (250m native)
@@ -362,8 +420,34 @@ COVARIATES <- list(
     category = "temperature",
     scale = "coarse",
     active = TRUE,
-    notes = "PRISM aggregated to 250m - READY"
+    notes = "Daymet V4 resampled to 250m"  # ← Updated note
   ),
+  
+  # === ADD THESE TWO NEW ENTRIES ===
+  tmin_coarse = list(
+    name = "tmin",
+    display_name = "Minimum Temperature",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/tmin.tif",
+    resolution = "250m",
+    type = "climate",
+    category = "temperature",
+    scale = "coarse",
+    active = TRUE,
+    notes = "Daymet V4 resampled to 250m"
+  ),
+  
+  tmax_coarse = list(
+    name = "tmax",
+    display_name = "Maximum Temperature",
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/tmax.tif",
+    resolution = "250m",
+    type = "climate",
+    category = "temperature",
+    scale = "coarse",
+    active = TRUE,
+    notes = "Daymet V4 resampled to 250m"
+  ),
+  # === END NEW ENTRIES ===
   
   ppt_coarse = list(
     name = "ppt",
@@ -374,8 +458,8 @@ COVARIATES <- list(
     category = "precipitation",
     scale = "coarse",
     active = TRUE,
-    notes = "PRISM aggregated to 250m - READY"
-  )
+    notes = "Daymet V4 resampled to 250m"  # ← Updated note
+  )  
 )
 
 # =============================================================================

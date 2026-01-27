@@ -113,6 +113,7 @@ cat("\nStep 2: Loading and cropping covariate rasters...\n")
 
 # Get active covariates
 active_covs <- get_active_covariates()
+active_names <- sapply(active_covs, function(x) x$name)
 
 cat("  Loading", length(active_covs), "covariate rasters...\n")
 
@@ -130,22 +131,8 @@ covariate_rasters <- list()
 first_raster <- NULL
 target_crs <- NULL
 
-for (cov_key in names(active_covs)) {
-    cov_info <- active_covs[[cov_key]]
-  
-  
-  # Skip if path is NULL or invalid
-  if (is.null(cov_info$path) || !is.character(cov_info$path)) {
-    cat("  ⚠ Skipping", cov_info$display_name, "- invalid path\n")
-    next
-  }
-  
-  
-  # Skip if path is NULL or invalid
-  if (is.null(cov_info$path) || !is.character(cov_info$path)) {
-    cat("  ⚠ Skipping", cov_info$display_name, "- invalid path\n")
-    next
-  }
+for (cov_name in active_names) {
+  cov_info <- COVARIATES[[cov_name]]
   
   if (!file.exists(cov_info$path)) {
     cat("  ⚠ Skipping", cov_info$display_name, "- file not found\n")
@@ -195,7 +182,7 @@ for (cov_key in names(active_covs)) {
   # Crop to extent
   r_crop <- crop(r, extent_bbox)
   
-  covariate_rasters[[cov_key]] <- r_crop
+  covariate_rasters[[cov_name]] <- r_crop
 }
 
 cat("  ✓ Loaded", length(covariate_rasters), "covariates\n\n")
