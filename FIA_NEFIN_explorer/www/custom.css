@@ -1,0 +1,59 @@
+/* ============================================================================
+   Custom CSS for FIA-NEFIN Explorer
+   ============================================================================ */
+
+/* Card headers */
+.card-header.bg-primary {
+  background-color: #E69F00 !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+/* Sidebar styling */
+.bslib-sidebar-layout > .sidebar {
+  background-color: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+}
+
+/* Improve table readability */
+.dataTables_wrapper table {
+  font-size: 0.9em;
+}
+
+.dataTables_wrapper table th {
+  background-color: #f0f0f0;
+  font-weight: 600;
+}
+
+/* Plotly modebar */
+.modebar {
+  display: none !important;
+}
+
+/* Info text styling */
+.bg-light p {
+  margin-bottom: 0.5rem;
+}
+
+.bg-light ul {
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+/* Button styling */
+.btn-primary {
+  background-color: #E69F00 !important;
+  border-color: #E69F00 !important;
+}
+
+.btn-primary:hover {
+  background-color: #cc8000 !important;
+  border-color: #cc8000 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bslib-sidebar-layout > .sidebar {
+    width: 100% !important;
+  }
+}

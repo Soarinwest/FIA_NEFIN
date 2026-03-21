@@ -23,6 +23,10 @@ cat("═════════════════════════
 fig_dir <- file.path(PHASE4_CONFIG$output$dir_figures, "predictions")
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 
+# Fix PostgreSQL PROJ interference (must be before loading terra)
+Sys.setenv(PROJ_DATA = "")
+Sys.setenv(PROJ_LIB = "")
+
 # =============================================================================
 # LOAD PREDICTION RASTERS
 # =============================================================================

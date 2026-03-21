@@ -22,7 +22,7 @@ suppressPackageStartupMessages({
 # Paths
 path_fhm_mapping <- "data/processed/fhm_species_mapping.csv"
 path_fia_tree    <- "data/interim/fia/extracted/tree.csv"
-path_nefin_tree  <- "data/raw/nefin/TREE_RAW_DATA.csv"
+path_nefin_tree  <- "data/processed/nefin_growth_check/nefin_trees_clean.csv"
 
 out_dir <- "data/processed/edge_case_analysis_species_structure"
 fig_dir <- file.path(out_dir, "figures")

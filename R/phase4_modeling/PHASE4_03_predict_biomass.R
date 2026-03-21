@@ -1,22 +1,17 @@
 # =============================================================================
-# PHASE 4: PREDICT BIOMASS RASTERS
+# PHASE 4: DUAL-SCALE BIOMASS PREDICTION - COVARIATE NAME FIX
 # =============================================================================
-# Generates wall-to-wall biomass predictions using trained models
-# 
-# Features:
-# - Predicts for configurable extent (county, state, region)
-# - Uses best model from CV or specified models
-# - Creates difference maps (NEFIN vs FIA)
-# - Memory-efficient chunk processing
-# - Parallel processing support
-#
-# Usage:
-#   Rscript R/phase4_modeling/PHASE4_03_predict_biomass.R
+# Fixes covariate name mismatch by adding resolution suffix
 # =============================================================================
 
 source("R/00_config/PHASE4_config.R")
 source("R/00_config/PHASE4_config_covariates.R")
-source("R/00_config/PHASE4_config_covariates_PREPROCESSED.R") 
+source("R/00_config/PHASE4_config_covariates_PREPROCESSED.R")
+
+# Fix PostgreSQL PROJ interference
+Sys.setenv(PROJ_DATA = "")
+Sys.setenv(PROJ_LIB = "")
+cat("✓ Cleared PostgreSQL PROJ paths\n\n")
 
 library(terra)
 library(dplyr)
@@ -25,11 +20,47 @@ library(randomForest)
 library(xgboost)
 library(sf)
 
+# =============================================================================
+# MODEL SELECTION - EDIT THESE!
+# =============================================================================
+
+FINE_MODEL <- "rf_fine_scale_(10m)_pooled"      
+COARSE_MODEL <- "rf_coarse_scale_(250m)_pooled"
+
+MODEL_DIR <- "data/processed/phase4_models"
+
 cat("\n")
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  PHASE 4: BIOMASS PREDICTION\n")
-cat("  Generate Wall-to-Wall Biomass Maps\n")
+cat("  PHASE 4: DUAL-SCALE BIOMASS PREDICTION\n")
+cat("  Comparing Fine (10m) vs Coarse (250m) Resolution\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
+
+cat("Model Selection:\n")
+cat("  Fine model:", FINE_MODEL, "\n")
+cat("  Coarse model:", COARSE_MODEL, "\n\n")
+
+# Check models exist
+fine_model_path <- file.path(MODEL_DIR, paste0(FINE_MODEL, ".rds"))
+coarse_model_path <- file.path(MODEL_DIR, paste0(COARSE_MODEL, ".rds"))
+
+if (!file.exists(fine_model_path)) {
+  cat("✗ Fine model not found:", fine_model_path, "\n\n")
+  cat("Available models:\n")
+  models <- list.files(MODEL_DIR, pattern = "\\.rds$", full.names = FALSE)
+  if (length(models) == 0) {
+    cat("  (none)\n\n")
+  } else {
+    for (m in models) cat("  •", m, "\n")
+  }
+  stop("Required models not found")
+}
+
+if (!file.exists(coarse_model_path)) {
+  cat("✗ Coarse model not found:", coarse_model_path, "\n\n")
+  stop("Required models not found")
+}
+
+cat("✓ Both models found\n\n")
 
 # Create output directory
 dir.create(PHASE4_CONFIG$prediction$output$dir, 
@@ -48,25 +79,21 @@ if (extent_type == "chittenden_county") {
   
   cat("  County: Chittenden, Vermont\n")
   
-  # Option 1: Use tigris package to get county boundary
   if (require(tigris, quietly = TRUE)) {
     county_boundary <- counties(state = "VT", cb = TRUE) %>%
       filter(NAME == "Chittenden") %>%
       st_transform(4326)
     
-    # Add buffer if specified
     buffer_km <- PHASE4_CONFIG$prediction$extent$county$buffer_km
     if (buffer_km > 0) {
       county_boundary <- county_boundary %>%
-        st_transform(5070) %>%  # Project to meters
+        st_transform(5070) %>%
         st_buffer(buffer_km * 1000) %>%
         st_transform(4326)
       cat("  Buffer:", buffer_km, "km\n")
     }
-    
   } else {
-    # Option 2: Manual bounding box for Chittenden County
-    cat("  Using manual bounding box (install 'tigris' package for exact boundary)\n")
+    cat("  Using manual bounding box\n")
     bbox <- c(xmin = -73.3, xmax = -72.9, ymin = 44.35, ymax = 44.65)
     county_boundary <- st_as_sfc(st_bbox(bbox, crs = 4326))
   }
@@ -83,7 +110,6 @@ if (extent_type == "chittenden_county") {
       st_transform(4326)
     prediction_extent <- state_boundary
   } else {
-    # Vermont bounding box
     bbox <- c(xmin = -73.5, xmax = -71.5, ymin = 42.7, ymax = 45.0)
     prediction_extent <- st_as_sfc(st_bbox(bbox, crs = 4326))
   }
@@ -106,362 +132,309 @@ if (extent_type == "chittenden_county") {
 cat("  ✓ Extent defined\n\n")
 
 # =============================================================================
-# STEP 2: LOAD COVARIATE RASTERS
+# HELPER FUNCTION: Load covariates for a specific scale
 # =============================================================================
 
-cat("\nStep 2: Loading and cropping covariate rasters...\n")
+load_scale_covariates <- function(scale, extent_vect) {
+  
+  cat("\nLoading", scale, "scale covariates...\n")
+  
+  # Get covariates for this scale
+  active_covs <- Filter(function(x) !is.null(x$active) && x$active, COVARIATES)
+  scale_covs <- Filter(function(x) x$scale == scale, active_covs)
+  
+  cat("  Found", length(scale_covs), scale, "scale covariates\n")
+  
+  # Determine resolution suffix
+  if (scale == "fine") {
+    resolution_suffix <- "_10m"
+  } else {
+    resolution_suffix <- "_250m"
+  }
+  
+  # Storage
+  covariate_rasters <- list()
+  target_crs <- NULL
+  extent_transformed <- NULL
+  template_extent <- NULL
+  template_res <- NULL
+  template_crs <- NULL
+  
+  for (cov_key in names(scale_covs)) {
+    cov_info <- scale_covs[[cov_key]]
+    
+    if (is.null(cov_info$path) || !is.character(cov_info$path)) {
+      next
+    }
+    
+    if (!file.exists(cov_info$path)) {
+      cat("    ⚠ File not found:", cov_info$display_name, "\n")
+      next
+    }
+    
+    cat("  Loading", cov_info$display_name, "...")
+    
+    tryCatch({
+      r <- rast(cov_info$path)
+      
+      # Use first raster's CRS as target for this scale
+      if (is.null(target_crs)) {
+        target_crs <- crs(r)
+        extent_transformed <- project(extent_vect, target_crs)
+        cat(" [template]")
+      }
+      
+      # Crop to extent
+      r_cropped <- crop(r, extent_transformed)
+      
+      # Ensure exact extent match for stacking (within this scale)
+      if (is.null(template_extent)) {
+        template_extent <- ext(r_cropped)
+        template_res <- res(r_cropped)
+        template_crs <- crs(r_cropped)
+      } else {
+        # Resample if needed to match template
+        if (!identical(ext(r_cropped), template_extent)) {
+          template_r <- rast(extent = template_extent, 
+                             resolution = template_res,
+                             crs = template_crs)
+          r_cropped <- resample(r_cropped, template_r, method = "bilinear")
+          cat(" [aligned]")
+        }
+      }
+      
+      # CRITICAL FIX: Store with name INCLUDING resolution suffix
+      # This matches what the model expects (e.g., "canopy_height_10m")
+      covariate_name_with_suffix <- paste0(cov_info$name, resolution_suffix)
+      covariate_rasters[[covariate_name_with_suffix]] <- r_cropped
+      
+      cat(" ✓\n")
+      
+    }, error = function(e) {
+      cat(" ✗ Error:", e$message, "\n")
+    })
+  }
+  
+  cat("  ✓ Loaded", length(covariate_rasters), scale, "scale covariates\n\n")
+  
+  return(covariate_rasters)
+}
 
-# Get active covariates
-active_covs <- get_active_covariates()
+# =============================================================================
+# STEP 2: PREPARE EXTENT
+# =============================================================================
 
-cat("  Loading", length(active_covs), "covariate rasters...\n")
+cat("Step 2: Preparing extent...\n")
 
-# Convert extent to terra format (in WGS84)
+# Convert to terra format
 extent_vect <- vect(prediction_extent)
 
 cat("  Extent bounding box (WGS84):\n")
-cat("    xmin:", ext(extent_vect)[1], "xmax:", ext(extent_vect)[2], "\n")
-cat("    ymin:", ext(extent_vect)[3], "ymax:", ext(extent_vect)[4], "\n")
+cat("    xmin:", round(ext(extent_vect)[1], 2), "xmax:", round(ext(extent_vect)[2], 2), "\n")
+cat("    ymin:", round(ext(extent_vect)[3], 2), "ymax:", round(ext(extent_vect)[4], 2), "\n")
 
-# Load and crop each raster (will transform extent to match raster CRS)
-covariate_rasters <- list()
-
-# Get CRS from first raster to standardize
-first_raster <- NULL
-target_crs <- NULL
-
-for (cov_key in names(active_covs)) {
-    cov_info <- active_covs[[cov_key]]
-  
-  
-  # Skip if path is NULL or invalid
-  if (is.null(cov_info$path) || !is.character(cov_info$path)) {
-    cat("  ⚠ Skipping", cov_info$display_name, "- invalid path\n")
-    next
-  }
-  
-  
-  # Skip if path is NULL or invalid
-  if (is.null(cov_info$path) || !is.character(cov_info$path)) {
-    cat("  ⚠ Skipping", cov_info$display_name, "- invalid path\n")
-    next
-  }
-  
-  if (!file.exists(cov_info$path)) {
-    cat("  ⚠ Skipping", cov_info$display_name, "- file not found\n")
-    next
-  }
-  
-  cat("  Loading", cov_info$display_name, "...\n")
-  
-  # Load raster
-  r <- rast(cov_info$path)
-  
-  # Use first raster's CRS as target
-  if (is.null(target_crs)) {
-    target_crs <- crs(r)
-    cat("    Raster CRS:", target_crs, "\n")
-    
-    # Transform extent to match raster CRS
-    extent_vect_proj <- project(extent_vect, target_crs)
-    extent_bbox <- ext(extent_vect_proj)
-    
-    cat("    Transformed extent:\n")
-    cat("      xmin:", extent_bbox[1], "xmax:", extent_bbox[2], "\n")
-    cat("      ymin:", extent_bbox[3], "ymax:", extent_bbox[4], "\n")
-    
-    # Check if extents overlap
-    raster_bbox <- ext(r)
-    cat("    Raster extent:\n")
-    cat("      xmin:", raster_bbox[1], "xmax:", raster_bbox[2], "\n")
-    cat("      ymin:", raster_bbox[3], "ymax:", raster_bbox[4], "\n")
-    
-    # Check overlap
-    if (extent_bbox[2] < raster_bbox[1] || extent_bbox[1] > raster_bbox[2] ||
-        extent_bbox[4] < raster_bbox[3] || extent_bbox[3] > raster_bbox[4]) {
-      stop("ERROR: Prediction extent does not overlap with rasters!\n",
-           "  Check that your extent is within the raster coverage area.")
-    }
-    
-    cat("    ✓ Extents overlap - proceeding with crop\n")
-  }
-  
-  # Reproject raster to target CRS if needed
-  if (crs(r) != target_crs) {
-    cat("    Reprojecting to target CRS...\n")
-    r <- project(r, target_crs)
-  }
-  
-  # Crop to extent
-  r_crop <- crop(r, extent_bbox)
-  
-  covariate_rasters[[cov_key]] <- r_crop
-}
-
-cat("  ✓ Loaded", length(covariate_rasters), "covariates\n\n")
+cat("  ✓ Extent ready\n")
 
 # =============================================================================
-# STEP 3: DETERMINE WHICH MODELS TO USE
+# STEP 3: LOAD MODELS AND PREDICT
 # =============================================================================
 
-cat("Step 3: Selecting models for prediction...\n")
+cat("\nStep 3: Loading models and predicting...\n")
 
-if (PHASE4_CONFIG$prediction$models$use_best) {
-  cat("  Using best model from CV results...\n")
-  
-  best_model_info <- get_best_model()
-  models_to_predict <- list(best_model_info$model_name)
-  
-} else {
-  cat("  Using specified models...\n")
-  models_to_predict <- PHASE4_CONFIG$prediction$models$specific_models
-  cat("  Models:", paste(models_to_predict, collapse = ", "), "\n")
-}
+predictions <- list()
 
-cat("\n")
-
-# =============================================================================
-# STEP 4: PREDICT FOR EACH MODEL
-# =============================================================================
-
-cat("Step 4: Generating predictions...\n\n")
-
-for (model_id in models_to_predict) {
-  
-  cat("───────────────────────────────────────────────────────────────\n")
-  cat("  Model:", model_id, "\n")
-  cat("───────────────────────────────────────────────────────────────\n\n")
-  
-  # Parse model ID to get components
-  parts <- strsplit(model_id, "_")[[1]]
-  model_type <- parts[1]  # rf or xgb
-  scale <- parts[2]       # fine or coarse
-  scenario <- paste(parts[3:length(parts)], collapse = "_")
-  
-  cat("  Type:", model_type, "\n")
-  cat("  Scale:", scale, "\n")
-  cat("  Scenario:", scenario, "\n\n")
-  
-  # Get covariates for this scale
-  scale_covs <- get_scale_covariates(scale)
-  scale_covs <- intersect(scale_covs, active_names)
-  
-  cat("  Using", length(scale_covs), "covariates:\n")
-  cat("   ", paste(scale_covs, collapse = ", "), "\n\n")
-  
-  # Check that we have all needed covariates
-  missing <- setdiff(scale_covs, names(covariate_rasters))
-  if (length(missing) > 0) {
-    cat("  ⚠ Missing covariates:", paste(missing, collapse = ", "), "\n")
-    cat("  Skipping this model\n\n")
-    next
-  }
-  
-  # Stack the needed rasters
-  cat("  Stacking covariates...\n")
-  cov_stack <- rast(covariate_rasters[scale_covs])
-  names(cov_stack) <- scale_covs
-  
-  # Resample to target resolution if needed
-  target_res <- if (scale == "fine") {
-    PHASE4_CONFIG$prediction$output$resolution$fine
-  } else {
-    PHASE4_CONFIG$prediction$output$resolution$coarse
-  }
-  
-  current_res <- res(cov_stack)[1]
-  if (abs(current_res - target_res) > 1) {
-    cat("  Resampling from", round(current_res), "m to", target_res, "m...\n")
-    
-    # Create template at target resolution
-    template <- rast(ext(cov_stack), resolution = target_res, crs = crs(cov_stack))
-    cov_stack <- resample(cov_stack, template, method = "bilinear")
-  }
-  
-  cat("  Final resolution:", round(res(cov_stack)[1]), "m\n")
-  cat("  Raster dimensions:", paste(dim(cov_stack)[1:2], collapse = " x "), "\n\n")
-  
-  # -------------------------------------------------------------------------
-  # TRAIN MODEL (using all data for final prediction)
-  # -------------------------------------------------------------------------
-  
-  cat("  Training model on full dataset...\n")
-  
-  # Load data
-  full_data <- read_csv("data/processed/augmented_with_covariates.csv",
-                        show_col_types = FALSE) %>%
-    filter(!is.na(biomass), biomass > 0)
-  
-  # Filter by scenario
-  if (scenario == "fia_only") {
-    model_data <- full_data %>% filter(dataset == "FIA")
-  } else if (scenario == "nefin_only") {
-    model_data <- full_data %>% filter(dataset == "NEFIN")
-  } else {
-    model_data <- full_data  # pooled
-  }
-  
-  # Remove NAs in covariates
-  model_data <- model_data %>%
-    filter(if_all(all_of(scale_covs), ~ !is.na(.)))
-  
-  cat("    Training data:", nrow(model_data), "plots\n")
-  
-  # Standardize covariates
-  means <- colMeans(model_data[, scale_covs], na.rm = TRUE)
-  sds <- apply(model_data[, scale_covs], 2, sd, na.rm = TRUE)
-  
-  for (cov in scale_covs) {
-    model_data[[cov]] <- (model_data[[cov]] - means[cov]) / sds[cov]
-  }
-  
-  # Train model
-  set.seed(PHASE4_CONFIG$cv$seed)
-  
-  if (model_type == "rf") {
-    
-    formula_reg <- as.formula(paste("biomass ~", paste(scale_covs, collapse = " + ")))
-    mtry_val <- floor(sqrt(length(scale_covs)))
-    
-    model <- randomForest(
-      formula = formula_reg,
-      data = model_data,
-      ntree = PHASE4_CONFIG$models$rf$params$ntree,
-      mtry = mtry_val,
-      nodesize = PHASE4_CONFIG$models$rf$params$nodesize,
-      importance = FALSE
-    )
-    
-    cat("    Random Forest trained (", PHASE4_CONFIG$models$rf$params$ntree, " trees)\n")
-    
-  } else if (model_type == "xgb") {
-    
-    train_matrix <- as.matrix(model_data[, scale_covs])
-    
-    model <- xgboost(
-      data = train_matrix,
-      label = model_data$biomass,
-      nrounds = PHASE4_CONFIG$models$xgb$params$nrounds,
-      max_depth = PHASE4_CONFIG$models$xgb$params$max_depth,
-      eta = PHASE4_CONFIG$models$xgb$params$eta,
-      objective = "reg:squarederror",
-      verbose = 0
-    )
-    
-    cat("    XGBoost trained (", PHASE4_CONFIG$models$xgb$params$nrounds, " rounds)\n")
-  }
-  
-  # -------------------------------------------------------------------------
-  # PREDICT OVER RASTER
-  # -------------------------------------------------------------------------
-  
-  cat("\n  Predicting biomass...\n")
-  
-  # Define prediction function that handles standardization
-  predict_biomass <- function(model, newdata, model_type, means, sds, scale_covs) {
-    
-    # Standardize input
-    for (cov in scale_covs) {
-      newdata[[cov]] <- (newdata[[cov]] - means[cov]) / sds[cov]
-    }
-    
-    # Predict
-    if (model_type == "rf") {
-      pred <- predict(model, newdata = newdata)
-    } else if (model_type == "xgb") {
-      pred_matrix <- as.matrix(newdata[, scale_covs])
-      pred <- predict(model, newdata = pred_matrix)
-    }
-    
-    return(pred)
-  }
-  
-  # Predict using terra::predict (handles large rasters efficiently)
-  biomass_pred <- predict(
-    cov_stack,
-    model,
-    fun = function(model, ...) {
-      predict_biomass(model, data.frame(...), model_type, means, sds, scale_covs)
-    },
-    na.rm = TRUE
+# Define models to run
+models_to_run <- list(
+  fine = list(
+    name = "Fine Scale (10m)",
+    model_file = FINE_MODEL,
+    scale = "fine"
+  ),
+  coarse = list(
+    name = "Coarse Scale (250m)",
+    model_file = COARSE_MODEL,
+    scale = "coarse"
   )
+)
+
+for (scale_name in c("fine", "coarse")) {
+  
+  model_info <- models_to_run[[scale_name]]
+  
+  cat("\n═══════════════════════════════════════════════════════════════\n")
+  cat(" ", model_info$name, "\n")
+  cat("═══════════════════════════════════════════════════════════════\n")
+  
+  # Load covariates for this scale
+  scale_covariates <- load_scale_covariates(model_info$scale, extent_vect)
+  
+  if (length(scale_covariates) == 0) {
+    cat("  ✗ No covariates loaded - skipping\n\n")
+    next
+  }
+  
+  # Load model
+  cat("  Loading model:", model_info$model_file, "\n")
+  
+  model_path <- file.path(MODEL_DIR, paste0(model_info$model_file, ".rds"))
+  model_obj <- readRDS(model_path)
+  
+  model <- model_obj$model
+  scaling_means <- model_obj$scaling_means
+  scaling_sds <- model_obj$scaling_sds
+  model_covs <- model_obj$covariates
+  
+  cat("  ✓ Model loaded\n")
+  cat("    Model requires:", length(model_covs), "covariates\n")
+  
+  # Check available covariates
+  available_covs <- intersect(model_covs, names(scale_covariates))
+  
+  cat("    Loaded rasters have:", length(scale_covariates), "covariates\n")
+  cat("    Matching covariates:", length(available_covs), "\n")
+  
+  if (length(available_covs) < length(model_covs)) {
+    missing <- setdiff(model_covs, names(scale_covariates))
+    cat("  ⚠ Missing", length(missing), "covariates:", 
+        paste(head(missing, 3), collapse = ", "), 
+        if(length(missing) > 3) "..." else "", "\n")
+  }
+  
+  cat("  Using", length(available_covs), "covariates\n\n")
+  
+  if (length(available_covs) == 0) {
+    cat("  ✗ No matching covariates - cannot predict\n\n")
+    next
+  }
+  
+  # Stack covariates
+  cat("  Stacking covariates...\n")
+  
+  # Ensure all extents match
+  ref_ext <- ext(scale_covariates[[available_covs[1]]])
+  for (cov in available_covs[-1]) {
+    if (!identical(ext(scale_covariates[[cov]]), ref_ext)) {
+      scale_covariates[[cov]] <- resample(
+        scale_covariates[[cov]], 
+        scale_covariates[[available_covs[1]]], 
+        method = "bilinear"
+      )
+    }
+  }
+  
+  cov_stack <- rast(scale_covariates[available_covs])
+  names(cov_stack) <- available_covs
+  
+  cat("  ✓ Stacked successfully\n")
+  cat("    Resolution:", round(res(cov_stack)[1]), "m\n")
+  cat("    Dimensions:", paste(dim(cov_stack)[1:2], collapse = " x "), "pixels\n\n")
+  
+  # Standardize
+  cat("  Standardizing covariates...\n")
+  for (cov in available_covs) {
+    if (cov %in% names(scaling_means) && cov %in% names(scaling_sds)) {
+      cov_stack[[cov]] <- (cov_stack[[cov]] - scaling_means[cov]) / scaling_sds[cov]
+    }
+  }
+  cat("  ✓ Standardized\n\n")
+  
+  # Predict
+  cat("  Predicting biomass...\n")
+  
+  if ("randomForest" %in% class(model)) {
+    biomass_pred <- predict(cov_stack, model, type = "response", na.rm = TRUE)
+  } else {
+    biomass_pred <- predict(cov_stack, model, na.rm = TRUE)
+  }
+  
+  biomass_pred <- ifel(biomass_pred < 0, 0, biomass_pred)
+  
+  # Post-prediction water/urban mask (safety net)
+  # NDVI < 0.15 reliably identifies non-vegetated surfaces
+  ndvi_name <- grep("ndvi", available_covs, value = TRUE)[1]
+  if (!is.null(ndvi_name) && ndvi_name %in% names(cov_stack)) {
+    cat("  Applying water/urban mask (", ndvi_name, " < 0.15)...\n")
+    ndvi_layer <- cov_stack[[ndvi_name]]
+    if (ndvi_name %in% names(scaling_means) && ndvi_name %in% names(scaling_sds)) {
+      ndvi_raw <- ndvi_layer * scaling_sds[ndvi_name] + scaling_means[ndvi_name]
+    } else {
+      ndvi_raw <- ndvi_layer
+    }
+    n_masked <- global(ndvi_raw < 0.15 & !is.na(ndvi_raw), "sum", na.rm = TRUE)[[1]]
+    n_total <- global(!is.na(biomass_pred), "sum", na.rm = TRUE)[[1]]
+    biomass_pred <- ifel(ndvi_raw < 0.15, 0, biomass_pred)
+    cat("  ✓ Masked", n_masked, "of", n_total, "pixels",
+        "(", round(n_masked / n_total * 100, 1), "%) to 0 Mg/ha\n")
+  }
   
   names(biomass_pred) <- "biomass"
   
-  cat("    ✓ Prediction complete\n")
-  cat("    Range:", round(minmax(biomass_pred)[1], 1), "to", 
-      round(minmax(biomass_pred)[2], 1), "Mg/ha\n\n")
+  cat("  ✓ Prediction complete\n")
+  cat("    Mean biomass:", round(global(biomass_pred, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    Min:", round(global(biomass_pred, "min", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    Max:", round(global(biomass_pred, "max", na.rm = TRUE)[[1]], 2), "Mg/ha\n\n")
   
-  # -------------------------------------------------------------------------
-  # SAVE OUTPUT
-  # -------------------------------------------------------------------------
-  
-  cat("  Saving output...\n")
-  
+  # Save
   output_file <- file.path(
     PHASE4_CONFIG$prediction$output$dir,
-    paste0("biomass_", model_id, ".tif")
+    paste0("biomass_", scale_name, "_", gsub("[()]", "", model_info$model_file), ".tif")
   )
   
-  writeRaster(
-    biomass_pred,
-    output_file,
-    overwrite = TRUE,
-    gdal = c("COMPRESS=LZW", "TILED=YES")
-  )
+  cat("  Saving:", basename(output_file), "\n")
+  writeRaster(biomass_pred, output_file, overwrite = TRUE,
+              gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
   
-  cat("    ✓ Saved:", output_file, "\n\n")
+  cat("  ✓ Saved\n\n")
+  
+  predictions[[scale_name]] <- biomass_pred
 }
 
 # =============================================================================
-# STEP 5: CREATE DIFFERENCE MAPS
+# STEP 4: CREATE COMPARISON MAPS
 # =============================================================================
 
-if (PHASE4_CONFIG$prediction$output$create_difference_maps) {
+if (length(predictions) == 2) {
   
-  cat("\n")
-  cat("═══════════════════════════════════════════════════════════════\n")
-  cat("  CREATING DIFFERENCE MAPS (NEFIN - FIA)\n")
-  cat("═══════════════════════════════════════════════════════════════\n\n")
+  cat("\n═══════════════════════════════════════════════════════════════════\n")
+  cat("  CREATING COMPARISON MAPS\n")
+  cat("═══════════════════════════════════════════════════════════════════\n\n")
   
-  # Find matching FIA and NEFIN predictions
-  pred_files <- list.files(
+  cat("  Resampling coarse to fine resolution...\n")
+  coarse_resampled <- resample(predictions$coarse, predictions$fine, method = "bilinear")
+  
+  cat("  Calculating difference (Fine - Coarse)...\n")
+  difference <- predictions$fine - coarse_resampled
+  names(difference) <- "difference"
+  
+  diff_file <- file.path(
     PHASE4_CONFIG$prediction$output$dir,
-    pattern = "biomass_.*\\.tif$",
-    full.names = TRUE
+    paste0("biomass_difference_", gsub("[()]", "", FINE_MODEL), "_vs_", gsub("[()]", "", COARSE_MODEL), ".tif")
   )
   
-  # Group by scale
-  for (scale in c("fine", "coarse")) {
-    
-    fia_file <- grep(paste0(scale, "_fia_only"), pred_files, value = TRUE)
-    nefin_file <- grep(paste0(scale, "_nefin_only"), pred_files, value = TRUE)
-    
-    if (length(fia_file) == 1 && length(nefin_file) == 1) {
-      
-      cat("  Scale:", scale, "\n")
-      
-      fia_rast <- rast(fia_file)
-      nefin_rast <- rast(nefin_file)
-      
-      # Calculate difference
-      diff_rast <- nefin_rast - fia_rast
-      names(diff_rast) <- "biomass_diff"
-      
-      # Save
-      diff_file <- file.path(
-        PHASE4_CONFIG$prediction$output$dir,
-        paste0("difference_", scale, "_nefin_minus_fia.tif")
-      )
-      
-      writeRaster(diff_rast, diff_file, overwrite = TRUE,
-                  gdal = c("COMPRESS=LZW", "TILED=YES"))
-      
-      cat("    ✓ Saved:", basename(diff_file), "\n")
-      cat("    Difference range:", round(minmax(diff_rast)[1], 1), "to",
-          round(minmax(diff_rast)[2], 1), "Mg/ha\n\n")
-    }
-  }
+  cat("  Saving difference map...\n")
+  writeRaster(difference, diff_file, overwrite = TRUE,
+              gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
+  
+  abs_diff <- abs(difference)
+  names(abs_diff) <- "abs_difference"
+  
+  abs_diff_file <- file.path(
+    PHASE4_CONFIG$prediction$output$dir,
+    paste0("biomass_abs_difference_", gsub("[()]", "", FINE_MODEL), "_vs_", gsub("[()]", "", COARSE_MODEL), ".tif")
+  )
+  
+  cat("  Saving absolute difference map...\n")
+  writeRaster(abs_diff, abs_diff_file, overwrite = TRUE,
+              gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
+  
+  cat("\n  Difference Statistics (Fine - Coarse):\n")
+  cat("    Mean difference:", round(global(difference, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    SD:", round(global(difference, "sd", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    Min:", round(global(difference, "min", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    Max:", round(global(difference, "max", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
+  cat("    Mean absolute difference:", round(global(abs_diff, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n\n")
+  
+  cat("  ✓ Comparison maps created\n\n")
 }
 
 # =============================================================================
@@ -469,14 +442,11 @@ if (PHASE4_CONFIG$prediction$output$create_difference_maps) {
 # =============================================================================
 
 cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  PREDICTION COMPLETE!\n")
+cat("  PREDICTION COMPLETE\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")
 
-cat("Output directory:", PHASE4_CONFIG$prediction$output$dir, "\n")
-cat("Extent:", extent_type, "\n")
-cat("Models predicted:", length(models_to_predict), "\n\n")
+cat("Models used:\n")
+cat("  Fine:", FINE_MODEL, "\n")
+cat("  Coarse:", COARSE_MODEL, "\n\n")
 
-cat("Next steps:\n")
-cat("  1. Visualize predictions in QGIS/ArcGIS\n")
-cat("  2. Create publication-quality maps\n")
-cat("  3. Analyze difference maps to assess fuzzing impacts\n\n")
+cat("Output directory:", PHASE4_CONFIG$prediction$output$dir, "\n\n")

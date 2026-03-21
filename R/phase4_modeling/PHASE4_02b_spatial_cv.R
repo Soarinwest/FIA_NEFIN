@@ -2,8 +2,8 @@
 # PHASE 4 - STEP 2b: Spatial Cross-Validation (CORRECTED FOR NEW DATA STRUCTURE)
 # =============================================================================
 # CORRECTED DESIGN:
-# - Loads scenario-specific TRAINING files (train_fia_only.csv, etc.)
-# - Loads UNIVERSAL TEST file (test_data.csv - same for all models)
+# - Loads scenario-specific TRAINING files (train_fia_only_with_water_urban.csv, etc.)
+# - Loads UNIVERSAL TEST file (test_data_with_water_urban.csv - same for all models)
 # - Runs spatial CV on training data
 # - Evaluates final model on universal test set
 # - Compares Random Forest vs XGBoost
@@ -42,23 +42,23 @@ dir.create("data/processed/phase4_cv_results", showWarnings = FALSE, recursive =
 scenarios <- list(
   fia_only = list(
     name = "FIA Only",
-    train_file = "train_fia_only.csv",
+    train_file = "train_fia_only_with_water_urban.csv",
     description = "Train on FIA (fuzzed coords)"
   ),
   nefin_only = list(
     name = "NEFIN Only", 
-    train_file = "train_nefin_only.csv",
+    train_file = "train_nefin_only_with_water_urban.csv",
     description = "Train on NEFIN (precise coords)"
   ),
   pooled = list(
     name = "Pooled",
-    train_file = "train_pooled.csv",
+    train_file = "train_pooled_with_water_urban.csv",
     description = "Train on FIA + NEFIN"
   )
 )
 
 # Universal test file (same for all scenarios)
-test_file <- "test_data.csv"
+test_file <- "test_data_with_water_urban.csv"
 
 # Model types to compare
 model_types <- c("rf", "xgb")
@@ -100,6 +100,8 @@ coarse_covs <- sapply(
 
 cat("  ✓ Fine scale (10m):", length(fine_covs), "covariates\n")
 cat("  ✓ Coarse scale (250m):", length(coarse_covs), "covariates\n\n")
+
+fold_predictions <- list()
 
 # =============================================================================
 # DEFINE SCALES
@@ -204,11 +206,11 @@ for (model_idx in seq_along(model_types)) {
       
       train_subset <- train_data %>%
         select(all_of(intersect(required_cols, names(train_data)))) %>%
-        filter(!is.na(biomass), biomass > 0)
+        filter(!is.na(biomass), biomass >= 0)
       
       test_subset <- test_data %>%
         select(all_of(intersect(required_cols, names(test_data)))) %>%
-        filter(!is.na(biomass), biomass > 0)
+        filter(!is.na(biomass), biomass >= 0)
       
       # Filter extreme covariate outliers (likely nodata values)
       # NDVI/EVI/NBR/NDWI should be between -1 and 1
@@ -234,8 +236,10 @@ for (model_idx in seq_along(model_types)) {
       test_subset <- test_subset %>% filter(complete.cases(.))
       
       cat("  After filtering:\n")
-      cat("    Train:", nrow(train_subset), "plots\n")
-      cat("    Test:", nrow(test_subset), "plots\n\n")
+      cat("    Train:", nrow(train_subset), "plots",
+          "(", sum(train_subset$biomass == 0), "water/urban)\n")
+      cat("    Test:", nrow(test_subset), "plots",
+          "(", sum(test_subset$biomass == 0), "water/urban)\n\n")
       
       if (nrow(train_subset) < 50 || nrow(test_subset) < 10) {
         cat("  ⚠ WARNING: Insufficient data after filtering\n")
@@ -388,6 +392,18 @@ for (model_idx in seq_along(model_types)) {
           r2 = r2
         )
         fold_counter <- fold_counter + 1
+        
+        # Store plot-level predictions for this fold
+        fold_predictions[[fold_counter]] <- data.frame(
+          model_type = model_type,
+          model_name = model_name,
+          scale = scale$name,
+          scenario = scenario$name,
+          fold = fold,
+          plot_id = as.character(fold_test$CN), # Plot identifier
+          y = y_test,              # Observed biomass
+          pred = predictions       # Predicted biomass
+        )
         
         # Progress indicator (less verbose - every 5 folds)
         if (fold %% 5 == 0) {
@@ -555,6 +571,82 @@ write_csv(results_df, "data/processed/phase4_cv_results/cv_summary.csv")
 write_csv(fold_results_df, "data/processed/phase4_cv_results/fold_results.csv")
 
 cat("  ✓ Results saved to data/processed/phase4_cv_results/\n\n")
+
+# =============================================================================
+# SAVE FOLD-LEVEL PREDICTIONS FOR EDGE CASE ANALYSIS
+# =============================================================================
+
+cat("\nSaving fold-level predictions for edge case analysis...\n")
+
+if (length(fold_predictions) > 0) {
+  
+  # Combine all fold predictions
+  fold_predictions_df <- bind_rows(fold_predictions)
+  
+  cat("  Total predictions collected:", nrow(fold_predictions_df), "\n")
+  
+  # Create directory for fold predictions
+  pred_dir <- "data/processed/phase4_cv_results/fold_predictions"
+  dir.create(pred_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  # Get unique model combinations
+  unique_models <- fold_predictions_df %>%
+    distinct(model_type, scale, scenario)
+  
+  cat("  Saving", nrow(unique_models), "prediction files...\n\n")
+  
+  # Save each model's predictions separately
+  for (i in 1:nrow(unique_models)) {
+    mt <- unique_models$model_type[i]
+    sc <- unique_models$scale[i]
+    sn <- unique_models$scenario[i]
+    
+    # Filter predictions for this specific model
+    model_preds <- fold_predictions_df %>%
+      filter(
+        model_type == mt,
+        scale == sc,
+        scenario == sn
+      )
+    
+    # Create filename following edge case analysis expectations
+    # Format: predictions_{scale}_{scenario}.csv
+    # Examples: predictions_fine_fia_only.csv, predictions_coarse_pooled.csv
+    
+    scale_str <- tolower(gsub(" ", "_", sc))      # "Fine" -> "fine"
+    scenario_str <- tolower(gsub(" ", "_", sn))   # "FIA Only" -> "fia_only"
+    
+    filename <- paste0(
+      "predictions_",
+      scale_str, "_",
+      scenario_str,
+      ".csv"
+    )
+    
+    filepath <- file.path(pred_dir, filename)
+    
+    # Save with standard column names (plot_id, y, pred, fold)
+    # This format matches what edge case analysis scripts expect
+    model_preds %>%
+      transmute(
+        plot_id = as.character(plot_id),  # Ensure character type
+        y = y,                             # Observed biomass
+        pred = pred,                       # Predicted biomass  
+        fold = fold                        # CV fold number
+      ) %>%
+      write_csv(filepath)
+    
+    cat("  ✓", filename, 
+        "(", nrow(model_preds), "predictions)\n")
+  }
+  
+  cat("\n✓ All fold predictions saved to:", pred_dir, "\n")
+  cat("  These files are now ready for edge case analysis\n\n")
+  
+} else {
+  cat("⚠ Warning: No fold predictions were collected\n")
+  cat("  Check that CV loops completed successfully\n\n")
+}
 
 # =============================================================================
 # SUMMARY

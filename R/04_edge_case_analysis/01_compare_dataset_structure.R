@@ -37,7 +37,7 @@ have_gstat <- requireNamespace("gstat", quietly = TRUE)
 # Paths
 # -----------------------------------------------------------------------------
 path_fia_tree   <- "data/interim/fia/extracted/tree.csv"
-path_nefin_tree <- "data/raw/nefin/TREE_RAW_DATA.csv"
+path_nefin_tree <- "data/processed/nefin_growth_check/nefin_trees_clean.csv"
 
 path_fia_plot   <- "data/interim/fia/extracted/plot.csv"
 path_nefin_plot <- "data/raw/nefin/NEFIN_plots.csv"

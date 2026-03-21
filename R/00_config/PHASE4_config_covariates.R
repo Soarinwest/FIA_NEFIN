@@ -261,7 +261,7 @@ COVARIATES <- list(
   ndvi_modis = list(
     name = "ndvi_modis",
     display_name = "NDVI (MODIS)",
-    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NDVI_5yr_blocked_2020_2024.tif",  # In raw, will copy
+    path = "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NDVI_250m_2020_2024_NE.tif",  # In raw, will copy
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
@@ -369,7 +369,7 @@ COVARIATES <- list(
   
   # ---------------------------------------------------------------------------
   # TOPOGRAPHY (aggregated from 10m to 250m - already done!)
-  # ---------------------------------------------------------------------------
+a  # ---------------------------------------------------------------------------
   
   elevation_coarse = list(
     name = "elevation",
