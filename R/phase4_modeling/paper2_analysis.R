@@ -5,7 +5,7 @@
 # performance, and can local networks with true locations recover it?
 #
 # Generates all key results tables and figures for Paper 2.
-# Run from project root: source("paper2_analysis.R")
+# Run from project root: source("R/phase4_modeling/paper2_analysis.R")
 # =============================================================================
 
 library(dplyr)
