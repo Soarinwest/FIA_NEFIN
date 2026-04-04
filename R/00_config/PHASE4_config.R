@@ -195,7 +195,8 @@ PHASE4_CONFIG$models <- list(
     enabled = TRUE,
     params = list(
       ntree = 500,               # Number of trees
-      mtry = NULL,               # sqrt(n_covariates)
+      mtry = NULL,               # mtry: floor(p/3) — ranger regression default for regression trees
+                                 # NOTE: sqrt(p) is the classification default — do not confuse
       nodesize = 5,              # Min terminal node size
       importance = TRUE,         # Variable importance
       classwt = NULL             # Class weights (for imbalanced data)

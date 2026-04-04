@@ -1,7 +1,7 @@
 # =============================================================================
 # VALIDATE: Do retrained models predict ~0 for water/urban?
 # =============================================================================
-# Run AFTER retraining with the fixed PHASE4_02b_spatial_cv.R
+# Run AFTER retraining with the fixed PHASE4_02_spatial_cv.R
 # =============================================================================
 
 library(readr)

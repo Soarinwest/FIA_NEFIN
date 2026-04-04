@@ -11,7 +11,7 @@
 #   3. Visual "gap" in the distributions showing FIA's absolute limit
 #   4. Statistical significance of these gaps
 #
-# Rscript R\04_edge_case_analysis\10_extreme_tail_gap_analysis.R
+# Rscript R\07_edge_case_analysis\10_extreme_tail_gap_analysis.R
 # =============================================================================
 
 suppressPackageStartupMessages({

@@ -423,5 +423,5 @@ if (all_pass) {
 
 cat("═══════════════════════════════════════════════════════════════════\n")
 cat("  NEXT: Retrain models\n")
-cat("  Rscript R/phase4_modeling/PHASE4_02b_spatial_cv.R\n")
+cat("  Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n") 

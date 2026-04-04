@@ -12,6 +12,9 @@
 # Author: Soren Donisvitch
 # Updated: January 2026
 # =============================================================================
+# PRODUCTION CONFIG — used in final analysis pipeline
+# Sources: data/raw/daymet/ (Daymet V4, 4 variables: tmean, tmin, tmax, ppt)
+# ETH Global canopy height 2020 — confirmed predictor, 100% variable importance
 
 # =============================================================================
 # COVARIATE DEFINITIONS

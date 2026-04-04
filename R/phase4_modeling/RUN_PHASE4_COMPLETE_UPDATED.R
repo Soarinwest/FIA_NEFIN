@@ -59,7 +59,7 @@ cat("  Running 6 models (2 scales × 3 scenarios)\n")
 cat("───────────────────────────────────────────────────────────────────\n")
 
 step3_start <- Sys.time()
-source("R/phase4_modeling/PHASE4_02b_spatial_cv.R")
+source("R/phase4_modeling/PHASE4_02_spatial_cv.R")
 step3_time <- difftime(Sys.time(), step3_start, units = "mins")
 
 cat("✓ Step 3 complete in", round(step3_time, 1), "minutes\n\n")

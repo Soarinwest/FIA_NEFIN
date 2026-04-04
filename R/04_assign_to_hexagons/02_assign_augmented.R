@@ -120,4 +120,4 @@ cat("Example structure:\n")
 print(head(augmented_hex_long, 6))
 
 cat("\nNext: Aggregate to hex level for comparison\n")
-cat("  Rscript R/06_analysis/01_aggregate_to_hexagons.R\n\n")
+cat("  Rscript R/06_analysis/01b_aggregate_to_hexagons.R\n\n")

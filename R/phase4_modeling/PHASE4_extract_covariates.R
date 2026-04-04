@@ -315,6 +315,6 @@ cat("Next steps:\n")
 cat("  1. Prepare data for modeling:\n")
 cat("     Rscript R/phase4_modeling/PHASE4_01_prep_data.R\n")
 cat("  2. Run spatial cross-validation:\n")
-cat("     Rscript R/phase4_modeling/PHASE4_02b_spatial_cv.R\n\n")
+cat("     Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n\n")
 
 cat("═══════════════════════════════════════════════════════════════════\n\n")

@@ -21,12 +21,12 @@ cat("─────────────────────────
 
 # Step 2: Aggregate to hexagons
 cat("STEP 2/12: Aggregate data to hexagons...\n")
-source("R/06_analysis/01_aggregate_to_hexagons.R")
+source("R/06_analysis/01b_aggregate_to_hexagons.R")
 cat("  ✓ Complete\n\n")
 
 # Step 3: Filter empty hexagons
 cat("STEP 3/12: Filter empty hexagons...\n")
-source("R/06_analysis/01_filter_empty_hexagons.R")
+source("R/06_analysis/01a_filter_empty_hexagons.R")
 cat("  ✓ Complete\n\n")
 
 # Step 4: Compare datasets
@@ -96,9 +96,9 @@ source("R/06_analysis/10_hexagon_scale_impact.R")
 cat("  ✓ Complete\n\n")
 
 # Optional: Max tree per plot analysis
-if (file.exists("R/06_analysis/11_max_tree_per_plot.R")) {
+if (file.exists("R/06_analysis/11a_max_tree_per_plot.R")) {
   cat("OPTIONAL: Max tree per plot analysis...\n")
-  source("R/06_analysis/11_max_tree_per_plot.R")
+  source("R/06_analysis/11a_max_tree_per_plot.R")
   cat("  ✓ Complete\n\n")
 }
 

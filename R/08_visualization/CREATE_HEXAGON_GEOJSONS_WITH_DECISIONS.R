@@ -24,7 +24,7 @@ dir.create("data/processed/hex_geojson_with_decisions",
 # DECISION FRAMEWORK LOGIC
 # =============================================================================
 
-# Decision function (matches 11_spatial_decision_framework.R)
+# Decision function (matches 11b_spatial_decision_framework.R)
 get_hex_recommendation <- function(scale_ha, pct_nefin, n_plots, biomass_sd) {
   
   # Scale-based primary recommendation

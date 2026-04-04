@@ -303,5 +303,5 @@ cat("  • metadata.csv - Run metadata\n\n")
 
 cat("═══════════════════════════════════════════════════════════════════\n")
 cat("  NEXT STEP: Spatial cross-validation\n")
-cat("  Rscript R/phase4_modeling/PHASE4_02b_spatial_cv.R\n")
+cat("  Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n")
 cat("═══════════════════════════════════════════════════════════════════\n\n")

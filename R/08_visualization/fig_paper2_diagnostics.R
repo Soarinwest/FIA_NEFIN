@@ -62,7 +62,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 # PATHS -- update these to match your saved model and data locations
 # =============================================================================
 PATHS <- list(
-  # RF model objects -- saved by PHASE4_02b_spatial_cv.R
+  # RF model objects -- saved by PHASE4_02_spatial_cv.R
   # Note: filenames contain parentheses as produced by the pipeline
   model_fia_10m    = "data/processed/phase4_models/rf_fine_scale_(10m)_fia_only.rds",
   model_nefin_10m  = "data/processed/phase4_models/rf_fine_scale_(10m)_nefin_only.rds",
@@ -925,7 +925,7 @@ cat("  Model paths expected:\n")
 cat("    ", PATHS$model_fia_10m, "\n")
 cat("    ", PATHS$model_nefin_10m, "\n")
 cat("    ", PATHS$model_pooled_10m, "\n")
-cat("\n  If models were not saved during PHASE4_02b_spatial_cv.R,\n")
+cat("\n  If models were not saved during PHASE4_02_spatial_cv.R,\n")
 cat("  re-run the final model fits with:\n")
 cat("    rf_model <- ranger(biomass ~ ., data = train_df,\n")
 cat("                       num.trees = 500, min.node.size = 5,\n")
