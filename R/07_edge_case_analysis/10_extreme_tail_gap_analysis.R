@@ -25,7 +25,7 @@ suppressPackageStartupMessages({
   library(patchwork)  # For combined plots
 })
 
-set.seed(42)
+set.seed(42)  # matches CONFIG$monte_carlo$seed
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
 cat("  EXTREME TAIL GAP ANALYSIS: NEFIN vs FIA\n")

@@ -38,6 +38,13 @@ rsconnect/
 *.pdf
 manuscript_figures/*
 data/*
+
+# raster and model file types (belt-and-suspenders — also covered by data/*)
+Rplots.pdf
+*.tif
+*.tif.ovr
+*.tif.aux.xml
+*.rds
 outputs/*
 runs/*
 reporting/NEFIN vs FIA Hexagon Method Impact Comparison.docx

@@ -222,6 +222,24 @@ PHASE4_CONFIG$models <- list(
 )
 
 # =============================================================================
+# EXTERNAL DATA DRIVE
+# =============================================================================
+# Large rasters and AOI are stored outside the project on an external drive.
+# Set EXTERNAL_DATA_ROOT to match your local setup before running the pipeline.
+# See README.md -> Data Sources for required files and how to obtain them.
+# Default assumes Windows drive letter D: — adjust for your OS/mount point.
+
+EXTERNAL_DATA_ROOT <- "D:/FIA_NEFIN/data"
+
+PHASE4_CONFIG$paths <- list(
+  aoi            = file.path(EXTERNAL_DATA_ROOT, "aoi/Region.shp"),
+  cov_fine_raw   = file.path(EXTERNAL_DATA_ROOT, "covariates/fine_10m"),
+  cov_fine       = file.path(EXTERNAL_DATA_ROOT, "covariates/fine_10m_preprocessed"),
+  cov_coarse_raw = file.path(EXTERNAL_DATA_ROOT, "covariates/coarse_250m"),
+  cov_coarse     = file.path(EXTERNAL_DATA_ROOT, "covariates/coarse_250m_preprocessed")
+)
+
+# =============================================================================
 # OUTPUT SETTINGS
 # =============================================================================
 

@@ -234,7 +234,7 @@ if (!dir.exists(hex_dir)) {
 cat("Step 5: Creating fuzzing visualization...\n")
 
 # Select a few example plots
-set.seed(42)
+set.seed(42)  # matches CONFIG$monte_carlo$seed
 if (nrow(nefin) > 0) {
   example_nefin <- nefin_sf %>%
     sample_n(min(5, nrow(nefin)))

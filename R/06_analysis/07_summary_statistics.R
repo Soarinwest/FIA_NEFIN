@@ -121,7 +121,7 @@ cat("  Change:       ", sprintf("%.4f\n\n", cv_augmented - cv_baseline))
 cat("1.3 Bootstrap variance reduction...\n")
 
 n_boot <- 1000
-set.seed(42)
+set.seed(CONFIG$monte_carlo$seed)
 
 bootstrap_baseline <- replicate(n_boot, {
   idx <- sample(1:nrow(baseline), replace = TRUE)

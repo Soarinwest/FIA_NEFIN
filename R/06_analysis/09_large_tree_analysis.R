@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
   library(forcats)
 })
 
-set.seed(42)
+set.seed(42)  # matches CONFIG$monte_carlo$seed
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
 cat("  LARGE TREE ANALYSIS: NEFIN vs FIA\n")

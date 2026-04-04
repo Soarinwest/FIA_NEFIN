@@ -128,7 +128,7 @@ CONFIG <- list(
     
     # Covariates
     ndvi = "data/processed/ndvi",
-    prism = "data/processed/prism",
+    # prism = "data/processed/prism",  # PRISM not used — Daymet V4 used instead
     
     # Outputs
     runs = "runs",

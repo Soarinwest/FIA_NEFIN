@@ -8,7 +8,7 @@
 # KEY FEATURES:
 # - Uses YOUR template grids (guarantees exact grid match)
 # - EPSG:5070 (NAD83 Albers Equal Area - meters)
-# - Clips to AOI shapefile (D:/FIA_NEFIN/data/aoi/region.shp)
+# - Clips to AOI shapefile (PHASE4_CONFIG$paths$aoi — set EXTERNAL_DATA_ROOT in PHASE4_config.R)
 # - Verifies every output immediately after writing
 # - Deletes corrupt files and stops
 # - Never uses file.copy() - always projects through template
@@ -16,6 +16,13 @@
 #
 # Author: Soren Donisvitch
 # Updated: January 2026
+# =============================================================================
+#
+# NOTE: S2 bands B8 (NIR, 842nm) and B11 (SWIR1, 1610nm) are present in the
+# raw fine_10m/ directory but were deliberately excluded from preprocessing.
+# B8 is redundant with the computed spectral indices (NDVI, EVI, NBR, NDWI).
+# B11 was excluded to limit multicollinearity. Neither band appears in any
+# of the 6 final models. Raw files are retained on disk for reference only.
 # =============================================================================
 
 source("R/00_config/PHASE4_config.R")
@@ -35,15 +42,16 @@ library(dplyr)
 
 # USER-PROVIDED TEMPLATE GRIDS (MUST BE IN EPSG:5070)
 # These define the exact grid (CRS, resolution, extent, origin) for outputs
-TEMPLATE_FINE <- "D:/FIA_NEFIN/data/covariates/fine_10m/S2_NDVI_10m_2020_2024.tif"  # 10m
-TEMPLATE_COARSE <- "D:/FIA_NEFIN/data/covariates/coarse_250m/MODIS_NDVI_250m_2020_2024_NE.tif" # 250m
+source("R/00_config/PHASE4_config.R")   # defines EXTERNAL_DATA_ROOT and PHASE4_CONFIG$paths
+TEMPLATE_FINE   <- file.path(PHASE4_CONFIG$paths$cov_fine_raw,   "S2_NDVI_10m_2020_2024.tif")    # 10m
+TEMPLATE_COARSE <- file.path(PHASE4_CONFIG$paths$cov_coarse_raw, "MODIS_NDVI_250m_2020_2024_NE.tif") # 250m
 
 # AOI shapefile for clipping
-AOI_SHAPEFILE <- "D:/FIA_NEFIN/data/aoi/region.shp"
+AOI_SHAPEFILE <- PHASE4_CONFIG$paths$aoi
 
 # Output directories
-OUTPUT_DIR_FINE <- "D:/FIA_NEFIN/data/covariates/fine_10m_preprocessed"
-OUTPUT_DIR_COARSE <- "D:/FIA_NEFIN/data/covariates/coarse_250m_preprocessed"
+OUTPUT_DIR_FINE   <- PHASE4_CONFIG$paths$cov_fine
+OUTPUT_DIR_COARSE <- PHASE4_CONFIG$paths$cov_coarse
 
 # GDAL write options
 GDAL_OPTIONS <- c(
@@ -515,7 +523,7 @@ for (cov_name in names(COVARIATES)) {
   cov <- COVARIATES[[cov_name]]
   
   new_path <- file.path(
-    if (cov$scale == "fine") "D:/FIA_NEFIN/data/covariates/fine_10m_preprocessed" else "D:/FIA_NEFIN/data/covariates/coarse_250m_preprocessed",
+    if (cov$scale == "fine") PHASE4_CONFIG$paths$cov_fine else PHASE4_CONFIG$paths$cov_coarse,
     basename(cov$path)
   )
   

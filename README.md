@@ -54,6 +54,20 @@ project/
     └── run_complete_pipeline.R
 ```
 
+## Reproducing the Analysis
+
+To reproduce the full pipeline from raw data to results:
+
+```r
+source("run_scripts/run_complete_pipeline_updated.R")
+```
+
+See `run_scripts/README.md` for a description of each phase script.
+Before running, set `EXTERNAL_DATA_ROOT` in `R/00_config/PHASE4_config.R`
+to point to the directory containing the covariate rasters and AOI shapefile.
+
+---
+
 ## 🚀 Execution Flow
 
 ### Phase A: Process FIA
@@ -113,3 +127,73 @@ Not: "Is NEFIN better than FIA?" (different networks, not comparable)
 4. Proceed through phases B, C, D
 
 Questions? Check the README files in each directory!
+
+---
+
+## Data Sources
+
+### Large raster data (external drive — not in repo)
+
+All covariate rasters live on a separate drive. Set `EXTERNAL_DATA_ROOT` in
+`R/00_config/PHASE4_config.R` to your local path before running the pipeline.
+
+Required directory structure:
+```
+{EXTERNAL_DATA_ROOT}/
+├── aoi/
+│   └── Region.shp (+ .dbf, .prj, .shx, .cpg, .sbn, .sbx)
+└── covariates/
+    ├── fine_10m/              ← raw 10m covariates (GEE exports)
+    ├── fine_10m_preprocessed/ ← aligned/clipped (output of PHASE4_00)
+    ├── coarse_250m/           ← raw 250m covariates (GEE exports)
+    └── coarse_250m_preprocessed/ ← aligned/clipped (output of PHASE4_00)
+```
+
+Fine scale covariates (10m):
+- `canopy_height_10m_2020_NE.tif` — ETH Global Canopy Height 2020 (Lang et al.)
+- `Elevation10m.tif`, `Slope10m.tif`, `Aspect10m.tif` — 10m DEM derivatives
+- `S2_NDVI/EVI/NBR/NDWI_10m_2020_2024.tif` — Sentinel-2 spectral indices
+- `S2_B2/B3/B4_10m_2020_2024.tif` — Sentinel-2 visible bands
+- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` — Daymet V4 resampled to 10m
+- Note: S2_B8 (NIR) and S2_B11 (SWIR1) are present in raw but were excluded
+  from preprocessing and are not used in any final model.
+
+Coarse scale covariates (250m):
+- `canopy_height_250m_2020_NE.tif` — ETH Global Canopy Height 2020 aggregated
+- `elevation/slope/aspect_250m_NE.tif`
+- `MODIS_NDVI/EVI/NBR/NDWI/RED/NIR/BLUE/GREEN/SWIR1_250m_2020_2024_NE.tif`
+- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` — Daymet V4 aggregated to 250m
+
+GEE scripts to regenerate raw covariates are in `GEE/`. Run
+`R/phase4_modeling/PHASE4_00_preprocess_rasters.R` to regenerate the
+`_preprocessed` directories from the raw inputs.
+
+### FIA data
+
+Download state SQLite databases from FIADB:
+https://apps.fs.usda.gov/fia/datamart/datamart.html
+
+Required states: CT, MA, ME, NH, NY, RI, VT
+
+Place each as: `data/raw/fia_sqlite/{STATE}/SQLite_FIADB_{STATE}.db`
+
+### NEFIN data
+
+Contact the Northeast Forest Inventory Network for plot data.
+Source files expected at:
+- `data/raw/nefin/NEFIN_plots.csv`
+- `data/raw/nefin/TREE_PLOT_DATA.csv`
+- `data/raw/nefin/TREE_RAW_DATA.csv`
+
+### Daymet V4 climate rasters
+
+Raw Daymet TIFs are included in `data/raw/daymet/` (tracked in repo).
+GEE export script: `GEE/CLIMATE_01_daymet_1km_2020_2024.js`
+Resampling script: `R/05_extract_covariates/resample_daymet_climate.R`
+
+### Files NOT in the repository
+
+The following large files are excluded via `.gitignore`:
+- All raster files (`*.tif`) including all covariate and prediction rasters
+- Model objects (`*.rds`) in `data/processed/phase4_models/`
+- FIA SQLite databases in `data/raw/fia_sqlite/`

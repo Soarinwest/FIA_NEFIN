@@ -59,7 +59,7 @@ if (file.exists("data/processed/fia_plots.csv")) {
   cat("FIA Plots:\n")
   cat(sprintf("  Total plots: %s\n", format(nrow(fia), big.mark = ",")))
   
-  key_vars <- c("biomass_Mg_ha", "ndvi_s2_mean", "tmean_prism", "ppt_prism")
+  key_vars <- c("biomass_Mg_ha", "ndvi_s2_mean", "tmean", "ppt")
   for (var in key_vars) {
     if (var %in% names(fia)) {
       na_count <- sum(is.na(fia[[var]]))

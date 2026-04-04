@@ -21,12 +21,8 @@ library(terra)
 # =============================================================================
 
 # Daymet input directory (where your 1km Daymet files from GEE are stored)
-# This may be on a different drive than your covariates directory
-DAYMET_INPUT_DIR <- "C:/Users/soren/FIA_NEFIN/data/raw/daymet"
-
-# If all your data is on the same drive, you can set this to NULL
-# and the script will auto-detect from config (see OPTION 2 below)
-# DAYMET_INPUT_DIR <- NULL
+# Relative to project root — adjust if your Daymet files are elsewhere
+DAYMET_INPUT_DIR <- "data/raw/daymet"
 
 # =============================================================================
 
@@ -94,7 +90,7 @@ if (!dir.exists(daymet_dir)) {
   cat("⚠ WARNING: Daymet directory not found at:", daymet_dir, "\n")
   cat("Please update 'DAYMET_INPUT_DIR' at the top of this script.\n")
   cat("Common locations:\n")
-  cat("  - C:/Users/soren/FIA_NEFIN/data/raw/daymet\n")
+  cat("  - data/raw/daymet  (relative to project root)\n")
   cat("  - D:/FIA_NEFIN/data/raw/daymet\n\n")
 }
 

@@ -5,7 +5,7 @@
 #          [C] NEFIN Only            [D] Pooled
 #
 # Also produces:  fig5b_aerial_difference_2panel.png
-#                 aerial_size_test.png  (always -- check this first)
+#                 aerial_size_test.png  (always -- inspect to confirm aerial image dimensions)
 #
 # NOTE: Sys.setenv must be before library() calls to clear PostgreSQL PROJ conflict
 # =============================================================================

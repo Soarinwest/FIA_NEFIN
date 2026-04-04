@@ -15,7 +15,7 @@ for (cov_name in names(COVARIATES)) {
   cov <- COVARIATES[[cov_name]]
   
   new_path <- file.path(
-    if (cov$scale == "fine") "D:/FIA_NEFIN/data/covariates/fine_10m_preprocessed" else "D:/FIA_NEFIN/data/covariates/coarse_250m_preprocessed",
+    if (cov$scale == "fine") PHASE4_CONFIG$paths$cov_fine else PHASE4_CONFIG$paths$cov_coarse,
     basename(cov$path)
   )
   

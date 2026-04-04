@@ -636,7 +636,7 @@ if (models_available) {
   # Returns data.frame with columns: x, yhat, scenario
   compute_pdp <- function(model, train_df, pred_var, scenario_label,
                           n_grid = 60, n_sample = 500) {
-    set.seed(42)
+    set.seed(42)  # matches CONFIG$monte_carlo$seed
     if (nrow(train_df) > n_sample) train_df <- train_df[sample(nrow(train_df), n_sample), ]
     
     grid_vals <- seq(

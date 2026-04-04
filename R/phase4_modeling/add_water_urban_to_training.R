@@ -45,12 +45,12 @@ data_dir <- "data/processed/phase4_modeling"
 N_WATER_POINTS <- 500
 N_URBAN_POINTS <- 500
 TEST_PROPORTION <- 0.30
-RANDOM_SEED <- 42
+RANDOM_SEED <- PHASE4_CONFIG$cv$seed
 
 water_file <- "data/hex/Waterbodies_FeaturesToJSON.geojson"
 
 # AOI shapefile — same boundary all rasters were clipped to
-AOI_SHAPEFILE <- "D:/FIA_NEFIN/data/aoi/region.shp"
+AOI_SHAPEFILE <- PHASE4_CONFIG$paths$aoi
 
 # =============================================================================
 # STEP 0: LOAD AOI AND COVARIATE CONFIG
@@ -152,8 +152,8 @@ cat("Step 3: Sampling urban points (from low-NDVI raster pixels)...\n")
 urban_locations <- NULL
 
 ndvi_paths <- c(
-  "D:/FIA_NEFIN/data/covariates/fine_10m_preprocessed/ndvi_s2_10m_5070_template.tif",
-  "D:/FIA_NEFIN/data/covariates/fine_10m/S2_NDVI_10m_2020_2024.tif"
+  file.path(PHASE4_CONFIG$paths$cov_fine, "ndvi_s2_10m_5070_template.tif"),
+  file.path(PHASE4_CONFIG$paths$cov_fine_raw, "S2_NDVI_10m_2020_2024.tif")
 )
 
 ndvi_file <- NULL

@@ -15,7 +15,7 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
-set.seed(42)
+set.seed(42)  # matches CONFIG$monte_carlo$seed
 
 cat("\n═══════════════════════════════════════════════════════════════════\n")
 cat("  NEFIN GROWTH RATE ANOMALY CHECK\n")
