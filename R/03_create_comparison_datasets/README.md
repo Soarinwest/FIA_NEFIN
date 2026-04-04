@@ -1,38 +1,27 @@
-# Phase C: Create Comparison Datasets
+# R/03_create_comparison_datasets
 
-**This is the key phase!** Creates baseline vs augmented datasets for the correct comparison.
-
-## The Correct Research Question
-
-**Does augmenting FIA with NEFIN's precise coordinates improve biomass estimates?**
-
-NOT: "Is NEFIN better than FIA?" (different networks)
+Creates the baseline and augmented datasets used for the FIA vs NEFIN
+comparison in Paper 1.
 
 ## Scripts
 
-1. **01_validate_inputs.R**
-   - Validates FIA and NEFIN datasets
-   - Checks for overlapping plots (by CN)
-   - Ensures schemas match
+1. `01_validate_inputs.R`
+   Validates FIA and NEFIN datasets.
+   Checks for overlapping plots (by CN).
+   Ensures schemas match.
 
-2. **02_create_baseline.R**
-   - Creates FIA-only dataset
-   - All coordinates fuzzed
-   - Comparison benchmark
+2. `02_create_baseline.R`
+   Creates FIA-only dataset.
+   All coordinates are fuzzed.
+   Serves as the comparison benchmark.
 
-3. **03_create_augmented.R**
-   - Combines FIA + NEFIN
-   - For overlaps: uses NEFIN (true coords)
-   - For FIA-only: keeps fuzzed
-   - Adds all NEFIN plots
+3. `03_create_augmented.R`
+   Combines FIA and NEFIN.
+   For overlapping plots: uses NEFIN (true coordinates).
+   For FIA-only plots: keeps fuzzed coordinates.
+   Adds all NEFIN-only plots.
 
 ## Outputs
 
-- **baseline.csv**: FIA-only (~22k plots, all fuzzed)
-- **augmented.csv**: FIA + NEFIN (~25k plots, mixed coords)
-
-## Why This Approach?
-
-We're testing if adding precise coordinates to the FIA network improves estimates.
-Both datasets cover the same region, but augmented has better coordinate precision
-for NEFIN plots.
+- `baseline.csv` -- FIA-only dataset (all fuzzed coordinates)
+- `augmented.csv` -- FIA + NEFIN combined (mixed coordinate sources)

@@ -121,7 +121,7 @@
 2. MODIS_LST_night_1km_2020_2024_NE.tif - Nighttime temperature
 3. MODIS_LST_range_1km_2020_2024_NE.tif - Diurnal range
 
-**Purpose:** Microclimate variation (complements PRISM)
+**Purpose:** Microclimate variation (complements Daymet V4 climate)
 
 ---
 
@@ -345,9 +345,7 @@ data/raw/
 │       ├── MODIS_NBR_250m_2020_2024_NE.tif
 │       └── MODIS_NDWI_250m_2020_2024_NE.tif
 │
-├── prism/
-│   ├── prism_tmean_ne_2020_2024.tif (already have)
-│   └── prism_ppt_ne_2020_2024.tif (already have)
+├── daymet/ (climate source; final analysis uses Daymet V4, not PRISM)
 │
 ├── lst/ (optional)
 │   ├── MODIS_LST_day_1km_2020_2024_NE.tif

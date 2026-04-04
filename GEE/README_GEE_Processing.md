@@ -69,7 +69,7 @@ This repository contains Google Earth Engine scripts to process remote sensing a
 ### 🌡️ **Land Surface Temperature (Optional)**
 
 7. **`LST_01_day_night_mean_2020_2024.js`**
-   - **Purpose**: Microclimate variation (complements PRISM)
+   - **Purpose**: Microclimate variation (complements Daymet V4 climate)
    - **Product**: MOD11A2 (8-day composite)
    - **Layers**: LST Day, LST Night, Diurnal Range
    - **Temporal Agg**: 5-year MEAN
@@ -178,23 +178,12 @@ NEFIN_FIA_Covariates/
 Once GEE exports complete:
 
 1. **Download** all files from Google Drive
-2. **Organize** into local directory structure:
-   ```
-   data/raw/
-   ├── dem/
-   ├── ndvi/s2/
-   ├── ndvi/modis/
-   ├── prism/
-   └── lst/
-   ```
-3. **Run extraction scripts** (to be created):
-   - `PHASE4_02_extract_covariates_10m.R`
-   - `PHASE4_03_extract_covariates_250m.R`
+2. **Organize** into the external drive structure under EXTERNAL_DATA_ROOT.
+   Climate covariates use Daymet V4 (not PRISM); see data/raw/daymet/.
+3. **Run extraction scripts**:
+   - `R/phase4_modeling/PHASE4_extract_covariates.R`
 4. **Output**:
-   - `baseline_with_covariates_10m.csv`
-   - `augmented_with_covariates_10m.csv`
-   - `baseline_with_covariates_250m.csv`
-   - `augmented_with_covariates_250m.csv`
+   - training and test CSVs in `data/processed/phase4_modeling/`
 
 ---
 
@@ -225,7 +214,7 @@ Once GEE exports complete:
 ## 📝 **NOTES**
 
 ### **CRS / Projection**
-- All exports use **EPSG:4326 (WGS84)** to match your existing PRISM/FIA pipeline
+- All exports use **EPSG:4326 (WGS84)** for initial export; final analysis uses EPSG:5070
 - Processing done in native projections (EPSG:5070 for S2, sinusoidal for MODIS)
 - Reprojection happens during export
 

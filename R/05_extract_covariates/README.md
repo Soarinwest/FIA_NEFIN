@@ -1,19 +1,20 @@
-# Phase D Part 2: Covariate Extraction
+# R/05_extract_covariates
 
 Extracts environmental covariates at plot locations.
 
 ## Scripts
 
-1. **01_extract_baseline_covariates.R** - NDVI/PRISM for baseline
-2. **02_extract_augmented_covariates.R** - NDVI/PRISM for augmented
+1. `01_extract_baseline_covariates.R` -- spectral and climate covariates for baseline plots
+2. `02_extract_augmented_covariates.R` -- spectral and climate covariates for augmented plots
+3. `resample_daymet_climate.R` -- resamples Daymet V4 climate rasters to target resolution
 
 ## Covariates
 
-- NDVI (MODIS or Sentinel-2)
-- PRISM climate (temperature, precipitation)
+- Spectral indices (NDVI, EVI, NBR, NDWI) from Sentinel-2 (10 m) and MODIS (250 m)
+- Daymet V4 climate: tmean, tmin, tmax, ppt
 
-## Important
+## Coordinate handling
 
-Uses lat_for_extraction/lon_for_extraction, which are:
+Extraction uses `lat_for_extraction` / `lon_for_extraction`, which are:
 - Fuzzed for FIA plots
-- True for NEFIN plots
+- True coordinates for NEFIN plots

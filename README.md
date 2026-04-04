@@ -1,199 +1,138 @@
-# FIA-NEFIN Clean Pipeline Structure
+# FIA_NEFIN
 
-This is the proposed clean file structure for the FIA-NEFIN comparison project.
+This repository supports a two-paper thesis comparing FIA (Forest Inventory
+and Analysis) and NEFIN (Northeast Forest Inventory Network) plot data for
+forest biomass prediction in the northeastern United States. The study covers
+seven states (CT, MA, ME, NH, NY, RI, VT), 7,345 FIA plots and 457 NEFIN
+plots, and produces biomass predictions at two spatial scales (10 m and 250 m)
+for Chittenden County, Vermont using random forest models trained under three
+scenarios: FIA-only, NEFIN-only, and pooled.
 
-## 🎯 Core Concept
+## Repository contents
 
-**Current Problem**: Comparing FIA vs NEFIN as separate networks (WRONG)
-**Correct Approach**: Does augmenting FIA with NEFIN's precise coordinates improve biomass estimates?
-
-## 📊 Comparison Design
-
-### Baseline Dataset (FIA-only)
-- All FIA plots with fuzzed coordinates (~22k plots)
-- Baseline for comparison
-
-### Augmented Dataset (FIA + NEFIN)
-- FIA plots (fuzzed coords) + NEFIN plots (true coords)
-- Combined network (~25k plots)
-- Tests if adding precise coordinates improves estimates
-
-## 📁 Directory Structure
-
-```
-project/
-├── R/                          # All R scripts
-│   ├── 00_config/             # Configuration
-│   ├── utils/                 # Reusable functions
-│   ├── 01_process_fia/        # FIA processing (Phase A)
-│   ├── 02_process_nefin/      # NEFIN processing (Phase B)
-│   ├── 03_create_comparison_datasets/  # Baseline vs Augmented (Phase C)
-│   ├── 04_assign_to_hexagons/ # Spatial joins (Phase D)
-│   └── 05_extract_covariates/ # NDVI/PRISM extraction (Phase D)
-│
-├── data/
-│   ├── raw/                   # Never modified
-│   │   ├── fia_sqlite/
-│   │   └── nefin/
-│   ├── interim/               # Processing steps
-│   │   ├── fia/
-│   │   └── nefin/
-│   └── processed/             # Final clean datasets
-│       ├── fia_complete.csv
-│       ├── nefin_complete.csv
-│       ├── baseline.csv           # FIA-only
-│       ├── augmented.csv          # FIA + NEFIN
-│       ├── baseline_hex_assignments.csv
-│       └── augmented_hex_assignments.csv
-│
-└── run_scripts/               # Convenience runners
-    ├── run_phase_A.R
-    ├── run_phase_B.R
-    ├── run_phase_C.R
-    ├── run_phase_D.R
-    └── run_complete_pipeline.R
+```text
+R/                    analysis scripts organized by pipeline phase
+data/                 processed data outputs (large files excluded from git)
+GEE/                  Google Earth Engine scripts for covariate generation
+FIA_NEFIN_explorer/   Shiny application (self-contained)
+manuscript_figures/   publication-ready figures
+outputs/              additional model outputs
+run_scripts/          pipeline entry points
 ```
 
-## Reproducing the Analysis
+## Prerequisites
 
-To reproduce the full pipeline from raw data to results:
+- R >= 4.3
+- Required packages: dplyr, readr, sf, terra, ggplot2, patchwork, tidyr,
+  ranger, xgboost, blockCV, tidyterra, RSQLite, DBI, viridis
+- To pin package versions, run:
+
+```r
+renv::init()
+renv::snapshot()
+```
+
+## Data sources
+
+### FIA data
+
+Download state SQLite databases from the FIA DataMart:
+https://apps.fs.usda.gov/fia/datamart/datamart.html
+
+Required states: CT, MA, ME, NH, NY, RI, VT
+
+Place each database at:
+`data/raw/fia_sqlite/{STATE}/unzipped/SQLite_FIADB_{STATE}.db`
+
+### NEFIN data
+
+Contact the Northeast Forest Inventory Network for plot data.
+Source files go in: `data/raw/nefin/`
+
+Expected files:
+- `data/raw/nefin/NEFIN_plots.csv`
+- `data/raw/nefin/TREE_PLOT_DATA.csv`
+- `data/raw/nefin/TREE_RAW_DATA.csv`
+
+### Daymet V4 climate
+
+Raw climate rasters are included in `data/raw/daymet/`.
+GEE export script: `GEE/CLIMATE_01_daymet_1km_2020_2024.js`
+Resampling script: `R/05_extract_covariates/resample_daymet_climate.R`
+
+### Covariate rasters (external drive)
+
+Large raster files are stored outside the repository.
+See "External data setup" below.
+
+## External data setup
+
+Covariate rasters and the AOI shapefile live on an external drive.
+Before running any Phase D scripts, set `EXTERNAL_DATA_ROOT` in
+`R/00_config/PHASE4_config.R` to match your local path.
+
+Default:
+
+```r
+EXTERNAL_DATA_ROOT <- "D:/FIA_NEFIN/data"
+```
+
+Required directory structure:
+
+```text
+{EXTERNAL_DATA_ROOT}/
+  aoi/
+    Region.shp
+  covariates/
+    fine_10m/
+    fine_10m_preprocessed/
+    coarse_250m/
+    coarse_250m_preprocessed/
+```
+
+Fine-scale covariates (10 m):
+- `canopy_height_10m_2020_NE.tif` -- ETH Global Canopy Height 2020 (Lang et al.)
+- `Elevation10m.tif`, `Slope10m.tif`, `Aspect10m.tif` -- DEM derivatives
+- `S2_NDVI/EVI/NBR/NDWI_10m_2020_2024.tif` -- Sentinel-2 spectral indices
+- `S2_B2/B3/B4_10m_2020_2024.tif` -- Sentinel-2 visible bands
+- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` -- Daymet V4 resampled to 10 m
+
+Coarse-scale covariates (250 m):
+- `canopy_height_250m_2020_NE.tif` -- ETH Global Canopy Height 2020 aggregated
+- `elevation/slope/aspect_250m_NE.tif`
+- `MODIS_NDVI/EVI/NBR/NDWI/RED/NIR/BLUE/GREEN/SWIR1_250m_2020_2024_NE.tif`
+- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` -- Daymet V4 aggregated to 250 m
+
+Run `R/phase4_modeling/PHASE4_00_preprocess_rasters.R` to generate the
+`_preprocessed` directories from raw GEE exports.
+
+Files excluded from git (see `.gitignore`):
+- `data/raw/fia_sqlite/**/*.db` -- FIA SQLite databases
+- `data/processed/phase4_models/` -- trained model objects
+- `data/predictions/phase4/` -- prediction rasters
+- `*.tif`, `*.rds`, `*.tif.ovr`, `*.tif.aux.xml`
+
+## How to reproduce
+
+Set working directory to `FIA_NEFIN/`, then:
 
 ```r
 source("run_scripts/run_complete_pipeline_updated.R")
 ```
 
-See `run_scripts/README.md` for a description of each phase script.
-Before running, set `EXTERNAL_DATA_ROOT` in `R/00_config/PHASE4_config.R`
-to point to the directory containing the covariate rasters and AOI shapefile.
+Or run phases individually -- see `run_scripts/README.md`.
 
----
+## Shiny app
 
-## 🚀 Execution Flow
+The interactive app is in `FIA_NEFIN_explorer/`.
+Before first run or deployment:
 
-### Phase A: Process FIA
 ```r
-source("run_scripts/run_phase_A.R")
-# → data/processed/fia_complete.csv
+setwd("FIA_NEFIN_explorer")
+source("data/prep_app_data.R") # run once to build app data
+shiny::runApp()
 ```
 
-### Phase B: Process NEFIN
-```r
-source("run_scripts/run_phase_B.R")
-# → data/processed/nefin_complete.csv
-```
+## Citation
 
-### Phase C: Create Comparison Datasets
-```r
-source("run_scripts/run_phase_C.R")
-# → baseline.csv (FIA-only)
-# → augmented.csv (FIA + NEFIN)
-```
-
-### Phase D: Hex Assignment & Covariates
-```r
-source("run_scripts/run_phase_D.R")
-# → Spatial joins at all scales
-# → Covariate extraction
-```
-
-## 📋 Key Outputs
-
-| File | Description | Use |
-|------|-------------|-----|
-| `fia_complete.csv` | All FIA plots (fuzzed) | Input for comparison |
-| `nefin_complete.csv` | All NEFIN plots (true coords) | Input for comparison |
-| `baseline.csv` | FIA-only dataset | Comparison benchmark |
-| `augmented.csv` | FIA + NEFIN combined | Test dataset |
-
-## 🔍 Research Question
-
-**Does adding NEFIN's precise coordinates to the FIA network improve forest biomass estimates at different spatial scales?**
-
-Not: "Is NEFIN better than FIA?" (different networks, not comparable)
-
-## 📦 What's Included in This ZIP
-
-- Complete R/ directory with all scripts
-- Empty data/ directory structure
-- Run scripts for each phase
-- README files explaining each component
-- Example configuration
-
-## 🎓 Next Steps
-
-1. Extract this structure to your project
-2. Review the scripts
-3. Run Phase A (or skip if you have fia_complete.csv)
-4. Proceed through phases B, C, D
-
-Questions? Check the README files in each directory!
-
----
-
-## Data Sources
-
-### Large raster data (external drive — not in repo)
-
-All covariate rasters live on a separate drive. Set `EXTERNAL_DATA_ROOT` in
-`R/00_config/PHASE4_config.R` to your local path before running the pipeline.
-
-Required directory structure:
-```
-{EXTERNAL_DATA_ROOT}/
-├── aoi/
-│   └── Region.shp (+ .dbf, .prj, .shx, .cpg, .sbn, .sbx)
-└── covariates/
-    ├── fine_10m/              ← raw 10m covariates (GEE exports)
-    ├── fine_10m_preprocessed/ ← aligned/clipped (output of PHASE4_00)
-    ├── coarse_250m/           ← raw 250m covariates (GEE exports)
-    └── coarse_250m_preprocessed/ ← aligned/clipped (output of PHASE4_00)
-```
-
-Fine scale covariates (10m):
-- `canopy_height_10m_2020_NE.tif` — ETH Global Canopy Height 2020 (Lang et al.)
-- `Elevation10m.tif`, `Slope10m.tif`, `Aspect10m.tif` — 10m DEM derivatives
-- `S2_NDVI/EVI/NBR/NDWI_10m_2020_2024.tif` — Sentinel-2 spectral indices
-- `S2_B2/B3/B4_10m_2020_2024.tif` — Sentinel-2 visible bands
-- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` — Daymet V4 resampled to 10m
-- Note: S2_B8 (NIR) and S2_B11 (SWIR1) are present in raw but were excluded
-  from preprocessing and are not used in any final model.
-
-Coarse scale covariates (250m):
-- `canopy_height_250m_2020_NE.tif` — ETH Global Canopy Height 2020 aggregated
-- `elevation/slope/aspect_250m_NE.tif`
-- `MODIS_NDVI/EVI/NBR/NDWI/RED/NIR/BLUE/GREEN/SWIR1_250m_2020_2024_NE.tif`
-- `tmean.tif`, `tmin.tif`, `tmax.tif`, `ppt.tif` — Daymet V4 aggregated to 250m
-
-GEE scripts to regenerate raw covariates are in `GEE/`. Run
-`R/phase4_modeling/PHASE4_00_preprocess_rasters.R` to regenerate the
-`_preprocessed` directories from the raw inputs.
-
-### FIA data
-
-Download state SQLite databases from FIADB:
-https://apps.fs.usda.gov/fia/datamart/datamart.html
-
-Required states: CT, MA, ME, NH, NY, RI, VT
-
-Place each as: `data/raw/fia_sqlite/{STATE}/SQLite_FIADB_{STATE}.db`
-
-### NEFIN data
-
-Contact the Northeast Forest Inventory Network for plot data.
-Source files expected at:
-- `data/raw/nefin/NEFIN_plots.csv`
-- `data/raw/nefin/TREE_PLOT_DATA.csv`
-- `data/raw/nefin/TREE_RAW_DATA.csv`
-
-### Daymet V4 climate rasters
-
-Raw Daymet TIFs are included in `data/raw/daymet/` (tracked in repo).
-GEE export script: `GEE/CLIMATE_01_daymet_1km_2020_2024.js`
-Resampling script: `R/05_extract_covariates/resample_daymet_climate.R`
-
-### Files NOT in the repository
-
-The following large files are excluded via `.gitignore`:
-- All raster files (`*.tif`) including all covariate and prediction rasters
-- Model objects (`*.rds`) in `data/processed/phase4_models/`
-- FIA SQLite databases in `data/raw/fia_sqlite/`
+[Placeholder -- add thesis citation here before submission]

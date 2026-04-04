@@ -1,17 +1,17 @@
-# Phase D Part 1: Hexagon Assignment
+# R/04_assign_to_hexagons
 
-Assigns plots to hexagon grids at all scales.
+Assigns plots to hexagonal grid cells at multiple spatial scales.
 
 ## Scripts
 
-1. **01_assign_baseline.R** - Baseline plots → hexagons
-2. **02_assign_augmented.R** - Augmented plots → hexagons
+1. `01_assign_baseline.R` -- assigns baseline plots to hexagons
+2. `02_assign_augmented.R` -- assigns augmented plots to hexagons
 
-## Hex Scales
+## Hexagon scales
 
-- 100ha, 500ha, 1kha, 5kha, 10kha, 50kha, 64kha, 100kha
+100 ha, 500 ha, 1 kha, 5 kha, 10 kha, 50 kha, 64 kha, 100 kha
 
 ## Outputs
 
-- baseline_hex_assignments.csv
-- augmented_hex_assignments.csv
+- `baseline_hex_assignments.csv`
+- `augmented_hex_assignments.csv`

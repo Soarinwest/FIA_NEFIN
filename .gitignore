@@ -41,6 +41,7 @@ data/*
 
 # raster and model file types (belt-and-suspenders — also covered by data/*)
 Rplots.pdf
+*.geojson
 *.tif
 *.tif.ovr
 *.tif.aux.xml
@@ -51,3 +52,4 @@ reporting/NEFIN vs FIA Hexagon Method Impact Comparison.docx
 reporting/Summary_proj.docx
 FIA_NEFIN.Rproj
 ArcProject
+CLAUDE.md

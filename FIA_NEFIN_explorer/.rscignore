@@ -1,0 +1,6 @@
+# Excluded from shinyapps.io deployment bundle
+data/prep_app_data.R
+*.tif.ovr
+*.tif.aux.xml
+*.tif.xml
+*.tfw
