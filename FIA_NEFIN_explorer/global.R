@@ -42,29 +42,81 @@ source("R/mod_modeling.R")
 
 # Load data -------------------------------------------------------------------
 
+# Ensure ggplot2 is fully loaded before sourcing plugins
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  stop("ggplot2 package required but not installed")
+}
+
 # Core data for existing Dataset Comparison tab
-plot_data        <- readRDS("data/plot_data.rds")
-species_summary  <- readRDS("data/species_summary.rds")
-tree_data        <- readRDS("data/tree_data.rds")
+tryCatch({
+  plot_data        <- readRDS("data/plot_data.rds")
+  species_summary  <- readRDS("data/species_summary.rds")
+  tree_data        <- readRDS("data/tree_data.rds")
+}, error = function(e) {
+  stop("Failed to load core RDS files: ", conditionMessage(e))
+})
+
+# Transform species_summary column names to match expected schema
+species_summary <- species_summary |>
+  dplyr::rename(
+    species_code  = dplyr::any_of("species"),
+    fia_n_trees   = dplyr::any_of("n__FIA"),
+    nefin_n_trees = dplyr::any_of("n__NEFIN"),
+    p99_diff      = dplyr::any_of("dbh_p99_delta"),
+    p99_est       = dplyr::any_of("dbh_p99_est"),
+    p99_lo95      = dplyr::any_of("dbh_p99_lo95"),
+    p99_hi95      = dplyr::any_of("dbh_p99_hi95")
+  ) |>
+  dplyr::mutate(
+    common_name  = tools::toTitleCase(species_code),
+    p99_diff_se  = (p99_hi95 - p99_lo95) / (2 * 1.96),
+    p99_pvalue   = ifelse(p99_lo95 > 0 | p99_hi95 < 0, 0.01, 0.5),
+    p95_diff     = NA_real_,
+    max_diff     = NA_real_,
+    .keep = "all"
+  )
 
 # Spatial data for Spatial Explorer tab
-fia_plots        <- readRDS("data/fia_plots.rds")
-nefin_plots      <- readRDS("data/nefin_plots.rds")
-plot_uncertainty <- readRDS("data/plot_uncertainty.rds")
-hex_1kha         <- readRDS("data/hex_1kha.rds")
-states_sf        <- readRDS("data/states.rds")
+# Derived from unified plot_data structure
+fia_plots        <- plot_data |> dplyr::filter(dataset == "FIA")
+nefin_plots      <- plot_data |> dplyr::filter(dataset == "NEFIN")
+
+# Uncertainty data (renamed from plot_uncertainty.rds)
+uncertainty_data <- readRDS("data/uncertainty_data.rds")
+plot_uncertainty <- uncertainty_data  # Alias for backward compatibility
+
+# Hex data (all 9 scales stacked, extract 1kha for default display)
+hex_data <- readRDS("data/hex_data.rds")
+hex_1kha <- hex_data |> dplyr::filter(scale == "1kha")
+
+# State boundaries for spatial overlay
+states_sf <- tigris::states(year = 2020, progress_bar = FALSE) |>
+  sf::st_transform(4326)
 
 # Scale analysis data
-scale_metrics      <- readRDS("data/scale_metrics.rds")
-bootstrap_variance <- readRDS("data/bootstrap_variance.rds")
+scale_metrics <- readRDS("data/scale_metrics.rds")
 
-# Modeling results data
-cv_results       <- readRDS("data/cv_results.rds")
-fold_results     <- readRDS("data/fold_results.rds")
-test_predictions <- readRDS("data/test_predictions.rds")
-var_importance   <- readRDS("data/var_importance.rds")
-fuzzing_sig      <- readRDS("data/fuzzing_significance.rds")
-fuzzing_rmse     <- readRDS("data/fuzzing_rmse.rds")
+# Bootstrap variance may be bundled in scale_metrics; provide gracefully
+bootstrap_variance <- if (
+  "pct_bootstrap_var" %in% names(scale_metrics) ||
+  "bootstrap_var" %in% names(scale_metrics)
+) {
+  scale_metrics |>
+    dplyr::select(scale, dplyr::any_of(
+      c("pct_bootstrap_var", "bootstrap_var", "bootstrap_variance")
+    ))
+} else {
+  NULL  # Modules handle NULL gracefully
+}
+
+# Modeling results data (loaded as list from single RDS file)
+cv_results_list  <- readRDS("data/cv_results.rds")
+cv_results       <- if (is.null(cv_results_list$summary)) data.frame() else cv_results_list$summary
+fold_results     <- cv_results_list$folds
+test_predictions <- cv_results_list$test_preds
+var_importance   <- cv_results_list$importance
+fuzzing_sig      <- cv_results_list$significance
+fuzzing_rmse     <- cv_results_list$fuzzing
 
 # Global variables ------------------------------------------------------------
 
@@ -78,10 +130,9 @@ DATASET_COLORS <- c(
 # State list for filter dropdown
 STATE_LIST <- c("ME", "NH", "VT", "MA", "CT", "RI", "NY")
 
-# Path to source GeoJSON hex files (for lazy loading in mod_spatial Sub-tab B)
-# normalizePath resolves relative to the app working directory (FIA_NEFIN_explorer/)
+# Path to hex GeoJSON files (self-contained in app)
 HEX_SRC_PATH <- normalizePath(
-  "../data/processed/hex_geojson_with_stats",
+  "data/hex_geojsons",
   mustWork = FALSE
 )
 

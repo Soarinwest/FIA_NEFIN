@@ -2,32 +2,37 @@
 # Custom ggplot2 Theme and Color Palettes
 # ============================================================================
 
+# Ensure ggplot2 is loaded
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  stop("ggplot2 package is required but not installed")
+}
+
 # Custom theme for all plots -------------------------------------------------
 theme_fia_nefin <- function(base_size = 14) {
-  theme_minimal(base_size = base_size) +
-    theme(
+  ggplot2::theme_minimal(base_size = base_size) +
+    ggplot2::theme(
       # Text
-      plot.title = element_text(face = "bold", size = base_size + 2),
-      plot.subtitle = element_text(color = "gray40", size = base_size - 1),
-      axis.title = element_text(face = "bold"),
-      legend.title = element_text(face = "bold"),
-      
+      plot.title = ggplot2::element_text(face = "bold", size = base_size + 2),
+      plot.subtitle = ggplot2::element_text(color = "gray40", size = base_size - 1),
+      axis.title = ggplot2::element_text(face = "bold"),
+      legend.title = ggplot2::element_text(face = "bold"),
+
       # Grid
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "gray90", linewidth = 0.3),
-      
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major = ggplot2::element_line(color = "gray90", linewidth = 0.3),
+
       # Legend
       legend.position = "top",
       legend.justification = "left",
-      
+
       # Background
-      plot.background = element_rect(fill = "white", color = NA),
-      panel.background = element_rect(fill = "white", color = NA)
+      plot.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA)
     )
 }
 
 # Set as default theme
-theme_set(theme_fia_nefin())
+ggplot2::theme_set(theme_fia_nefin())
 
 # Color scale functions -------------------------------------------------------
 
