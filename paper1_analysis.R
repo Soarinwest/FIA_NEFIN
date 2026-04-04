@@ -39,33 +39,33 @@ cat("── Fix 1: Table A3 with complete biomass stats ────────
 
 nefin_bio_stats <- nefin %>%
   summarise(
-    n              = n(),
-    mean_biomass   = round(mean(biomass,   na.rm = TRUE), 1),
+    n = n(),
+    mean_biomass= round(mean(biomass,   na.rm = TRUE), 1),
     median_biomass = round(median(biomass, na.rm = TRUE), 1),
-    sd_biomass     = round(sd(biomass,     na.rm = TRUE), 1),
-    p95_biomass    = round(quantile(biomass, 0.95, na.rm = TRUE), 1),
-    max_biomass    = round(max(biomass,    na.rm = TRUE), 1)
+    sd_biomass= round(sd(biomass,     na.rm = TRUE), 1),
+    p95_biomass = round(quantile(biomass, 0.95, na.rm = TRUE), 1),
+    max_biomass = round(max(biomass,    na.rm = TRUE), 1)
   ) %>%
   mutate(dataset = "NEFIN",
-         mean_ndvi  = round(sum_stats$ndvi_s2_mean[sum_stats$dataset == "NEFIN"], 3),
+         mean_ndvi= round(sum_stats$ndvi_s2_mean[sum_stats$dataset == "NEFIN"], 3),
          mean_tmean = round(sum_stats$tmean_mean[sum_stats$dataset == "NEFIN"],   1),
-         mean_ppt   = round(sum_stats$ppt_mean[sum_stats$dataset == "NEFIN"],     1))
+         mean_ppt = round(sum_stats$ppt_mean[sum_stats$dataset == "NEFIN"],     1))
 
 fia_bio_stats <- fia %>%
   summarise(
-    n              = n(),
-    mean_biomass   = round(mean(biomass,             na.rm = TRUE), 1),
+    n = n(),
+    mean_biomass= round(mean(biomass,             na.rm = TRUE), 1),
     median_biomass = round(median(biomass,           na.rm = TRUE), 1),
-    sd_biomass     = round(sd(biomass,               na.rm = TRUE), 1),
-    p95_biomass    = round(quantile(biomass, 0.95,   na.rm = TRUE), 1),
-    max_biomass    = round(max(biomass,              na.rm = TRUE), 1)
+    sd_biomass= round(sd(biomass,               na.rm = TRUE), 1),
+    p95_biomass = round(quantile(biomass, 0.95,   na.rm = TRUE), 1),
+    max_biomass = round(max(biomass,              na.rm = TRUE), 1)
   ) %>%
   mutate(
-    dataset    = "FIA",
+    dataset = "FIA",
     # NDVI/climate: no per-plot columns in fia_complete.csv — use pre-computed means
-    mean_ndvi  = round(sum_stats$ndvi_s2_mean[sum_stats$dataset == "FIA"], 3),
+    mean_ndvi = round(sum_stats$ndvi_s2_mean[sum_stats$dataset == "FIA"], 3),
     mean_tmean = round(sum_stats$tmean_mean[sum_stats$dataset == "FIA"],   1),
-    mean_ppt   = round(sum_stats$ppt_mean[sum_stats$dataset == "FIA"],     1)
+    mean_ppt= round(sum_stats$ppt_mean[sum_stats$dataset == "FIA"],     1)
   )
 # Verified values (fia_complete.csv, n=7345):
 #   median=119.1, SD=76.2, P95=265.8, max=483.9 Mg/ha
@@ -123,13 +123,13 @@ cat("── Fix 2: Table C3 corrected pivot ────────────
 table_C3 <- plot_quant %>%
   # Rename metrics to readable labels
   mutate(metric = recode(metric,
-                         "max_dbh"        = "Plot max DBH (cm)",
-                         "p95_dbh"        = "Plot P95 DBH (cm)",
-                         "pct_ba_large"   = "% basal area in large trees",
+                         "max_dbh"= "Plot max DBH (cm)",
+                         "p95_dbh"= "Plot P95 DBH (cm)",
+                         "pct_ba_large" = "% basal area in large trees",
                          "pct_large_trees" = "% stems that are large trees",
-                         "qmd_cm"         = "Quadratic mean diameter (cm)"
+                         "qmd_cm" = "Quadratic mean diameter (cm)"
   )) %>%
-  select(-n) %>%                             # drop n — it differs by dataset, breaks wide join
+  select(-n) %>% # drop n — it differs by dataset, breaks wide join
   pivot_wider(
     names_from  = dataset,
     values_from = c(q50, q90, q95, q99),
@@ -167,61 +167,61 @@ cat("── Fix 3: Fig D1 with common names ────────────
 common_name_lookup <- tribble(
   ~species,                    ~common_name,
   # ── NEFIN advantage species ──────────────────────────────────────────────
-  "carya cordiformis",         "Bitternut hickory",
-  "acer platanoides",          "Norway maple",
-  "liriodendron tulipifera",   "Tulip poplar",
-  "pseudotsuga menziesii",     "Douglas-fir",
-  "pinus sylvestris",          "Scots pine",
-  "betula nigra",              "River birch",
-  "carya ovata",               "Shagbark hickory",
-  "picea rubens",              "Red spruce",
-  "fraxinus pennsylvanica",    "Green ash",
-  "populus tremuloides",       "Quaking aspen",
-  "tilia americana",           "American basswood",
-  "picea mariana",             "Black spruce",
-  "tsuga canadensis",          "Eastern hemlock",
-  "betula alleghaniensis",     "Yellow birch",
-  "abies balsamea",            "Balsam fir",
-  "betula populifolia",        "Gray birch",
-  "betula papyrifera",         "Paper birch",
-  "fraxinus americana",        "White ash",
-  "fagus grandifolia",         "American beech",
-  "acer saccharum",            "Sugar maple",
+  "carya cordiformis", "Bitternut hickory",
+  "acer platanoides", "Norway maple",
+  "liriodendron tulipifera", "Tulip poplar",
+  "pseudotsuga menziesii", "Douglas-fir",
+  "pinus sylvestris", "Scots pine",
+  "betula nigra", "River birch",
+  "carya ovata", "Shagbark hickory",
+  "picea rubens", "Red spruce",
+  "fraxinus pennsylvanica", "Green ash",
+  "populus tremuloides","Quaking aspen",
+  "tilia americana", "American basswood",
+  "picea mariana","Black spruce",
+  "tsuga canadensis","Eastern hemlock",
+  "betula alleghaniensis","Yellow birch",
+  "abies balsamea","Balsam fir",
+  "betula populifolia","Gray birch",
+  "betula papyrifera","Paper birch",
+  "fraxinus americana","White ash",
+  "fagus grandifolia", "American beech",
+  "acer saccharum","Sugar maple",
   # ── FIA advantage species ────────────────────────────────────────────────
-  "castanea dentata",          "American chestnut",
-  "populus deltoides",         "Eastern cottonwood",
-  "quercus bicolor",           "Swamp white oak",
-  "quercus alba",              "White oak",
-  "quercus velutina",          "Black oak",
-  "ailanthus altissima",       "Tree-of-heaven",
-  "sassafras albidum",         "Sassafras",
-  "sorbus americana",          "American mountain-ash",
-  "ostrya virginiana",         "Hop hornbeam",
-  "pinus rigida",              "Pitch pine",
-  "quercus coccinea",          "Scarlet oak",
-  "ulmus americana",           "American elm",
-  "quercus rubra",             "Northern red oak",
-  "juniperus virginiana",      "Eastern red cedar",
-  "pinus strobus",             "Eastern white pine",
+  "castanea dentata","American chestnut",
+  "populus deltoides","Eastern cottonwood",
+  "quercus bicolor","Swamp white oak",
+  "quercus alba", "White oak",
+  "quercus velutina", "Black oak",
+  "ailanthus altissima", "Tree-of-heaven",
+  "sassafras albidum", "Sassafras",
+  "sorbus americana", "American mountain-ash",
+  "ostrya virginiana","Hop hornbeam",
+  "pinus rigida","Pitch pine",
+  "quercus coccinea","Scarlet oak",
+  "ulmus americana", "American elm",
+  "quercus rubra", "Northern red oak",
+  "juniperus virginiana", "Eastern red cedar",
+  "pinus strobus", "Eastern white pine",
   # ── Additional species ───────────────────────────────────────────────────
-  "larix laricina",            "Tamarack",
-  "populus grandidentata",     "Bigtooth aspen",
-  "nyssa sylvatica",           "Black tupelo",
-  "thuja occidentalis",        "Northern white cedar",
-  "acer rubrum",               "Red maple",
-  "acer pensylvanicum",        "Striped maple",
-  "pinus banksiana",           "Jack pine",
-  "prunus serotina",           "Black cherry",
-  "carya glabra",              "Pignut hickory",
-  "juglans nigra",             "Black walnut",
-  "picea glauca",              "White spruce",
-  "chamaecyparis thyoides",    "Atlantic white cedar",
-  "fraxinus nigra",            "Black ash",
-  "juglans cinerea",           "Butternut",
-  "betula lenta",              "Sweet birch",
-  "prunus pensylvanica",       "Pin cherry",
-  "robinia pseudoacacia",      "Black locust",
-  "picea abies",               "Norway spruce"
+  "larix laricina","Tamarack",
+  "populus grandidentata","Bigtooth aspen",
+  "nyssa sylvatica","Black tupelo",
+  "thuja occidentalis","Northern white cedar",
+  "acer rubrum", "Red maple",
+  "acer pensylvanicum","Striped maple",
+  "pinus banksiana","Jack pine",
+  "prunus serotina","Black cherry",
+  "carya glabra", "Pignut hickory",
+  "juglans nigra", "Black walnut",
+  "picea glauca", "White spruce",
+  "chamaecyparis thyoides","Atlantic white cedar",
+  "fraxinus nigra","Black ash",
+  "juglans cinerea","Butternut",
+  "betula lenta", "Sweet birch",
+  "prunus pensylvanica","Pin cherry",
+  "robinia pseudoacacia","Black locust",
+  "picea abies", "Norway spruce"
 )
 
 # Build species label: "Common name\n(Latin name)" for figure
@@ -233,10 +233,10 @@ sp_plot_data <- sp_summary %>%
                           tools::toTitleCase(species),
                           common_name),
     # Label for plot: common name on top, italic latin below
-    label        = paste0(common_name, "\n(", species, ")"),
-    label_short  = common_name,          # short version for crowded plots
-    direction    = ifelse(dbh_p99_delta > 0, "NEFIN advantage", "FIA advantage"),
-    sig          = !(dbh_p99_lo95 < 0 & dbh_p99_hi95 > 0)
+    label = paste0(common_name, "\n(", species, ")"),
+    label_short = common_name,          # short version for crowded plots
+    direction = ifelse(dbh_p99_delta > 0, "NEFIN advantage", "FIA advantage"),
+    sig = !(dbh_p99_lo95 < 0 & dbh_p99_hi95 > 0)
   ) %>%
   arrange(desc(abs(dbh_p99_delta))) %>%
   slice_head(n = 20)
@@ -244,9 +244,9 @@ sp_plot_data <- sp_summary %>%
 # Verify all top-20 got common names
 missing <- sp_plot_data %>% filter(is.na(common_name) | common_name == "")
 if (nrow(missing) > 0) {
-  cat("  ⚠ Missing common names for:", paste(missing$species, collapse = ", "), "\n")
+  cat("  Missing common names for:", paste(missing$species, collapse = ", "), "\n")
 } else {
-  cat("  ✓ All 20 species have common names\n")
+  cat("  all 20 species have common names\n")
 }
 
 # ── Figure D1 (fixed) ────────────────────────────────────────────────────────
@@ -263,8 +263,8 @@ sp_fia   <- sp_plot_data %>% filter(direction == "FIA advantage")
 fig_D1_fixed <- ggplot(
   sp_plot_data,
   aes(
-    x     = reorder(label_short, dbh_p99_delta),
-    y     = dbh_p99_delta,
+    x = reorder(label_short, dbh_p99_delta),
+    y = dbh_p99_delta,
     color = direction,
     size  = sig
   )
@@ -280,20 +280,20 @@ fig_D1_fixed <- ggplot(
   geom_text(
     data     = sp_nefin,
     aes(x = reorder(label_short, dbh_p99_delta), y = NEFIN_label_x, label = species),
-    hjust    = 0,
-    size     = 3.5,
+    hjust = 0,
+    size= 3.5,
     fontface = "italic",
-    color    = "gray15",
+    color = "gray15",
     inherit.aes = FALSE
   ) +
   # FIA-advantage latin labels: fixed left position, right-aligned
   geom_text(
-    data     = sp_fia,
+    data= sp_fia,
     aes(x = reorder(label_short, dbh_p99_delta), y = FIA_label_x, label = species),
-    hjust    = 0,
-    size     = 3.5,
+    hjust = 0,
+    size  = 3.5,
     fontface = "italic",
-    color    = "gray15",
+    color = "gray15",
     inherit.aes = FALSE
   ) +
   scale_color_manual(
@@ -303,33 +303,33 @@ fig_D1_fixed <- ggplot(
   scale_size_manual(
     values = c("TRUE" = 3.2, "FALSE" = 1.6),
     labels = c("TRUE" = "Significant (95% CI)", "FALSE" = "Not significant"),
-    name   = ""
+    name = ""
   ) +
   # Expand x limits so fixed-position labels aren't clipped
   scale_y_continuous(limits = c(-55, 55), breaks = seq(-40, 40, 20)) +
   coord_flip() +
   labs(
-    title    = "Species P99 DBH difference: NEFIN − FIA (cm)",
+    title = "Species P99 DBH difference: NEFIN − FIA (cm)",
     subtitle = "Error bars = 95% bootstrap CI. Italic = Latin name.",
-    x        = NULL,
-    y        = "P99 DBH difference (cm)  [NEFIN − FIA]"
+    x = NULL,
+    y  = "P99 DBH difference (cm)  [NEFIN − FIA]"
   ) +
   theme_minimal(base_size = 12) +
   theme(
     plot.title = element_text(size = 15, face = "bold"),
     legend.position = "bottom",
-    plot.subtitle   = element_text(color = "gray10", size = 11),
-    axis.text.y     = element_text(size = 13)
+    plot.subtitle = element_text(color = "gray10", size = 11),
+    axis.text.y = element_text(size = 13)
   )
 fig_D1_fixed 
 ggsave(
   file.path(out_dir, "figD1_species_p99_differences_fixed.png"),
   fig_D1_fixed,
-  width  = 10,
+  width = 10,
   height = 8,
-  dpi    = 300
+  dpi = 300
 )
-cat("  ✓ Saved figD1_species_p99_differences_fixed.png\n\n")
+cat("  Saved figD1_species_p99_differences_fixed.png\n\n")
 
 # Also print a clean lookup table for reference
 cat("Common name lookup (for manuscript Table 5 / species text):\n")
@@ -341,7 +341,7 @@ print(
   n = 20
 )
 
-cat("\n✓ All three fixes applied. Outputs in:", out_dir, "\n")
+cat("\n All three fixes applied. Outputs in:", out_dir, "\n")
 # =============================================================================
 # fig_three_bias_panels.R
 # Three dimensions of NEFIN sampling bias relative to FIA
@@ -386,14 +386,14 @@ alpha_fill <- 0.35
 theme_pub <- function() {
   theme_classic(base_size = 11) +
     theme(
-      axis.title        = element_text(size = 10),
-      axis.text         = element_text(size = 9),
-      legend.text       = element_text(size = 9),
-      legend.title      = element_blank(),
+      axis.title  = element_text(size = 10),
+      axis.text = element_text(size = 9),
+      legend.text = element_text(size = 9),
+      legend.title = element_blank(),
       legend.background = element_blank(),
-      legend.key        = element_blank(),
-      plot.title        = element_text(size = 11, face = "bold"),
-      panel.grid        = element_blank()
+      legend.key = element_blank(),
+      plot.title = element_text(size = 11, face = "bold"),
+      panel.grid = element_blank()
     )
 }
 
@@ -530,7 +530,7 @@ pC <- ggplot(lat_data, aes(x = lat, fill = dataset, colour = dataset)) +
   theme_pub() +
   theme(
     legend.position = c(0.18, 0.82),
-    plot.margin     = margin(5, 40, 5, 5)   # extra right margin for annotation
+    plot.margin = margin(5, 40, 5, 5)   # extra right margin for annotation
   )
 
 # =============================================================================

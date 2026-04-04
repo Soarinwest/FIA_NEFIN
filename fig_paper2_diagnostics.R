@@ -17,6 +17,7 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(randomForest)
 library(readr)
 library(ranger)   # for variable importance extraction
 library(pdp)      # for partial dependence (install if needed: install.packages("pdp"))
@@ -24,7 +25,7 @@ library(pdp)      # for partial dependence (install if needed: install.packages(
 # -- Colour palette (matches PHASE4_config.R) ---------------------------------
 SCENARIO_COLORS <- c(
   "FIA Only"  = "#d62728",
-  "Pooled"    = "#2ca02c",
+  "Pooled" = "#2ca02c",
   "NEFIN Only" = "#1f77b4"
 )
 SCENARIO_ORDER <- c("FIA Only", "Pooled", "NEFIN Only")
@@ -33,18 +34,18 @@ SCENARIO_ORDER <- c("FIA Only", "Pooled", "NEFIN Only")
 theme_paper <- function() {
   theme_bw(base_size = 11) +
     theme(
-      panel.grid.minor    = element_blank(),
-      panel.grid.major    = element_line(colour = "grey92", linewidth = 0.35),
-      strip.background    = element_rect(fill = "grey96", colour = "grey70"),
-      strip.text          = element_text(size = 10, face = "bold"),
-      legend.position     = "bottom",
-      legend.key.size     = unit(0.9, "lines"),
-      legend.title        = element_text(size = 9),
-      legend.text         = element_text(size = 9),
-      axis.title          = element_text(size = 10),
-      plot.title          = element_text(size = 12, face = "bold", margin =),
-      plot.subtitle       = element_text(size = 9, colour = "grey40", margin =),
-      plot.caption        = element_text(size = 8, colour = "grey50", hjust = 0)
+      panel.grid.minor = element_blank(),
+      panel.grid.major= element_line(colour = "grey92", linewidth = 0.35),
+      strip.background= element_rect(fill = "grey96", colour = "grey70"),
+      strip.text= element_text(size = 10, face = "bold"),
+      legend.position = "bottom",
+      legend.key.size = unit(0.9, "lines"),
+      legend.title= element_text(size = 9),
+      legend.text = element_text(size = 9),
+      axis.title= element_text(size = 10),
+      plot.title  = element_text(size = 12, face = "bold", margin =),
+      plot.subtitle = element_text(size = 9, colour = "grey40", margin =),
+      plot.caption = element_text(size = 8, colour = "grey50", hjust = 0)
     )
 }
 
@@ -85,7 +86,7 @@ PATHS <- list(
 cat("\n-- Figure S1: Variable importance ------------------------------\n")
 
 IMP_CSV <- "data/processed/phase4_diagnostics/variable_importance.csv"
-dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # -- Colours matching PHASE4_config.R -----------------------------------------
 SCENARIO_COLORS <- c(
@@ -108,40 +109,40 @@ scenario_map <- c(
 # Human-readable predictor labels
 var_map <- c(
   canopy_height_10m = "Canopy height",
-  ndvi_s2_10m       = "NDVI (S2)",
-  evi_s2_10m        = "EVI (S2)",
-  nbr_s2_10m        = "NBR (S2)",
-  ndwi_s2_10m       = "NDWI (S2)",
-  red_s2_10m        = "Red (B4)",
-  nir_s2_10m        = "NIR (B8)",
-  green_s2_10m      = "Green (B3)",
-  blue_s2_10m       = "Blue (B2)",
-  elevation_10m     = "Elevation",
-  slope_10m         = "Slope",
-  aspect_10m        = "Aspect",
-  tmean_10m         = "Mean temp.",
-  tmin_10m          = "Min. temp.",
-  tmax_10m          = "Max. temp.",
-  ppt_10m           = "Precipitation"
+  ndvi_s2_10m = "NDVI (S2)",
+  evi_s2_10m= "EVI (S2)",
+  nbr_s2_10m= "NBR (S2)",
+  ndwi_s2_10m = "NDWI (S2)",
+  red_s2_10m = "Red (B4)",
+  nir_s2_10m = "NIR (B8)",
+  green_s2_10m = "Green (B3)",
+  blue_s2_10m = "Blue (B2)",
+  elevation_10m = "Elevation",
+  slope_10m = "Slope",
+  aspect_10m = "Aspect",
+  tmean_10m = "Mean temp.",
+  tmin_10m = "Min. temp.",
+  tmax_10m = "Max. temp.",
+  ppt_10m = "Precipitation"
 )
 
 # Predictor groups for colour-coding the y-axis labels
 group_map <- c(
   "Canopy height" = "Structure",
-  "NDVI (S2)"     = "Spectral",
-  "EVI (S2)"      = "Spectral",
-  "NBR (S2)"      = "Spectral",
-  "NDWI (S2)"     = "Spectral",
-  "Red (B4)"      = "Spectral",
-  "NIR (B8)"      = "Spectral",
-  "Green (B3)"    = "Spectral",
-  "Blue (B2)"     = "Spectral",
-  "Elevation"     = "Topographic",
-  "Slope"         = "Topographic",
-  "Aspect"        = "Topographic",
-  "Mean temp."    = "Climate",
-  "Min. temp."    = "Climate",
-  "Max. temp."    = "Climate",
+  "NDVI (S2)" = "Spectral",
+  "EVI (S2)" = "Spectral",
+  "NBR (S2)" = "Spectral",
+  "NDWI (S2)" = "Spectral",
+  "Red (B4)" = "Spectral",
+  "NIR (B8)" = "Spectral",
+  "Green (B3)" = "Spectral",
+  "Blue (B2)" = "Spectral",
+  "Elevation" = "Topographic",
+  "Slope" = "Topographic",
+  "Aspect" = "Topographic",
+  "Mean temp." = "Climate",
+  "Min. temp." = "Climate",
+  "Max. temp." = "Climate",
   "Precipitation" = "Climate"
 )
 
@@ -172,7 +173,7 @@ pred_order <- rf_10m %>%
 
 rf_10m <- rf_10m %>%
   mutate(var_label = factor(var_label, levels = pred_order),
-         group     = factor(group, levels = c("Structure","Spectral","Topographic","Climate")))
+         group= factor(group, levels = c("Structure","Spectral","Topographic","Climate")))
 
 # -- Figure S1 -- dot plot ------------------------------------------------------
 fig_S1 <- ggplot(rf_10m,
@@ -184,8 +185,8 @@ fig_S1 <- ggplot(rf_10m,
   
   # Points (dot plot without stems)
   geom_point(
-    size     = 2.8,
-    alpha    = 0.92,
+    size= 2.8,
+    alpha = 0.92,
     position = position_dodge(width = 0.7)
   ) +
   
@@ -208,32 +209,33 @@ fig_S1 <- ggplot(rf_10m,
   scale_y_discrete(name = NULL) +
   
   labs(
-    title    = "Fig. S1.  Variable importance -- fine-scale (10 m) RF models",
-    subtitle = "IncNodePurity normalised 0-100 within each model. All scenarios use identical predictor sets.",
-    caption  = paste0(
-      "IncNodePurity. Rankings consistent across all three scenarios: canopy height dominates each. ",
-      "Performance differences reflect training data distribution, not predictor selection. ",
-      "Secondary shift: FIA weights precipitation (88%); NEFIN does not (25%), reflecting narrower environmental coverage."
-    )
+    title = "Fig. S1.  Variable importance -- fine-scale (10 m) RF models",
+    subtitle = "IncNodePurity normalised 0-100 within each model. All scenarios use identical predictor sets."
+    #,
+   #caption  = paste0(
+    #  "IncNodePurity. Rankings consistent across all three scenarios: canopy height dominates each. ",
+      #"Performance differences reflect training data distribution, not predictor selection. ",
+     # "Secondary shift: FIA weights precipitation (88%); NEFIN does not (25%), reflecting narrower environmental coverage."
+    #)
   ) +
   
   theme_bw(base_size = 11) +
   theme(
     panel.grid.major.y = element_blank(),
     panel.grid.major.x = element_blank(),
-    panel.grid.minor   = element_blank(),
-    panel.border       = element_rect(colour = "grey70"),
-    strip.background   = element_rect(fill = "grey96", colour = "grey70"),
-    axis.text.y        = element_text(size = 9),
-    axis.title.x       = element_text(size = 10),
-    legend.position    = "bottom",
-    legend.key.size    = unit(0.9, "lines"),
-    legend.title       = element_text(size = 9),
-    legend.text        = element_text(size = 9),
-    plot.title         = element_text(size = 12, face = "bold", margin =),
-    plot.subtitle      = element_text(size = 8.5, colour = "grey35",
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "grey70"),
+    strip.background= element_rect(fill = "grey96", colour = "grey70"),
+    axis.text.y = element_text(size = 9),
+    axis.title.x = element_text(size = 10),
+    legend.position = "bottom",
+    legend.key.size = unit(0.9, "lines"),
+    legend.title= element_text(size = 9),
+    legend.text = element_text(size = 9),
+    plot.title = element_text(size = 12, face = "bold", margin =),
+    plot.subtitle = element_text(size = 8.5, colour = "grey35",
                                       margin =, lineheight = 1.3),
-    plot.caption       = element_text(size = 8, colour = "grey45", hjust = 0,
+    plot.caption = element_text(size = 8, colour = "grey45", hjust = 0,
                                       margin =, lineheight = 1.3)
   )
 
@@ -253,37 +255,37 @@ cat(sprintf("  OK %s\n", out_path_s1))
 
 # -- Bonus: coarse-scale (250m) version for supplement -------------------------
 scenario_map_250 <- c(
-  "Scale (250m) Fia Only"   = "FIA Only",
+  "Scale (250m) Fia Only" = "FIA Only",
   "Scale (250m) Nefin Only" = "NEFIN Only",
-  "Scale (250m) Pooled"     = "Pooled"
+  "Scale (250m) Pooled" = "Pooled"
 )
 
 var_map_250 <- c(
   canopy_height_250m = "Canopy height",
-  ndvi_modis_250m    = "NDVI (MODIS)",
-  evi_modis_250m     = "EVI (MODIS)",
-  nbr_modis_250m     = "NBR (MODIS)",
-  ndwi_modis_250m    = "NDWI (MODIS)",
-  red_modis_250m     = "Red (MODIS B1)",
-  nir_modis_250m     = "NIR (MODIS B2)",
-  blue_modis_250m    = "Blue (MODIS)",
-  green_modis_250m   = "Green (MODIS)",
-  swir1_modis_250m   = "SWIR-1 (MODIS)",
-  elevation_250m     = "Elevation",
-  slope_250m         = "Slope",
-  aspect_250m        = "Aspect",
-  tmean_250m         = "Mean temp.",
-  tmin_250m          = "Min. temp.",
-  tmax_250m          = "Max. temp.",
-  ppt_250m           = "Precipitation"
+  ndvi_modis_250m = "NDVI (MODIS)",
+  evi_modis_250m= "EVI (MODIS)",
+  nbr_modis_250m= "NBR (MODIS)",
+  ndwi_modis_250m = "NDWI (MODIS)",
+  red_modis_250m = "Red (MODIS B1)",
+  nir_modis_250m = "NIR (MODIS B2)",
+  blue_modis_250m = "Blue (MODIS)",
+  green_modis_250m = "Green (MODIS)",
+  swir1_modis_250m = "SWIR-1 (MODIS)",
+  elevation_250m  = "Elevation",
+  slope_250m = "Slope",
+  aspect_250m = "Aspect",
+  tmean_250m = "Mean temp.",
+  tmin_250m = "Min. temp.",
+  tmax_250m = "Max. temp.",
+  ppt_250m = "Precipitation"
 )
 
 rf_250m <- imp_raw %>%
   filter(scale == "Coarse (250m)", model_type == "Random Forest") %>%
   mutate(
-    scenario  = recode(scenario, !!!scenario_map_250),
+    scenario = recode(scenario, !!!scenario_map_250),
     var_label = recode(variable, !!!var_map_250),
-    group     = case_when(
+    group = case_when(
       grepl("Canopy", var_label) ~ "Structure",
       grepl("temp|Precip", var_label) ~ "Climate",
       grepl("Elev|Slope|Aspect", var_label) ~ "Topographic",
@@ -400,29 +402,30 @@ fig_S1c <- ggplot(both_algorithms,
   ) +
   scale_y_discrete(name = NULL) +
   labs(
-    title    = "Fig. S1c.  RF vs XGBoost importance -- fine-scale (10 m), all training scenarios",
-    subtitle = paste0("Spearman rank correlation between algorithms  |  ", rho_str),
-    caption  = paste0(
-      "Canopy height (100%) and precipitation rank identically at the top for both algorithms ",
-      "across all three training scenarios, including NEFIN Only (true GPS coordinates). ",
-      "NEFIN Only shows the highest RF-XGBoost agreement (rho = 0.89) and perfect top-3 overlap. ",
-      "This consistency rules out both algorithm choice and coordinate precision ",
-      "as explanations for performance differences between training scenarios."
-    )
+    title = "Fig. S1c.  RF vs XGBoost importance -- fine-scale (10 m), all training scenarios",
+    subtitle = paste0("Spearman rank correlation between algorithms  |  ", rho_str)
+    #,
+    #caption  = paste0(
+      #"Canopy height (100%) and precipitation rank identically at the top for both algorithms ",
+      #"across all three training scenarios, including NEFIN Only (true GPS coordinates). ",
+     #"NEFIN Only shows the highest RF-XGBoost agreement (rho = 0.89) and perfect top-3 overlap. ",
+     # "This consistency rules out both algorithm choice and coordinate precision ",
+     # "as explanations for performance differences between training scenarios."
+    #)
   ) +
   theme_bw(base_size = 11) +
   theme(
-    panel.grid.major   = element_blank(),
-    panel.grid.minor   = element_blank(),
-    panel.border       = element_rect(colour = "grey70"),
-    strip.background   = element_rect(fill = "grey96", colour = "grey70"),
-    strip.text         = element_text(size = 10, face = "bold"),
-    axis.text.y        = element_text(size = 8.5),
-    axis.text.x        = element_text(size = 8),
-    legend.position    = "bottom",
-    plot.title         = element_text(size = 12, face = "bold"),
-    plot.subtitle      = element_text(size = 8.5, colour = "grey35"),
-    plot.caption       = element_text(size = 8, colour = "grey45", hjust = 0)
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "grey70"),
+    strip.background = element_rect(fill = "grey96", colour = "grey70"),
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.y = element_text(size = 8.5),
+    axis.text.x = element_text(size = 8),
+    legend.position = "bottom",
+    plot.title = element_text(size = 12, face = "bold"),
+    plot.subtitle = element_text(size = 8.5, colour = "grey35"),
+    plot.caption = element_text(size = 8, colour = "grey45", hjust = 0)
   )
 
 out_path_s1c <- file.path(out_dir, "fig_S1c_rf_vs_xgb_importance.png")
@@ -494,15 +497,16 @@ fig_S2 <- ggplot(preds_10m, aes(x = observed, y = residual)) +
   ) +
   facet_wrap(~ scenario, ncol = 3) +
   labs(
-    title   = "Fig. S2. Model residuals vs observed biomass -- fine-scale (10 m) RF",
-    subtitle= "Positive residuals = overestimation. Dashed line = zero bias. Loess smooth +/- 95% CI.",
-    caption = paste0(
-      "Test set n = 140 NEFIN plots (35 per biomass quartile). ",
-      "Near-linear negative residual trend reflects RF compression toward the training mean: ",
-      "FIA underestimates high-biomass stands (FIA training mean ~120 Mg/ha); ",
-      "NEFIN overestimates low-biomass stands (NEFIN training mean ~192 Mg/ha). ",
-      "This is training distribution bias, not model noise. Pooled model balances both biases."
-    )
+    title = "Fig. S2. Model residuals vs observed biomass -- fine-scale (10 m) RF",
+    subtitle= "Positive residuals = overestimation. Dashed line = zero bias. Loess smooth +/- 95% CI."
+    #,
+    #caption = paste0(
+    #  "Test set n = 140 NEFIN plots (35 per biomass quartile). ",
+     # "Near-linear negative residual trend reflects RF compression toward the training mean: ",
+     # "FIA underestimates high-biomass stands (FIA training mean ~120 Mg/ha); ",
+     # "NEFIN overestimates low-biomass stands (NEFIN training mean ~192 Mg/ha). ",
+     # "This is training distribution bias, not model noise. Pooled model balances both biases."
+    #)
   ) +
   theme_paper() +
   theme(legend.position = "none")
@@ -516,7 +520,7 @@ cat("  OK fig_S2_residuals_vs_observed.png\n")
 # Also produce the combined (both scales) version for supplement
 preds_both <- test_preds %>%
   mutate(
-    scenario   = factor(scenario, levels = SCENARIO_ORDER),
+    scenario = factor(scenario, levels = SCENARIO_ORDER),
     scale_label = ifelse(scale == "10m", "Fine scale (10 m)", "Coarse scale (250 m)")
   )
 
@@ -530,7 +534,7 @@ fig_S2b <- ggplot(preds_both, aes(x = observed, y = residual)) +
   scale_y_continuous(name = "Residual (Mg/ha)", breaks = seq(-500, 300, 100)) +
   facet_grid(scale_label ~ scenario) +
   labs(
-    title   = "Fig. S2b. Model residuals vs observed biomass -- both scales",
+    title = "Fig. S2b. Model residuals vs observed biomass -- both scales",
     caption = "Loess smooth (no CI). Test set n = 140 per scale x scenario combination."
   ) +
   theme_paper() +
@@ -565,7 +569,7 @@ models_available <- all(file.exists(
 
 if (models_available) {
   cat("  Loading RF models...\n")
-  rf_fia    <- unwrap_model(readRDS(PATHS$model_fia_10m))
+  rf_fia <- unwrap_model(readRDS(PATHS$model_fia_10m))
   rf_nefin  <- unwrap_model(readRDS(PATHS$model_nefin_10m))
   rf_pooled <- unwrap_model(readRDS(PATHS$model_pooled_10m))
   cat(sprintf("  Model classes: FIA=%s  NEFIN=%s  Pooled=%s\n",
@@ -588,7 +592,7 @@ if (models_available) {
   # Expected paths -- adjust to match your output directory from PHASE4_01_prep_data.R:
   # Training CSVs are produced by PHASE4_01_prep_data.R
   # and live at data/processed/phase4_modeling/
-  phase4_train_fia    <- "data/processed/phase4_modeling/train_fia_only.csv"
+  phase4_train_fia <- "data/processed/phase4_modeling/train_fia_only.csv"
   phase4_train_nefin  <- "data/processed/phase4_modeling/train_nefin_only.csv"
   phase4_train_pooled <- "data/processed/phase4_modeling/train_pooled.csv"
   
@@ -612,7 +616,7 @@ if (models_available) {
   # PDP predictor (must match a column in FINE_COVARIATES)
   PDP_VAR <- "ndvi_s2_10m"
   
-  fia_covs    <- read_csv(phase4_train_fia,    show_col_types = FALSE)
+  fia_covs<- read_csv(phase4_train_fia,    show_col_types = FALSE)
   
   # Check covariate columns exist -- detect suffix mismatches early
   missing_fia <- setdiff(FINE_COVARIATES, names(fia_covs))
@@ -625,7 +629,7 @@ if (models_available) {
       "\nUpdate FINE_COVARIATES to match actual column names above."
     ))
   }
-  nefin_covs  <- read_csv(phase4_train_nefin,  show_col_types = FALSE)
+  nefin_covs<- read_csv(phase4_train_nefin,  show_col_types = FALSE)
   pooled_covs <- read_csv(phase4_train_pooled, show_col_types = FALSE)
   
   # Helper: compute partial dependence manually (faster than pdp::partial for ranger)
@@ -705,23 +709,23 @@ if (models_available) {
       inherit.aes = FALSE
     ) +
     scale_x_continuous(
-      name   = "NDVI (Sentinel-2, 10 m)",
+      name = "NDVI (Sentinel-2, 10 m)",
       breaks = seq(0.4, 1.0, 0.1),
       limits = c(0.35, 1.0)
     ) +
     scale_y_continuous(
-      name   = "Partial dependence -- predicted AGB (Mg/ha)",
+      name  = "Partial dependence -- predicted AGB (Mg/ha)",
       breaks = seq(0, 400, 50)
     ) +
     labs(
-      title   = "Fig. S3. Partial dependence: NDVI -> predicted AGB -- fine-scale (10 m) RF",
+      title = "Fig. S3. Partial dependence: NDVI -> predicted AGB -- fine-scale (10 m) RF",
       subtitle= "Marginal effect of NDVI with all other predictors held at training-set means. Rug marks show training data NDVI coverage.",
-      caption = paste0(
-        "Shaded region: NDVI >= 0.75 (optical saturation zone). PDP from n = 500 subsampled training plots. ",
-        "FIA curve flattens at ~140 Mg/ha: absence of high-biomass training plots, not purely sensor limitation. ",
-        "NEFIN curve flat near training mean (~192 Mg/ha): PDP marginalises over all predictors, ",
-        "reflecting NEFIN mean rather than NDVI-only signal. Pooled is a compromise."
-      )
+      #caption = paste0(
+        #"Shaded region: NDVI >= 0.75 (optical saturation zone). PDP from n = 500 subsampled training plots. ",
+       # "FIA curve flattens at ~140 Mg/ha: absence of high-biomass training plots, not purely sensor limitation. ",
+        #"NEFIN curve flat near training mean (~192 Mg/ha): PDP marginalises over all predictors, ",
+      #  "reflecting NEFIN mean rather than NDVI-only signal. Pooled is a compromise."
+      #)
     ) +
     theme_paper()
   
@@ -732,9 +736,9 @@ if (models_available) {
   cat("  OK fig_S3_partial_dependence_ndvi.png\n")
   
 } else {
-  cat("  !  Model .rds files not found -- skipping Fig S3.\n")
-  cat("     Ensure models are saved with:\n")
-  cat("     saveRDS(rf_model, file = '<PATHS$model_fia_10m>')\n")
+  cat(" Model .rds files not found -- skipping Fig S3.\n")
+  cat(" Ensure models are saved with:\n")
+  cat(" saveRDS(rf_model, file = '<PATHS$model_fia_10m>')\n")
 }
 
 
@@ -745,7 +749,7 @@ if (models_available) {
 
 cat("\n-- Figure S4: Biomass distributions ----------------------------\n")
 
-fia_plots   <- read_csv(PATHS$fia_plots,   show_col_types = FALSE)
+fia_plots <- read_csv(PATHS$fia_plots,   show_col_types = FALSE)
 nefin_plots <- read_csv(PATHS$nefin_plots, show_col_types = FALSE)
 
 test_cns  <- unique(test_preds$CN)
@@ -759,7 +763,7 @@ fia_bio <- fia_plots %>%
   mutate(group = paste0("FIA training\n(n = ", scales::comma(nrow(fia_plots)), ")"))
 
 dist_df <- bind_rows(
-  fia_bio       %>% select(biomass, group),
+  fia_bio %>% select(biomass, group),
   nefin_train_bio %>% select(biomass, group),
   nefin_test_bio  %>% select(biomass, group)
 ) %>%
@@ -772,7 +776,7 @@ dist_df <- bind_rows(
     dataset = case_when(
       grepl("FIA",   group) ~ "FIA Only",
       grepl("train", group) ~ "NEFIN Only",
-      TRUE                  ~ "NEFIN Only"
+      TRUE ~ "NEFIN Only"
     )
   )
 
@@ -831,14 +835,14 @@ fig_S4 <- ggplot(dist_df, aes(x = biomass, colour = group, fill = group)) +
   scale_y_continuous(name = "Density") +
   labs(
     title   = "Fig. S4. Biomass distributions: FIA training, NEFIN training, and NEFIN test set",
-    subtitle= "Dashed verticals mark group medians. Shaded band = AGB range where optical saturation limits model performance.",
-    caption = paste0(
-      "FIA n = ", scales::comma(nrow(fia_plots)), "; NEFIN train n = 317; NEFIN test n = 140. ",
-      "FIA underrepresents high-biomass conditions; NEFIN is centered on them. ",
-      "Model error patterns (Fig. S2) align directly with these distributions: ",
-      "FIA models underestimate where FIA training data is sparse (high AGB); ",
-      "NEFIN models overestimate where NEFIN training data is sparse (low AGB)."
-    )
+    subtitle= "Dashed verticals mark group medians. Shaded band = AGB range where optical saturation limits model performance."#,
+    #caption = paste0(
+     # "FIA n = ", scales::comma(nrow(fia_plots)), "; NEFIN train n = 317; NEFIN test n = 140. ",
+    #  "FIA underrepresents high-biomass conditions; NEFIN is centered on them. ",
+     # "Model error patterns (Fig. S2) align directly with these distributions: ",
+     # "FIA models underestimate where FIA training data is sparse (high AGB); ",
+      #"NEFIN models overestimate where NEFIN training data is sparse (low AGB)."
+    #)
   ) +
   theme_paper()
 
