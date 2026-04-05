@@ -4,8 +4,7 @@
 # Interactive Shiny application for exploring compositional differences
 # between FIA and NEFIN forest inventory datasets
 #
-# Author: Soren Walljasper
-# Organization: Forest Ecosystem Monitoring Cooperative (FEMC) / UVM
+# Author: Soren Donisvitch
 # Date: February 2025 (updated 2026-04)
 # ============================================================================
 
@@ -20,6 +19,32 @@ ui <- page_navbar(
     bootswatch = "flatly",
     primary    = "#E69F00",
     base_font  = font_google("Open Sans")
+  ),
+
+  # Loading screen overlay — fades out when Shiny connects
+  header = tagList(
+    tags$div(
+      id = "loading-screen",
+      style = paste0(
+        "position:fixed; top:0; left:0; width:100%; height:100%;",
+        "background:white; z-index:9999; display:flex;",
+        "align-items:center; justify-content:center; flex-direction:column;"
+      ),
+      tags$div(
+        class = "spinner-border text-primary", role = "status",
+        style = "width:3rem; height:3rem;",
+        tags$span(class = "visually-hidden", "Loading...")
+      ),
+      tags$h4("Loading FIA-NEFIN Explorer...", class = "mt-3 text-muted"),
+      tags$p("Preparing data and map tiles", class = "text-muted small")
+    ),
+    tags$script(HTML("
+      $(document).on('shiny:connected', function() {
+        setTimeout(function() {
+          $('#loading-screen').fadeOut(600, function() { $(this).remove(); });
+        }, 800);
+      });
+    "))
   ),
 
   # Global sidebar (appears on Dataset Comparison tab) -----------------------
@@ -122,9 +147,20 @@ ui <- page_navbar(
 
     layout_columns(
       col_widths = c(12, 12, 12),
-      summary_stats_ui("summary"),
-      distributions_ui("distributions"),
-      species_ui("species")
+      navset_card_tab(
+        nav_panel(
+          "Summary Statistics",
+          summary_stats_ui("summary")
+        ),
+        nav_panel(
+          "Distributions",
+          distributions_ui("distributions")
+        ),
+        nav_panel(
+          "Species Analysis",
+          species_ui("species")
+        )
+      )
     )
   ),
 
@@ -247,7 +283,7 @@ ui <- page_navbar(
       icon("info-circle"),
       "About",
       href    = "#",
-      onclick = "alert('FIA-NEFIN Explorer v2.0\\nAuthor: Soren Walljasper\\nFEMC/UVM\\n2026')"
+      onclick = "alert('FIA-NEFIN Explorer v2.0\\nAuthor: Soren Donisvitch\\nFEMC/UVM\\n2026')"
     )
   )
 )
@@ -255,6 +291,9 @@ ui <- page_navbar(
 
 # SERVER ======================================================================
 server <- function(input, output, session) {
+
+  # Pulse spinner on outputs while recalculating
+  shiny::useBusyIndicators()
 
   # Reactive: filtered plot data ---------------------------------------------
   filtered_data <- reactive({

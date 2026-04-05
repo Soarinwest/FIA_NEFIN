@@ -2,9 +2,24 @@
 # FIA-NEFIN Explorer: Global Environment
 # ============================================================================
 # Loads packages, data, and global variables used across all modules
-# Author: Soren Walljasper
+# Author: Soren Donisvitch
 # Date: 2025-02-11 (updated 2026-04)
 # ============================================================================
+
+# PROJ fix — must be before any library() call --------------------------------
+Sys.setenv(PROJ_DATA    = "")
+Sys.setenv(PROJ_LIB     = "")
+Sys.setenv(PROJ_NETWORK = "OFF")
+
+# Suppress jsonlite named-vector deprecation warning (triggered by plotly
+# serialization internals — harmless, will be resolved in a future plotly release)
+globalCallingHandlers(
+  warning = function(w) {
+    if (grepl("keep_vec_names", conditionMessage(w))) {
+      invokeRestart("muffleWarning")
+    }
+  }
+)
 
 # Packages --------------------------------------------------------------------
 library(shiny)
@@ -27,7 +42,10 @@ library(leaflet.extras)
 library(leafsync)
 library(leafem)
 library(sf)
+sf::sf_use_s2(FALSE)
 library(terra)
+library(viridis)
+library(tigris)
 
 # Source helper files ---------------------------------------------------------
 source("R/plot_theme.R")
@@ -85,13 +103,19 @@ nefin_plots      <- plot_data |> dplyr::filter(dataset == "NEFIN")
 uncertainty_data <- readRDS("data/uncertainty_data.rds")
 plot_uncertainty <- uncertainty_data  # Alias for backward compatibility
 
-# Hex data (all 9 scales stacked, extract 1kha for default display)
+# Hex data (tabular, all scales)
 hex_data <- readRDS("data/hex_data.rds")
-hex_1kha <- hex_data |> dplyr::filter(scale == "1kha")
+# Default hex for Spatial Explorer — must be sf with geometry
+hex_1kha <- sf::st_read("data/hex_geojsons/hex_1kha.geojson", quiet = TRUE)
 
-# State boundaries for spatial overlay
-states_sf <- tigris::states(year = 2020, progress_bar = FALSE) |>
-  sf::st_transform(4326)
+# State boundaries for spatial overlay (HTTP call — wrapped for offline safety)
+states_sf <- tryCatch(
+  tigris::states(year = 2020, progress_bar = FALSE) |> sf::st_transform(4326),
+  error = function(e) {
+    message("Could not load state boundaries: ", e$message)
+    NULL
+  }
+)
 
 # Scale analysis data
 scale_metrics <- readRDS("data/scale_metrics.rds")

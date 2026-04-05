@@ -101,12 +101,12 @@ modeling_ui <- function(id) {
             col_widths = c(6, 6),
             div(
               h6("R\u00b2 by Fold"),
-              tags$img(src = "Spatial_CV_R2_boxplots.png",
+              tags$img(src = "figures/cv_r2_boxplots.png",
                        style = "max-width:100%; border-radius:4px;")
             ),
             div(
               h6("RMSE by Fold"),
-              tags$img(src = "Spatial_CV_RMSE_boxplots.png",
+              tags$img(src = "figures/cv_rmse_boxplots.png",
                        style = "max-width:100%; border-radius:4px;")
             )
           )
@@ -135,13 +135,28 @@ modeling_ui <- function(id) {
           full_screen = TRUE,
           card_header("Spatial Biomass Predictions \u2014 Northeastern US"),
           card_body(
-            tags$img(
-              src   = "biomass_4panel.png",
-              style = "max-width: 100%; border-radius: 4px;"
+            layout_columns(
+              col_widths = c(6, 6),
+              div(
+                tags$p(class = "text-center small fw-bold", "10m Fine Scale \u2014 Pooled"),
+                tags$img(src   = "figures/pred_fine_pooled.png",
+                         style = "max-width:100%; border-radius:4px;")
+              ),
+              div(
+                tags$p(class = "text-center small fw-bold", "250m Coarse Scale \u2014 Pooled"),
+                tags$img(src   = "figures/pred_coarse_pooled.png",
+                         style = "max-width:100%; border-radius:4px;")
+              )
+            ),
+            div(
+              class = "mt-2",
+              tags$p(class = "text-center small fw-bold", "Absolute Difference (Pooled \u2212 FIA-only, 10m)"),
+              tags$img(src   = "figures/pred_abs_diff.png",
+                       style = "max-width:100%; border-radius:4px;")
             ),
             tags$p(class = "text-muted small mt-2",
-              "Top row: 10m fine-scale RF predictions. Bottom row: 250m coarse-scale.",
-              " Left to right: FIA-only, NEFIN-only, Pooled, Difference (Pooled \u2212 FIA-only)."
+              "10m and 250m Pooled (FIA+NEFIN) RF predictions over Chittenden County, VT.",
+              " Bottom: absolute difference between Pooled and FIA-only predictions."
             )
           )
         )
@@ -193,12 +208,14 @@ modeling_server <- function(id, cv_results, fold_results, test_predictions,
     })
 
     output$pooled_gain_val <- renderUI({
-      row <- dplyr::filter(fuzzing_rmse, scale == "10m")
-      if (nrow(row) == 0) return("N/A")
+      fia_row    <- dplyr::filter(fuzzing_rmse, scale == "10m", scenario == "FIA Only")
+      pooled_row <- dplyr::filter(fuzzing_rmse, scale == "10m", scenario == "Pooled")
+      if (nrow(fia_row) == 0 || nrow(pooled_row) == 0) return("N/A")
+      pct_gain <- round(100 * (fia_row$rmse[1] - pooled_row$rmse[1]) / fia_row$rmse[1], 1)
       tags$span(
-        paste0(round(row$pooled_pct[1], 1), "% lower RMSE"),
+        paste0(pct_gain, "% lower RMSE"),
         tags$br(),
-        tags$small("Pooled vs. FIA-only")
+        tags$small("Pooled vs. FIA-only (10m)")
       )
     })
 
@@ -291,13 +308,8 @@ modeling_server <- function(id, cv_results, fold_results, test_predictions,
 
     # ── RMSE comparison chart ──────────────────────────────────────────────────
     output$rmse_comparison <- plotly::renderPlotly({
-      # fuzzing_rmse has columns: scale, `FIA Only`, `NEFIN Only`, `Pooled`
+      # fuzzing_rmse is already long: columns scale, scenario, n, rmse, r2, mae, bias
       data <- fuzzing_rmse |>
-        tidyr::pivot_longer(
-          cols      = c(`FIA Only`, `NEFIN Only`, `Pooled`),
-          names_to  = "scenario",
-          values_to = "rmse"
-        ) |>
         dplyr::mutate(
           scenario = factor(scenario, levels = c("FIA Only", "NEFIN Only", "Pooled")),
           hover_text = paste0(

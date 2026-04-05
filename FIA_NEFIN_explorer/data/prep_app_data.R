@@ -38,7 +38,7 @@ APP_DATA      <- "data"
 APP_FIGURES   <- "www/figures"
 
 # Set TRUE to overwrite all existing outputs regardless of whether they exist
-FORCE_REBUILD <- FALSE
+FORCE_REBUILD <- TRUE
 
 # ============================================================================
 # SANITY CHECKS
@@ -117,6 +117,22 @@ clip_to_chittenden <- function(src_path, out_path, chitt_sf,
   r_wgs        <- terra::project(r_clip, WGS84_PROJ, method = method)
   terra::writeRaster(r_wgs, out_path, overwrite = TRUE)
   message("  saved: ", basename(out_path))
+  invisible(out_path)
+}
+
+# Aggregate a full-res raster to a smaller display version for leaflet.
+# Skips if _display.tif already exists and FORCE_REBUILD is FALSE.
+write_display_raster <- function(full_res_path, fact = 3, fun = "mean") {
+  out_path <- sub("\\.tif$", "_display.tif", full_res_path)
+  if (file.exists(out_path) && !FORCE_REBUILD) {
+    message("  skip display (exists): ", basename(out_path))
+    return(invisible(out_path))
+  }
+  if (!file.exists(full_res_path)) return(invisible(NULL))
+  r <- terra::rast(full_res_path)
+  r_agg <- terra::aggregate(r, fact = fact, fun = fun, na.rm = TRUE)
+  terra::writeRaster(r_agg, out_path, overwrite = TRUE)
+  message("  display saved: ", basename(out_path))
   invisible(out_path)
 }
 
@@ -216,6 +232,12 @@ for (src_name in names(pred_map)) {
 }
 message("Prediction rasters complete")
 
+# Generate display-resolution versions for leaflet
+message("  Generating display rasters for predictions...")
+for (out_name in unlist(pred_map)) {
+  write_display_raster(file.path(APP_DATA, "rasters", out_name))
+}
+
 # ============================================================================
 # SECTION C: Clip fine-scale (10m) covariate rasters
 # ============================================================================
@@ -251,6 +273,13 @@ for (src_name in names(fine_map)) {
   )
 }
 message("Fine-scale covariate rasters complete")
+
+# Generate display-resolution versions for leaflet (not needed for coarse 250m)
+message("  Generating display rasters for fine covariates...")
+for (out_name in unlist(fine_map)) {
+  agg_fun <- if (grepl("aspect", out_name, ignore.case = TRUE)) "modal" else "mean"
+  write_display_raster(file.path(COV_OUT, out_name), fun = agg_fun)
+}
 
 # ============================================================================
 # SECTION D: Clip coarse-scale (250m) covariate rasters
@@ -344,54 +373,37 @@ save_rds_if_needed(
   file.path(APP_DATA, "plot_data.rds"),
   "plot_data.rds",
   {
-    fia_raw <- safe_read_csv(
-      file.path(ANALYSIS_ROOT, "data/processed/baseline_with_covariates.csv")
+    # Use augmented_with_covariates.csv for both FIA and NEFIN so that
+    # NEFIN rows get real covariate values instead of NA.
+    aug_raw <- safe_read_csv(
+      file.path(ANALYSIS_ROOT, "data/processed/augmented_with_covariates.csv")
     )
-    nefin_raw <- safe_read_csv(
-      file.path(ANALYSIS_ROOT, "data/processed/nefin_complete.csv")
-    )
-    stopifnot(!is.null(fia_raw), !is.null(nefin_raw))
-    
-    message("  baseline columns: ", paste(names(fia_raw), collapse = ", "))
-    message("  nefin columns:    ", paste(names(nefin_raw), collapse = ", "))
-    
-    fia_plots <- fia_raw |>
-      dplyr::filter(dataset == "FIA") |>
-      dplyr::mutate(
-        CN      = as.character(CN),
-        plot_id = as.character(PLOT),
-        state   = STATE_LU[as.character(STATECD)]
-      ) |>
-      dplyr::select(
-        CN, plot_id, dataset, state, COUNTYCD, MEASYEAR, lat, lon, biomass,
-        ndvi_s2       = dplyr::any_of(c("ndvi_s2_10m", "ndvi_s2")),
-        ndvi_modis    = dplyr::any_of(c("ndvi_modis_250m", "ndvi_modis")),
-        temp_mean     = dplyr::any_of(c("tmean_10m", "tmean", "temp_mean")),
-        precip_annual = dplyr::any_of(c("ppt_10m", "ppt", "precip_annual")),
-        canopy_height = dplyr::any_of(c("canopy_height_10m", "canopy_height")),
-        elevation     = dplyr::any_of(c("elevation_10m", "elevation")),
-        n_trees
-      )
-    
-    nefin_plots <- nefin_raw |>
-      dplyr::mutate(
-        CN            = as.character(CN),
-        plot_id       = as.character(CN),
-        state         = STATE_LU[as.character(STATECD)],
-        COUNTYCD      = NA_integer_,
-        n_trees       = NA_integer_,
-        ndvi_s2       = NA_real_,
-        ndvi_modis    = NA_real_,
-        temp_mean     = NA_real_,
-        precip_annual = NA_real_,
-        canopy_height = NA_real_,
-        elevation     = NA_real_
-      ) |>
-      dplyr::select(
-        CN, plot_id, dataset, state, COUNTYCD, MEASYEAR, lat, lon, biomass,
-        ndvi_s2, ndvi_modis, temp_mean, precip_annual,
-        canopy_height, elevation, n_trees
-      )
+    stopifnot(!is.null(aug_raw))
+
+    message("  augmented columns: ", paste(names(aug_raw), collapse = ", "))
+
+    make_plots <- function(raw, ds_filter) {
+      raw |>
+        dplyr::filter(dataset == ds_filter) |>
+        dplyr::mutate(
+          CN      = as.character(CN),
+          plot_id = if (ds_filter == "FIA") as.character(PLOT) else as.character(CN),
+          state   = STATE_LU[as.character(STATECD)]
+        ) |>
+        dplyr::select(
+          CN, plot_id, dataset, state, COUNTYCD, MEASYEAR, lat, lon, biomass,
+          ndvi_s2       = dplyr::any_of(c("ndvi_s2_10m", "ndvi_s2")),
+          ndvi_modis    = dplyr::any_of(c("ndvi_modis_250m", "ndvi_modis")),
+          temp_mean     = dplyr::any_of(c("tmean_10m", "tmean", "temp_mean")),
+          precip_annual = dplyr::any_of(c("ppt_10m", "ppt", "precip_annual")),
+          canopy_height = dplyr::any_of(c("canopy_height_10m", "canopy_height")),
+          elevation     = dplyr::any_of(c("elevation_10m", "elevation")),
+          n_trees
+        )
+    }
+
+    fia_plots   <- make_plots(aug_raw, "FIA")
+    nefin_plots <- make_plots(aug_raw, "NEFIN")
     
     result <- dplyr::bind_rows(fia_plots, nefin_plots)
     message("  ", nrow(result), " rows (FIA + NEFIN)")
@@ -477,21 +489,35 @@ save_rds_if_needed(
                                    "plot_id", "species_code", "dbh", "status"))
     )
     stopifnot(!is.null(tree_raw))
-    
+
     if ("PLT_CN" %in% names(tree_raw)) {
       tree_raw <- tree_raw |>
         dplyr::rename(plot_id = PLT_CN, species_code = SPCD,
                       dbh = DIA, status = STATUSCD)
     }
-    
+
+    # Load species crosswalk (SPCD -> latin_name)
+    sp_map <- safe_read_csv(
+      file.path(ANALYSIS_ROOT, "data/processed/fhm_species_mapping.csv")
+    )
+    if (!is.null(sp_map)) {
+      sp_map <- sp_map |>
+        dplyr::mutate(
+          species_code = as.character(SPCD),
+          species_name = tolower(latin_name)
+        ) |>
+        dplyr::select(species_code, species_name, common_name)
+      message("  species mapping: ", nrow(sp_map), " entries")
+    }
+
     tree_live <- tree_raw |>
       dplyr::filter(status == 1, !is.na(dbh), dbh > 0)
-    
+
     top40 <- tree_live |>
       dplyr::count(species_code, sort = TRUE) |>
       dplyr::slice_head(n = 40) |>
       dplyr::pull(species_code)
-    
+
     result <- tree_live |>
       dplyr::filter(species_code %in% top40) |>
       dplyr::mutate(
@@ -501,7 +527,15 @@ save_rds_if_needed(
       ) |>
       dplyr::select(plot_id, dataset, species_code, dbh) |>
       dplyr::slice_head(n = 500000)
-    
+
+    # Join species names from crosswalk
+    if (!is.null(sp_map)) {
+      result <- result |>
+        dplyr::left_join(sp_map, by = "species_code")
+      n_mapped <- sum(!is.na(result$species_name))
+      message("  species name mapped: ", n_mapped, "/", nrow(result), " rows")
+    }
+
     message("  ", nrow(result), " rows, ", length(top40), " species")
     result
   }

@@ -215,6 +215,7 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
 
     # ── Bootstrap variance ────────────────────────────────────────────────────
     output$bootstrap_table <- renderTable({
+      req(!is.null(bootstrap_variance))
       bootstrap_variance |>
         dplyr::mutate(
           `Bootstrap Variance` = round(var_bootstrap, 4),

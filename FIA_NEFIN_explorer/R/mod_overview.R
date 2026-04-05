@@ -79,7 +79,7 @@ overview_ui <- function(id) {
         card_header("Study Area — Northeastern US"),
         card_body(
           tags$img(
-            src   = "Fig1_Study_Area.png",
+            src   = "figures/Fig1_Study_Area.png",
             style = "max-width: 100%; border-radius: 4px;"
           )
         )

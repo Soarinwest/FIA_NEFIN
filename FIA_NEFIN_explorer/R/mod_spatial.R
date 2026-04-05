@@ -57,17 +57,17 @@ spatial_ui <- function(id) {
           h5("Hexagon Scale", class = "text-primary mt-0 mb-2"),
           selectInput(ns("hex_scale"), NULL,
             choices = c(
-              "100 ha (Warning: 386MB \u2014 slow)" = "hex_100ha_complete.geojson",
-              "500 ha"   = "hex_500ha_complete.geojson",
-              "1 kha"    = "hex_1kha_complete.geojson",
-              "2.4 kha"  = "hex_2_4kha_complete.geojson",
-              "5 kha"    = "hex_5kha_complete.geojson",
-              "10 kha"   = "hex_10kha_complete.geojson",
-              "50 kha"   = "hex_50kha_complete.geojson",
-              "64 kha"   = "hex_64kha_complete.geojson",
-              "100 kha"  = "hex_100kha_complete.geojson"
+              "100 ha (Warning: slow)" = "hex_100ha.geojson",
+              "500 ha"                 = "hex_500ha.geojson",
+              "1 kha"                  = "hex_1kha.geojson",
+              "2.4 kha"                = "hex_2_4kha.geojson",
+              "5 kha"                  = "hex_5kha.geojson",
+              "10 kha"                 = "hex_10kha.geojson",
+              "50 kha"                 = "hex_50kha.geojson",
+              "64 kha"                 = "hex_64kha.geojson",
+              "100 kha"                = "hex_100kha.geojson"
             ),
-            selected = "hex_1kha_complete.geojson"
+            selected = "hex_1kha.geojson"
           ),
           hr(),
           h5("Display Layer", class = "text-primary mt-0 mb-2"),
@@ -95,57 +95,64 @@ spatial_ui <- function(id) {
     nav_panel(
       title = tagList(bsicons::bs_icon("layers"), " Chittenden Detail (10m)"),
       value = "subtab_chittenden",
-      card(
-        card_body(
-          # Controls row
-          layout_columns(
-            col_widths = c(3, 3, 3, 3),
-            div(
-              h6("Left Map Scenario"),
-              selectInput(ns("scenario_a"), NULL,
-                choices  = c("FIA Only" = "fia_only",
-                             "NEFIN Only" = "nefin_only",
-                             "Pooled (FIA+NEFIN)" = "pooled"),
-                selected = "fia_only"
-              ),
-              sliderInput(ns("opacity_a"), "Opacity:",
-                          min = 0.1, max = 1.0, value = 0.8, step = 0.1)
-            ),
-            div(
-              h6("Right Map Scenario"),
-              selectInput(ns("scenario_b"), NULL,
-                choices  = c("FIA Only" = "fia_only",
-                             "NEFIN Only" = "nefin_only",
-                             "Pooled (FIA+NEFIN)" = "pooled"),
-                selected = "pooled"
-              ),
-              sliderInput(ns("opacity_b"), "Opacity:",
-                          min = 0.1, max = 1.0, value = 0.8, step = 0.1)
-            ),
-            div(
-              h6("Basemap"),
-              radioButtons(ns("basemap"), NULL,
-                choices = c(
-                  "Light (CartoDB)"  = "CartoDB.Positron",
-                  "Satellite (ESRI)" = "Esri.WorldImagery",
-                  "Topo (OSM)"       = "OpenTopoMap"
-                ),
-                selected = "CartoDB.Positron"
-              )
-            ),
-            div(
-              h6("Options"),
-              checkboxInput(ns("show_county"), "County boundary", value = TRUE),
-              br(),
-              tags$small(class = "text-muted",
-                "Maps are synchronized: pan/zoom one to move both."
-              )
-            )
+      tags$script(HTML("
+        Shiny.addCustomMessageHandler('show-spinner', function(id) {
+          $('#' + id).stop(true).fadeIn(200);
+        });
+      ")),
+      layout_sidebar(
+        sidebar = sidebar(
+          width = 260,
+          h5("Left Map", class = "text-primary mt-0 mb-2"),
+          selectInput(ns("scenario_a"), "Scenario:",
+            choices  = c("FIA Only" = "fia_only",
+                         "NEFIN Only" = "nefin_only",
+                         "Pooled (FIA+NEFIN)" = "pooled"),
+            selected = "fia_only"
           ),
-          # Synchronized maps
-          uiOutput(ns("sync_maps")),
+          sliderInput(ns("opacity_a"), "Opacity:",
+                      min = 0.1, max = 1.0, value = 0.8, step = 0.1),
+          hr(),
+          h5("Right Map", class = "text-primary mt-0 mb-2"),
+          selectInput(ns("scenario_b"), "Scenario:",
+            choices  = c("FIA Only" = "fia_only",
+                         "NEFIN Only" = "nefin_only",
+                         "Pooled (FIA+NEFIN)" = "pooled"),
+            selected = "pooled"
+          ),
+          sliderInput(ns("opacity_b"), "Opacity:",
+                      min = 0.1, max = 1.0, value = 0.8, step = 0.1),
+          hr(),
+          h5("Display", class = "text-primary mt-0 mb-2"),
+          radioButtons(ns("basemap"), "Basemap:",
+            choices = c(
+              "Light (CartoDB)"  = "CartoDB.Positron",
+              "Satellite (ESRI)" = "Esri.WorldImagery",
+              "Topo (OSM)"       = "OpenTopoMap"
+            ),
+            selected = "CartoDB.Positron"
+          ),
+          tags$small(class = "text-muted",
+            "Maps are synchronized: pan/zoom one to move both."
+          ),
+          hr(),
+          # RMSE stats in sidebar so they're always visible
           uiOutput(ns("chittenden_stats"))
-        )
+        ),
+        # Main content: synced maps with loading spinner
+        div(
+          class = "position-relative",
+          div(
+            id = ns("map_spinner"),
+            class = "position-absolute top-50 start-50 translate-middle text-center",
+            style = "z-index:999;",
+            div(class = "spinner-border text-primary", role = "status",
+                style = "width:3rem; height:3rem;"),
+            tags$p("Loading rasters...", class = "mt-2 text-muted")
+          ),
+          uiOutput(ns("sync_maps"))
+        ),
+        uiOutput(ns("raster_distributions"))
       )
     )
   )
@@ -231,8 +238,8 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
       color_col <- input$nefin_color
       pal <- switch(color_col,
-        measyear = colorNumeric("viridis", domain = nefin_plots$MEASYEAR, reverse = FALSE),
-        biomass  = colorNumeric("viridis", domain = nefin_plots$biomass,  na.color = "#ccc"),
+        measyear = colorNumeric("viridis", domain = unname(nefin_plots$MEASYEAR), reverse = FALSE),
+        biomass  = colorNumeric("viridis", domain = unname(nefin_plots$biomass),  na.color = "#ccc"),
         state    = colorFactor("Set1",     levels = unique(nefin_plots$state))
       )
       colors <- switch(color_col,
@@ -286,7 +293,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
     observeEvent(input$plot_map_marker_click, {
       click <- input$plot_map_marker_click
       req(click$id)
-      selected_cn(as.numeric(click$id))
+      selected_cn(as.character(click$id))
     })
 
     output$mc_panel <- renderUI({
@@ -312,7 +319,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
             ),
             div(
               tags$img(
-                src   = "Fig3_Monte_Carlo_Uncertainty.png",
+                src   = "figures/Fig3_Monte_Carlo.png",
                 style = "max-width: 100%; border-radius: 4px;"
               )
             )
@@ -392,7 +399,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
     # Cache for loaded GeoJSON scales (reactiveValues scoped to this module)
     hex_cache <- reactiveValues()
-    hex_cache[["hex_1kha_complete.geojson"]] <- hex_1kha  # pre-loaded
+    hex_cache[["hex_1kha.geojson"]] <- hex_1kha  # pre-loaded sf object
 
     # Reactive: current hex data (with lazy loading and caching)
     hex_data <- reactive({
@@ -432,15 +439,15 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       data  <- filtered_hex()
       vals  <- data[[layer]]
       if (layer == "biomass_change") {
-        lim <- max(abs(vals), na.rm = TRUE)
+        lim <- unname(max(abs(vals), na.rm = TRUE))
         leaflet::colorNumeric("RdBu",  domain = c(-lim, lim), na.color = "#cccccc",
                                reverse = TRUE)
       } else if (layer == "pct_nefin") {
-        leaflet::colorNumeric("Blues", domain = vals, na.color = "#cccccc")
+        leaflet::colorNumeric("Blues", domain = unname(vals), na.color = "#cccccc")
       } else if (layer == "n_plots_total") {
-        leaflet::colorNumeric("Oranges", domain = vals, na.color = "#cccccc")
+        leaflet::colorNumeric("Oranges", domain = unname(vals), na.color = "#cccccc")
       } else {
-        leaflet::colorNumeric("viridis", domain = vals, na.color = "#cccccc")
+        leaflet::colorNumeric("viridis", domain = unname(vals), na.color = "#cccccc")
       }
     })
 
@@ -502,7 +509,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           opacity  = 0.85
         )
 
-      if (isTRUE(input$show_states)) {
+      if (isTRUE(input$show_states) && !is.null(states_sf)) {
         proxy |>
           addPolylines(
             data    = states_sf,
@@ -546,12 +553,17 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
     opacity_a_d <- debounce(reactive(input$opacity_a), 400)
     opacity_b_d <- debounce(reactive(input$opacity_b), 400)
 
+    # Re-show spinner when scenario/basemap changes
+    observeEvent(list(input$scenario_a, input$scenario_b, input$basemap), {
+      session$sendCustomMessage("show-spinner", ns("map_spinner"))
+    }, ignoreInit = TRUE)
+
     output$sync_maps <- renderUI({
       req(input$scenario_a, input$scenario_b, input$basemap)
 
       # Build TIF paths (relative to app working directory)
-      tif_a_path <- file.path("data", paste0("chittenden_biomass_", input$scenario_a, ".tif"))
-      tif_b_path <- file.path("data", paste0("chittenden_biomass_", input$scenario_b, ".tif"))
+      tif_a_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_a, "_chittenden.tif"))
+      tif_b_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_b, "_chittenden.tif"))
 
       if (!file.exists(tif_a_path) || !file.exists(tif_b_path)) {
         return(card(card_body(
@@ -563,16 +575,21 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
         )))
       }
 
-      r_a <- terra::rast(tif_a_path)
-      r_b <- terra::rast(tif_b_path)
+      # Compute shared color domain from full-res rasters for legend
+      r_a_tmp <- terra::rast(tif_a_path)
+      r_b_tmp <- terra::rast(tif_b_path)
+      raster_domain <- unname(range(
+        c(terra::values(r_a_tmp, na.rm = TRUE),
+          terra::values(r_b_tmp, na.rm = TRUE)),
+        na.rm = TRUE
+      ))
+      rm(r_a_tmp, r_b_tmp)
 
-      # Shared color domain across all loaded rasters
-      all_vals <- c(terra::values(r_a, na.rm = TRUE),
-                    terra::values(r_b, na.rm = TRUE))
+      # Legend palette
       pal <- leaflet::colorNumeric(
         "viridis",
-        domain     = range(all_vals, na.rm = TRUE),
-        na.color   = "transparent"
+        domain   = raster_domain,
+        na.color = "transparent"
       )
 
       scenario_labels <- c(
@@ -581,31 +598,29 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
         "pooled"     = "Pooled (FIA+NEFIN)"
       )
 
-      chitt <- readRDS("data/chittenden_boundary.rds")
+      chitt <- sf::st_read("data/rasters/chittenden_boundary.geojson", quiet = TRUE)
 
-      make_map <- function(r, opacity_val, scenario_key) {
+      make_map <- function(tif_path, opacity_val, scenario_key,
+                           show_legend = FALSE) {
         m <- leaflet::leaflet(options = leaflet::leafletOptions(zoomControl = FALSE)) |>
-          leaflet::addProviderTiles(input$basemap)
-
-        m <- leafem::addRasterImage(
-          m,
-          x       = r,
-          colors  = pal,
-          opacity = opacity_val,
-          project = FALSE
-        )
-
-        if (isTRUE(input$show_county)) {
-          m <- m |>
-            leaflet::addPolylines(
-              data    = chitt,
-              color   = "black",
-              weight  = 2,
-              opacity = 0.9
+          leaflet::addProviderTiles(input$basemap) |>
+          leafem::addGeotiff(
+            file         = normalizePath(tif_path, winslash = "/"),
+            project      = FALSE,
+            opacity      = opacity_val,
+            autozoom     = TRUE,
+            colorOptions = leafem::colorOptions(
+              palette  = hcl.colors(100, "viridis"),
+              na.color = "transparent",
+              domain   = raster_domain
             )
-        }
-
-        m |>
+          ) |>
+          leaflet::addPolylines(
+            data    = chitt,
+            color   = "black",
+            weight  = 1.5,
+            opacity = 0.7
+          ) |>
           leaflet::addControl(
             html     = paste0(
               "<div style='background:white;padding:4px 8px;border-radius:4px;",
@@ -613,20 +628,39 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
               scenario_labels[scenario_key], "</div>"
             ),
             position = "topright"
-          ) |>
-          leaflet::addLegend(
-            position = "bottomright",
-            pal      = pal,
-            values   = all_vals,
-            title    = "Biomass<br>(Mg/ha)",
-            opacity  = 0.9
           )
+
+        # Single shared legend on right map only
+        if (show_legend) {
+          m <- m |>
+            leaflet::addLegend(
+              position = "bottomright",
+              pal      = pal,
+              values   = seq(raster_domain[1], raster_domain[2], length.out = 100),
+              title    = "Biomass<br>(Mg/ha)",
+              opacity  = 0.9
+            )
+        }
+
+        m
       }
 
-      map_a <- make_map(r_a, opacity_a_d(), input$scenario_a)
-      map_b <- make_map(r_b, opacity_b_d(), input$scenario_b)
+      map_a <- make_map(tif_a_path, opacity_a_d(), input$scenario_a,
+                         show_legend = FALSE)
+      map_b <- make_map(tif_b_path, opacity_b_d(), input$scenario_b,
+                         show_legend = TRUE)
 
-      leafsync::sync(map_a, map_b, ncol = 2, sync = "all")
+      # Wrap in a fixed-height div to ensure side-by-side rendering
+      tagList(
+        tags$div(
+          style = "width:100%; height:550px;",
+          leafsync::sync(map_a, map_b, ncol = 2, sync = "all")
+        ),
+        # Hide spinner once maps render
+        tags$script(HTML(sprintf(
+          "$('#%s').fadeOut(400);", ns("map_spinner")
+        )))
+      )
     })
 
     # Stats strip below synced maps
@@ -653,28 +687,106 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       rmse_a <- get_rmse(sc_a)
       rmse_b <- get_rmse(sc_b)
 
+      tags$div(
+        style = "font-size: 0.85em; color: #555;",
+        strong("Test RMSE (10m)"), br(),
+        tags$span(
+          style = paste0("color:", DATASET_COLORS["FIA"], ";"),
+          bsicons::bs_icon("square-fill")
+        ),
+        " ", sc_a, ": ",
+        strong(if (is.na(rmse_a)) "N/A" else paste0(rmse_a, " Mg/ha")),
+        br(),
+        tags$span(
+          style = paste0("color:", DATASET_COLORS["Pooled"], ";"),
+          bsicons::bs_icon("square-fill")
+        ),
+        " ", sc_b, ": ",
+        strong(if (is.na(rmse_b)) "N/A" else paste0(rmse_b, " Mg/ha"))
+      )
+    })
+
+    # Raster value distributions
+    output$raster_distributions <- renderUI({
+      req(input$scenario_a, input$scenario_b)
+
       card(
+        class = "mt-3",
+        card_header("Biomass Distribution (Raster Values)"),
         card_body(
-          class = "py-2",
           layout_columns(
             col_widths = c(6, 6),
             div(
-              tags$small(
-                strong("Left (", sc_a, "):"), br(),
-                "Test RMSE (fine scale): ",
-                strong(if (is.na(rmse_a)) "N/A" else paste0(rmse_a, " Mg/ha"))
-              )
+              plotly::plotlyOutput(ns("dist_a"), height = "350px")
             ),
             div(
-              tags$small(
-                strong("Right (", sc_b, "):"), br(),
-                "Test RMSE (fine scale): ",
-                strong(if (is.na(rmse_b)) "N/A" else paste0(rmse_b, " Mg/ha"))
-              )
+              plotly::plotlyOutput(ns("dist_b"), height = "350px")
             )
           )
         )
       )
+    })
+
+    # Distribution plot for left scenario
+    output$dist_a <- plotly::renderPlotly({
+      req(input$scenario_a)
+      tif_a_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_a, "_chittenden.tif"))
+      if (!file.exists(tif_a_path)) return(NULL)
+
+      r_a <- terra::rast(tif_a_path)
+      vals_a <- terra::values(r_a, na.rm = TRUE)
+
+      scenario_labels <- c(
+        "fia_only"   = "FIA Only",
+        "nefin_only" = "NEFIN Only",
+        "pooled"     = "Pooled (FIA+NEFIN)"
+      )
+
+      df_a <- data.frame(biomass = as.numeric(vals_a))
+
+      p <- ggplot2::ggplot(df_a, ggplot2::aes(x = biomass)) +
+        ggplot2::geom_histogram(bins = 50, fill = "#E69F00", alpha = 0.7) +
+        ggplot2::geom_density(ggplot2::aes(y = ggplot2::after_stat(count)),
+                              color = "#D55E00", linewidth = 1) +
+        ggplot2::labs(
+          x = "Biomass (Mg/ha)",
+          y = "Count",
+          title = paste0("Left: ", scenario_labels[input$scenario_a])
+        ) +
+        theme_fia_nefin()
+
+      plotly::ggplotly(p, tooltip = c("x", "y"))
+    })
+
+    # Distribution plot for right scenario
+    output$dist_b <- plotly::renderPlotly({
+      req(input$scenario_b)
+      tif_b_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_b, "_chittenden.tif"))
+      if (!file.exists(tif_b_path)) return(NULL)
+
+      r_b <- terra::rast(tif_b_path)
+      vals_b <- terra::values(r_b, na.rm = TRUE)
+
+      scenario_labels <- c(
+        "fia_only"   = "FIA Only",
+        "nefin_only" = "NEFIN Only",
+        "pooled"     = "Pooled (FIA+NEFIN)"
+      )
+
+      df_b <- data.frame(biomass = as.numeric(vals_b))
+
+      p <- ggplot2::ggplot(df_b, ggplot2::aes(x = biomass)) +
+        ggplot2::geom_histogram(bins = 50, fill = "#56B4E9", alpha = 0.7) +
+        ggplot2::geom_density(ggplot2::aes(y = ggplot2::after_stat(count)),
+                              color = "#0B5B9D", linewidth = 1) +
+        ggplot2::labs(
+          x = "Biomass (Mg/ha)",
+          y = "Count",
+          title = paste0("Right: ", scenario_labels[input$scenario_b])
+        ) +
+        theme_fia_nefin()
+
+      plotly::ggplotly(p, tooltip = c("x", "y"))
     })
 
   })

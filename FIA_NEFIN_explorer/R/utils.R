@@ -102,24 +102,36 @@ calculate_summary_stats <- function(data, dataset_filter) {
 
 # Perform statistical tests between FIA and NEFIN -----------------------------
 perform_comparison_tests <- function(data) {
-  
+
   fia_data <- data %>% filter(dataset == "FIA")
   nefin_data <- data %>% filter(dataset == "NEFIN")
-  
+
   # Skip if either dataset is empty
   if (nrow(fia_data) == 0 || nrow(nefin_data) == 0) {
     return(NULL)
   }
-  
+
+  # Safe wrappers: return NULL when either vector has < 2 non-NA values
+  safe_ks <- function(x, y) {
+    x <- x[!is.na(x)]; y <- y[!is.na(y)]
+    if (length(x) < 2 || length(y) < 2) return(NULL)
+    ks.test(x, y)
+  }
+  safe_wilcox <- function(x, y) {
+    x <- x[!is.na(x)]; y <- y[!is.na(y)]
+    if (length(x) < 2 || length(y) < 2) return(NULL)
+    wilcox.test(x, y)
+  }
+
   # Kolmogorov-Smirnov tests
-  ks_biomass <- ks.test(fia_data$biomass, nefin_data$biomass)
-  ks_ndvi_s2 <- ks.test(fia_data$ndvi_s2, nefin_data$ndvi_s2)
-  ks_temp <- ks.test(fia_data$temp_mean, nefin_data$temp_mean)
-  ks_precip <- ks.test(fia_data$precip_annual, nefin_data$precip_annual)
-  
+  ks_biomass <- safe_ks(fia_data$biomass, nefin_data$biomass)
+  ks_ndvi_s2 <- safe_ks(fia_data$ndvi_s2, nefin_data$ndvi_s2)
+  ks_temp <- safe_ks(fia_data$temp_mean, nefin_data$temp_mean)
+  ks_precip <- safe_ks(fia_data$precip_annual, nefin_data$precip_annual)
+
   # Mann-Whitney U tests (for medians)
-  mw_biomass <- wilcox.test(fia_data$biomass, nefin_data$biomass)
-  
+  mw_biomass <- safe_wilcox(fia_data$biomass, nefin_data$biomass)
+
   return(list(
     ks_biomass = ks_biomass,
     ks_ndvi_s2 = ks_ndvi_s2,
