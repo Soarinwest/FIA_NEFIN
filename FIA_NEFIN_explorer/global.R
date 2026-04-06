@@ -86,6 +86,7 @@ species_summary <- species_summary |>
     p99_hi95      = dplyr::any_of("dbh_p99_hi95")
   ) |>
   dplyr::mutate(
+    species_code = tolower(species_code),  # Match tree_data$species_name format
     common_name  = tools::toTitleCase(species_code),
     p99_diff_se  = (p99_hi95 - p99_lo95) / (2 * 1.96),
     p99_pvalue   = ifelse(p99_lo95 > 0 | p99_hi95 < 0, 0.01, 0.5),
@@ -166,16 +167,21 @@ TOP_SPECIES <- species_summary |>
   dplyr::slice(1:10) |>
   dplyr::pull(species_code)
 
-# Create species choices for dropdown (with counts)
+# Create species choices for dropdown -- only species with tree data
+available_species <- unique(tree_data$species_name)
 SPECIES_CHOICES <- species_summary |>
+  dplyr::filter(species_code %in% available_species) |>
   dplyr::arrange(dplyr::desc(p99_diff)) |>
   dplyr::mutate(
     label = glue::glue(
       "{common_name} (FIA: {scales::comma(fia_n_trees)} | NEFIN: {scales::comma(nefin_n_trees)})"
     )
   ) |>
-  dplyr::select(species_code, label) |>
+  dplyr::select(label, species_code) |>
   tibble::deframe()
+
+message("[global] SPECIES_CHOICES: ", length(SPECIES_CHOICES),
+        " species with tree data (of ", nrow(species_summary), " total)")
 
 # Add "All Species" option at top
 SPECIES_CHOICES <- c("All Species" = "ALL", SPECIES_CHOICES)

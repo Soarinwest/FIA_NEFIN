@@ -68,14 +68,39 @@ species_ui <- function(id) {
 species_server <- function(id, filtered_data, dataset_filter) {
   moduleServer(id, function(input, output, session) {
 
-    # Filter species data based on selections
+    # --- DEBUG: log SPECIES_CHOICES structure on init ---
+    message("[species] === SPECIES_CHOICES DEBUG ===")
+    message("[species] Length: ", length(SPECIES_CHOICES))
+    message("[species] First 3 names:  ", paste(head(names(SPECIES_CHOICES), 3), collapse = " | "))
+    message("[species] First 3 values: ", paste(head(as.character(SPECIES_CHOICES), 3), collapse = " | "))
+    message("[species] tree_data cols: ", paste(names(tree_data), collapse = ", "))
+    message("[species] tree_data$species_name unique (first 5): ",
+            paste(head(unique(tree_data$species_name), 5), collapse = " | "))
+    if ("species_code" %in% names(tree_data)) {
+      message("[species] tree_data$species_code unique (first 5): ",
+              paste(head(unique(tree_data$species_code), 5), collapse = " | "))
+    }
+    message("[species] species_summary$species_code (first 5): ",
+            paste(head(species_summary$species_code, 5), collapse = " | "))
+
+    # --- DEBUG: log input$species_select changes ---
+    observeEvent(input$species_select, {
+      message("[species] input$species_select changed to: '", input$species_select, "'")
+      message("[species] nchar: ", nchar(input$species_select))
+    })
+
+    # Filter species data based on selections (only species with tree data)
     filtered_species <- reactive({
-      data <- species_summary
+      available <- unique(tree_data$species_name)
+      data <- species_summary %>%
+        filter(species_code %in% available)
 
       if (isTRUE(input$show_significant_only)) {
         data <- data %>% filter(!is.na(p99_pvalue), p99_pvalue < 0.05)
       }
 
+      message("[species] filtered_species: ", nrow(data), " species",
+              if (isTRUE(input$show_significant_only)) " (significant only)" else "")
       data
     })
 
@@ -83,8 +108,21 @@ species_server <- function(id, filtered_data, dataset_filter) {
     selected_species_trees <- reactive({
       req(input$species_select, input$species_select != "ALL")
 
+      message("[species] Filtering tree_data where species_name == '", input$species_select, "'")
+      message("[species] tree_data has ", nrow(tree_data), " rows")
+      message("[species] Unique species_name values (first 10): ",
+              paste(head(unique(tree_data$species_name), 10), collapse = " | "))
+
       result <- tree_data %>%
         filter(species_name == input$species_select)
+
+      message("[species] Filter result: ", nrow(result), " rows")
+
+      # Also try matching species_code as fallback diagnostic
+      if (nrow(result) == 0 && "species_code" %in% names(tree_data)) {
+        alt <- tree_data %>% filter(species_code == input$species_select)
+        message("[species] Alt filter by species_code: ", nrow(alt), " rows")
+      }
 
       validate(need(
         nrow(result) > 0,
