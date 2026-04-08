@@ -99,6 +99,9 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
           na.value = "#999999"
         ) +
         ggplot2::scale_size_continuous(range = c(3, 10), name = "% Improved") +
+        ggplot2::scale_y_continuous(
+          expand = ggplot2::expansion(mult = c(0.05, 0.1))
+        ) +
         ggplot2::labs(
           y     = "Biomass RMSE (Mg/ha)",
           color = "Precision Tier",
@@ -110,7 +113,8 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
       plotly::ggplotly(p, tooltip = "text", source = "scale_curve") |>
         plotly::event_register("plotly_click") |>
         plotly::layout(
-          xaxis = list(type = "log"),
+          xaxis = list(type = "log", autorange = TRUE),
+          yaxis = list(autorange = TRUE),
           legend = list(orientation = "v")
         )
     })

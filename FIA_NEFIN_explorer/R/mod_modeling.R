@@ -38,19 +38,15 @@ modeling_ui <- function(id) {
           )
         ),
 
-        # Filter row
+        # Filter row — choices populated dynamically in server
         layout_columns(
           col_widths = c(4, 4, 4),
           selectInput(ns("perf_model"), "Model type:",
-            choices = c("All", "Random Forest" = "Random Forest",
-                        "XGBoost" = "XGBoost"),
-            selected = "All"),
+            choices = "All", selected = "All"),
           selectInput(ns("perf_scale"), "Scale:",
-            choices = c("All", "Fine Scale (10m)", "Coarse Scale (250m)"),
-            selected = "All"),
+            choices = "All", selected = "All"),
           selectInput(ns("perf_scenario"), "Scenario:",
-            choices = c("All", "FIA Only", "NEFIN Only", "Pooled"),
-            selected = "All")
+            choices = "All", selected = "All")
         ),
 
         # Charts
@@ -172,13 +168,43 @@ modeling_server <- function(id, cv_results, fold_results, test_predictions,
                              var_importance, fuzzing_sig, fuzzing_rmse) {
   moduleServer(id, function(input, output, session) {
 
+    # ── Populate filter dropdowns from actual data ─────────────────────────────
+    observe({
+      # Model names: prefer model_name if available, else model_type
+      model_col <- if ("model_name" %in% names(fold_results)) "model_name" else "model_type"
+      model_vals <- sort(unique(fold_results[[model_col]]))
+      updateSelectInput(session, "perf_model",
+        choices = c("All", setNames(model_vals, model_vals)))
+
+      scale_vals <- sort(unique(fold_results$scale))
+      updateSelectInput(session, "perf_scale",
+        choices = c("All", setNames(scale_vals, scale_vals)))
+
+      scenario_vals <- unique(fold_results$scenario)
+      updateSelectInput(session, "perf_scenario",
+        choices = c("All", setNames(scenario_vals, scenario_vals)))
+    })
+
     # ── Helper: apply perf filters ─────────────────────────────────────────────
     apply_perf_filter <- function(data, model_col = "model_type",
                                    scale_col = "scale", scenario_col = "scenario") {
-      if (!is.null(input$perf_model) && input$perf_model != "All")
-        data <- dplyr::filter(data, .data[[model_col]] == input$perf_model)
-      if (!is.null(input$perf_scale) && input$perf_scale != "All")
-        data <- dplyr::filter(data, grepl(input$perf_scale, .data[[scale_col]], ignore.case = TRUE))
+      if (!is.null(input$perf_model) && input$perf_model != "All") {
+        # Match against model_name or model_type (whichever has the value)
+        if ("model_name" %in% names(data)) {
+          data <- dplyr::filter(data,
+            .data[["model_name"]] == input$perf_model |
+            .data[[model_col]] == input$perf_model)
+        } else {
+          data <- dplyr::filter(data, .data[[model_col]] == input$perf_model)
+        }
+      }
+      if (!is.null(input$perf_scale) && input$perf_scale != "All") {
+        # Match full or short scale format (e.g. "Fine Scale (10m)" or "10m")
+        data <- dplyr::filter(data,
+          .data[[scale_col]] == input$perf_scale |
+          grepl(sub(".*\\((.+)\\).*", "\\1", input$perf_scale),
+                .data[[scale_col]], fixed = TRUE))
+      }
       if (!is.null(input$perf_scenario) && input$perf_scenario != "All")
         data <- dplyr::filter(data, .data[[scenario_col]] == input$perf_scenario)
       data

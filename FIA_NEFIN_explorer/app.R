@@ -47,73 +47,6 @@ ui <- page_navbar(
     "))
   ),
 
-  # Global sidebar (appears on Dataset Comparison tab) -----------------------
-  sidebar = sidebar(
-    id    = "global_sidebar",
-    width = 280,
-
-    # Header
-    h4("Data Filters", class = "text-primary"),
-
-    # Dataset selection
-    radioButtons(
-      "dataset_filter",
-      "Dataset:",
-      choices = c(
-        "Compare All Three"     = "all",
-        "FIA Only"              = "fia",
-        "NEFIN Only"            = "nefin",
-        "Pooled (FIA + NEFIN)"  = "pooled"
-      ),
-      selected = "all"
-    ),
-
-    hr(),
-
-    # Geographic filters
-    h5("Geographic Filters"),
-
-    selectInput(
-      "state_filter",
-      "State:",
-      choices  = c("All", STATE_LIST),
-      selected = "All",
-      multiple = TRUE
-    ),
-
-    sliderInput(
-      "biomass_range",
-      "Biomass Range:",
-      min   = 0,
-      max   = 800,
-      value = c(0, 800),
-      step  = 10,
-      post  = " Mg/ha"
-    ),
-
-    hr(),
-
-    # Display options
-    h5("Display Options"),
-
-    checkboxInput("show_ci",    "Show confidence intervals", value = TRUE),
-    checkboxInput("show_tests", "Show statistical tests",    value = TRUE),
-
-    hr(),
-
-    # Data summary
-    uiOutput("data_summary_text"),
-
-    hr(),
-
-    # Download button
-    downloadButton(
-      "download_data",
-      "Export Filtered Data",
-      class = "btn-primary btn-sm"
-    )
-  ),
-
   # Tab 1: Overview -----------------------------------------------------------
   nav_panel(
     title = "Overview",
@@ -128,37 +61,96 @@ ui <- page_navbar(
     icon  = icon("chart-bar"),
     value = "tab_comparison",
 
-    card(
-      card_body(
-        class = "bg-light",
-        h4("Compositional Differences Between FIA and NEFIN"),
-        p(
-          "This tab explores fundamental differences between the Forest Inventory",
-          "and Analysis (FIA) and Northeast Forest Inventory Network (NEFIN) datasets.",
-          "Key questions:",
-          tags$ul(
-            tags$li("Are NEFIN plots systematically different from FIA in biomass, species composition, and environmental conditions?"),
-            tags$li("Does NEFIN provide access to larger trees that are underrepresented in FIA?"),
-            tags$li("How do the datasets compare statistically?")
+    layout_sidebar(
+      sidebar = sidebar(
+        id    = "comparison_sidebar",
+        width = 280,
+
+        h4("Data Filters", class = "text-primary"),
+
+        radioButtons(
+          "dataset_filter",
+          "Dataset:",
+          choices = c(
+            "Compare All Three"     = "all",
+            "FIA Only"              = "fia",
+            "NEFIN Only"            = "nefin",
+            "Pooled (FIA + NEFIN)"  = "pooled"
+          ),
+          selected = "all"
+        ),
+
+        hr(),
+        h5("Geographic Filters"),
+
+        selectInput(
+          "state_filter",
+          "State:",
+          choices  = c("All", STATE_LIST),
+          selected = "All",
+          multiple = TRUE
+        ),
+
+        sliderInput(
+          "biomass_range",
+          "Biomass Range:",
+          min   = 0,
+          max   = 800,
+          value = c(0, 800),
+          step  = 10,
+          post  = " Mg/ha"
+        ),
+
+        hr(),
+        h5("Display Options"),
+
+        checkboxInput("show_ci",    "Show confidence intervals", value = TRUE),
+        checkboxInput("show_tests", "Show statistical tests",    value = TRUE),
+
+        hr(),
+        uiOutput("data_summary_text"),
+
+        hr(),
+        downloadButton(
+          "download_data",
+          "Export Filtered Data",
+          class = "btn-primary btn-sm"
+        )
+      ),
+
+      # Main content
+      card(
+        card_body(
+          class = "bg-light",
+          h4("Compositional Differences Between FIA and NEFIN"),
+          p(
+            "This tab explores fundamental differences between the Forest Inventory",
+            "and Analysis (FIA) and Northeast Forest Inventory Network (NEFIN) datasets.",
+            "Key questions:",
+            tags$ul(
+              tags$li("Are NEFIN plots systematically different from FIA in biomass, species composition, and environmental conditions?"),
+              tags$li("Does NEFIN provide access to larger trees that are underrepresented in FIA?"),
+              tags$li("How do the datasets compare statistically?")
+            )
           )
         )
-      )
-    ),
+      ),
 
-    layout_columns(
-      col_widths = c(12, 12, 12),
-      navset_card_tab(
-        nav_panel(
-          "Summary Statistics",
-          summary_stats_ui("summary")
-        ),
-        nav_panel(
-          "Distributions",
-          distributions_ui("distributions")
-        ),
-        nav_panel(
-          "Species Analysis",
-          species_ui("species")
+      layout_columns(
+        col_widths = c(12, 12, 12),
+        navset_card_tab(
+          nav_panel(
+            "Summary Statistics",
+            summary_stats_ui("summary")
+          ),
+          nav_panel(
+            "Distributions",
+            distributions_ui("distributions")
+          ),
+          nav_panel(
+            "Species Analysis",
+            species_ui("species")
+          )
         )
       )
     )

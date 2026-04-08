@@ -121,18 +121,14 @@ states_sf <- tryCatch(
 # Scale analysis data
 scale_metrics <- readRDS("data/scale_metrics.rds")
 
-# Bootstrap variance may be bundled in scale_metrics; provide gracefully
-bootstrap_variance <- if (
-  "pct_bootstrap_var" %in% names(scale_metrics) ||
-  "bootstrap_var" %in% names(scale_metrics)
-) {
-  scale_metrics |>
-    dplyr::select(scale, dplyr::any_of(
-      c("pct_bootstrap_var", "bootstrap_var", "bootstrap_variance")
-    ))
-} else {
-  NULL  # Modules handle NULL gracefully
-}
+# Bootstrap variance (per-dataset, not per-scale)
+bootstrap_variance <- tryCatch(
+  readRDS("data/bootstrap_variance.rds"),
+  error = function(e) {
+    message("bootstrap_variance.rds not found -- bootstrap table will be hidden")
+    NULL
+  }
+)
 
 # Modeling results data (loaded as list from single RDS file)
 cv_results_list  <- readRDS("data/cv_results.rds")

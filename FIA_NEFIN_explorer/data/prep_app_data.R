@@ -607,6 +607,27 @@ save_rds_if_needed(
   }
 )
 
+# -- F6b: bootstrap_variance.rds (per-dataset, not per-scale) -----------------
+message("\n-- F6b: bootstrap_variance.rds --")
+
+save_rds_if_needed(
+  file.path(APP_DATA, "bootstrap_variance.rds"),
+  "bootstrap_variance.rds",
+  {
+    bv <- safe_read_csv(
+      file.path(ANALYSIS_ROOT,
+                "data/processed/summary_statistics/bootstrap_variance.csv")
+    )
+    if (is.null(bv)) {
+      message("  bootstrap_variance.csv not found -- skipping")
+      NULL
+    } else {
+      message("  ", nrow(bv), " rows")
+      bv
+    }
+  }
+)
+
 # -- F7: cv_results.rds -------------------------------------------------------
 message("\n-- F7: cv_results.rds --")
 
