@@ -10,9 +10,9 @@ library(randomForest)
 library(xgboost)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  VALIDATE: Water/Urban Prediction Check\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 model_dir <- "data/processed/phase4_models"
 test_file <- "data/processed/phase4_modeling/test_data_with_water_urban.csv"
@@ -36,7 +36,7 @@ model_files <- list.files(model_dir, pattern = "\\.rds$", full.names = TRUE)
 
 cat("Model predictions on water/urban points:\n")
 cat(sprintf("  %-50s  %8s  %8s  %8s  %5s\n", "Model", "Mean", "Median", "Max", "N"))
-cat("  ", strrep("─", 85), "\n")
+cat("  ", strrep("-", 85), "\n")
 
 results <- list()
 
@@ -95,7 +95,7 @@ for (mf in model_files) {
   
   preds <- pmax(preds, 0)  # Clamp negatives
   
-  status <- ifelse(mean(preds) < 15, "✓ PASS", "✗ FAIL")
+  status <- ifelse(mean(preds) < 15, "ok PASS", "FAIL FAIL")
   
   cat(sprintf("  %-50s  %7.1f  %7.1f  %7.1f  %5d  %s\n",
               basename(mf), mean(preds), median(preds), max(preds), 
@@ -113,9 +113,9 @@ for (mf in model_files) {
 cat("\n")
 
 # Also check forest predictions aren't degraded
-cat("Sanity check — forest predictions should still be reasonable:\n")
-cat(sprintf("  %-50s  %8s  %8s  %8s\n", "Model", "Mean", "Median", "R²"))
-cat("  ", strrep("─", 80), "\n")
+cat("Sanity check -- forest predictions should still be reasonable:\n")
+cat(sprintf("  %-50s  %8s  %8s  %8s\n", "Model", "Mean", "Median", "R^2"))
+cat("  ", strrep("-", 80), "\n")
 
 for (mf in model_files) {
   
@@ -157,12 +157,12 @@ for (mf in model_files) {
 }
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  INTERPRETATION\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 cat("  Water/urban predictions:\n")
 cat("    PASS: mean < 15 Mg/ha (models learned water/urban = low biomass)\n")
 cat("    FAIL: mean > 50 Mg/ha (fix didn't work, check covariates)\n\n")
 cat("  Forest predictions:\n")
-cat("    R² should be similar to pre-fix values\n")
+cat("    R^2 should be similar to pre-fix values\n")
 cat("    Mean should be 80-200 Mg/ha (typical NE forest range)\n\n")

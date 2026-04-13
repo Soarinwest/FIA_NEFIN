@@ -58,14 +58,14 @@ CONFIG <- list(
     # Biomass field
     biomass_field = "DRYBIO_AG",  # Aboveground dry biomass (pounds)
     
-    # Conversion factor: pounds/acre → Mg/ha
+    # Conversion factor: pounds/acre -> Mg/ha
     lb_per_acre_to_Mg_per_ha = 0.001121,
     
     # Plot size for expansion
     plot_size_acres = 1,  # FIA subplot = 1/6 acre, but we use TREE-level expansion
     
     # Coordinate fuzzing
-    fuzz_distance_km = 1.6,  # FIA fuzzes ±1 mile (1.609 km)
+    fuzz_distance_km = 1.6,  # FIA fuzzes +/-1 mile (1.609 km)
     fuzz_distance_m = 1609.34
   ),
   
@@ -128,7 +128,7 @@ CONFIG <- list(
     
     # Covariates
     ndvi = "data/processed/ndvi",
-    # prism = "data/processed/prism",  # PRISM not used — Daymet V4 used instead
+    # prism = "data/processed/prism",  # PRISM not used -- Daymet V4 used instead
     
     # Outputs
     runs = "runs",
@@ -207,9 +207,9 @@ get_hex_scale <- function(scale_name) {
 #' Print configuration summary
 print_config <- function() {
   cat("\n")
-  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("===================================================================\n")
   cat("  FIA-NEFIN COMPARISON PIPELINE CONFIGURATION\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   cat("GEOGRAPHIC SCOPE:\n")
   cat("  States:", paste(CONFIG$states, collapse = ", "), "\n")
@@ -234,7 +234,7 @@ print_config <- function() {
   cat("  Processed:", CONFIG$paths$processed, "\n")
   cat("  Outputs:", CONFIG$paths$runs, "\n\n")
   
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
 }
 
 # =============================================================================

@@ -12,9 +12,9 @@ suppressPackageStartupMessages({
   library(jsonlite)
 })
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("  CREATING COMPREHENSIVE HEXAGON GEOJSONS\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 # Create output directory
 dir.create("data/processed/hex_geojson_with_stats", 
@@ -86,29 +86,29 @@ calc_improvement <- function(baseline_se, augmented_se) {
 
 for (scale in scales) {
   
-  cat("\n──────────────────────────────────────────────────────────────────\n")
+  cat("\n------------------------------------------------------------------\n")
   cat("Processing scale:", scale, "(", scale_ha[scale], "ha )\n")
-  cat("──────────────────────────────────────────────────────────────────\n\n")
+  cat("------------------------------------------------------------------\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 1: Load hex geometry
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   geom_file <- paste0("data/hex/hex_grid_", scale, ".geojson")
   
   if (!file.exists(geom_file)) {
-    cat("  ⚠ Geometry file not found:", geom_file, "\n")
+    cat("  WARNING Geometry file not found:", geom_file, "\n")
     cat("  Skipping", scale, "\n")
     next
   }
   
   cat("Step 1: Loading geometry...\n")
   hex_geom <- st_read(geom_file, quiet = TRUE)
-  cat("  ✓ Loaded", nrow(hex_geom), "hexagons\n\n")
+  cat("  ok Loaded", nrow(hex_geom), "hexagons\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 2: Load baseline data (FIA-only)
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 2: Loading baseline (FIA-only) data...\n")
   
@@ -120,18 +120,18 @@ for (scale in scales) {
   baseline_file <- baseline_files[file.exists(baseline_files)][1]
   
   if (is.na(baseline_file)) {
-    cat("  ⚠ Baseline file not found\n")
+    cat("  WARNING Baseline file not found\n")
     baseline_data <- NULL
   } else {
     baseline_data <- read_csv(baseline_file, show_col_types = FALSE) %>%
       filter(n_plots > 0) %>%
       rename_with(~paste0("fia_", .), -hex_id)
-    cat("  ✓ Loaded baseline:", nrow(baseline_data), "hexagons\n\n")
+    cat("  ok Loaded baseline:", nrow(baseline_data), "hexagons\n\n")
   }
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 3: Load augmented data (FIA+NEFIN)
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 3: Loading augmented (FIA+NEFIN) data...\n")
   
@@ -143,18 +143,18 @@ for (scale in scales) {
   augmented_file <- augmented_files[file.exists(augmented_files)][1]
   
   if (is.na(augmented_file)) {
-    cat("  ⚠ Augmented file not found\n")
+    cat("  WARNING Augmented file not found\n")
     augmented_data <- NULL
   } else {
     augmented_data <- read_csv(augmented_file, show_col_types = FALSE) %>%
       filter(n_plots > 0) %>%
       rename_with(~paste0("aug_", .), -hex_id)
-    cat("  ✓ Loaded augmented:", nrow(augmented_data), "hexagons\n\n")
+    cat("  ok Loaded augmented:", nrow(augmented_data), "hexagons\n\n")
   }
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 4: Load comparison metrics
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 4: Loading comparison metrics...\n")
   
@@ -165,16 +165,16 @@ for (scale in scales) {
   comparison_file <- comparison_files[file.exists(comparison_files)][1]
   
   if (is.na(comparison_file)) {
-    cat("  ⚠ Comparison file not found\n")
+    cat("  WARNING Comparison file not found\n")
     comparison_data <- NULL
   } else {
     comparison_data <- read_csv(comparison_file, show_col_types = FALSE)
-    cat("  ✓ Loaded comparison metrics\n\n")
+    cat("  ok Loaded comparison metrics\n\n")
   }
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 5: Join all data
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 5: Joining all data...\n")
   
@@ -190,11 +190,11 @@ for (scale in scales) {
       left_join(augmented_data, by = "hex_id")
   }
   
-  cat("  ✓ Joined all datasets\n\n")
+  cat("  ok Joined all datasets\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 6: Calculate derived metrics
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 6: Calculating derived metrics...\n")
   
@@ -202,7 +202,7 @@ for (scale in scales) {
   has_data <- !is.null(baseline_data) || !is.null(augmented_data)
   
   if (!has_data) {
-    cat("  ⚠ No plot data available for this scale\n")
+    cat("  WARNING No plot data available for this scale\n")
     cat("  Skipping", scale, "(hex grid exists but no aggregated data)\n\n")
     next
   }
@@ -264,16 +264,16 @@ for (scale in scales) {
     }
   }
   
-  cat("  ✓ Calculated", sum(!is.na(hex_complete$improvement_pct)), 
+  cat("  ok Calculated", sum(!is.na(hex_complete$improvement_pct)), 
       "hexagons with improvement metrics\n")
-  cat("  ✓", sum(hex_complete$use_nefin, na.rm = TRUE), 
+  cat("  ok", sum(hex_complete$use_nefin, na.rm = TRUE), 
       "hexagons where NEFIN is recommended\n")
-  cat("  ✓", sum(hex_complete$bias_warning, na.rm = TRUE), 
+  cat("  ok", sum(hex_complete$bias_warning, na.rm = TRUE), 
       "hexagons with bias warning\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 7: Select final columns for output
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 7: Preparing final dataset...\n")
   
@@ -339,11 +339,11 @@ for (scale in scales) {
   hex_final <- hex_complete %>%
     select(any_of(output_cols_present), geometry)
   
-  cat("  ✓ Selected", length(output_cols_present), "attribute columns\n\n")
+  cat("  ok Selected", length(output_cols_present), "attribute columns\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 8: Save GeoJSON
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 8: Saving GeoJSON...\n")
   
@@ -354,14 +354,14 @@ for (scale in scales) {
   
   file_size_mb <- round(file.size(output_file) / 1024^2, 2)
   
-  cat("  ✓ Saved:", output_file, "\n")
-  cat("  ✓ File size:", file_size_mb, "MB\n")
-  cat("  ✓ Features:", nrow(hex_final), "\n")
-  cat("  ✓ Attributes:", ncol(hex_final) - 1, "\n\n")  # -1 for geometry
+  cat("  ok Saved:", output_file, "\n")
+  cat("  ok File size:", file_size_mb, "MB\n")
+  cat("  ok Features:", nrow(hex_final), "\n")
+  cat("  ok Attributes:", ncol(hex_final) - 1, "\n\n")  # -1 for geometry
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Step 9: Create summary statistics
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 9: Summary statistics for", scale, "\n")
   
@@ -388,9 +388,9 @@ for (scale in scales) {
 # CREATE METADATA FILE
 # =============================================================================
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("Creating metadata documentation...\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 metadata <- list(
   title = "Comprehensive Hexagon GeoJSONs with Statistics and Recommendations",
@@ -399,15 +399,15 @@ metadata <- list(
   projection = "EPSG:5070 (CONUS Albers Equal Area)",
   
   scales = list(
-    `100ha` = "100 hectares (1 km²) - Very fine scale",
-    `500ha` = "500 hectares (5 km²) - Fine scale",
-    `1kha` = "1,000 hectares (10 km²) - Landscape scale",
-    `2_4kha` = "2,428 hectares (24 km²) - Intermediate scale",
-    `5kha` = "5,000 hectares (50 km²) - Intermediate scale",
-    `10kha` = "10,000 hectares (100 km²) - Regional scale",
-    `50kha` = "50,000 hectares (500 km²) - Large regional scale",
-    `64kha` = "64,000 hectares (640 km²) - FIA big map hex ⭐",
-    `100kha` = "100,000 hectares (1,000 km²) - Macro scale"
+    `100ha` = "100 hectares (1 km^2) - Very fine scale",
+    `500ha` = "500 hectares (5 km^2) - Fine scale",
+    `1kha` = "1,000 hectares (10 km^2) - Landscape scale",
+    `2_4kha` = "2,428 hectares (24 km^2) - Intermediate scale",
+    `5kha` = "5,000 hectares (50 km^2) - Intermediate scale",
+    `10kha` = "10,000 hectares (100 km^2) - Regional scale",
+    `50kha` = "50,000 hectares (500 km^2) - Large regional scale",
+    `64kha` = "64,000 hectares (640 km^2) - FIA big map hex ",
+    `100kha` = "100,000 hectares (1,000 km^2) - Macro scale"
   ),
   
   recommendations = list(
@@ -428,15 +428,15 @@ metadata <- list(
   
   interpretation = list(
     improvement_pct = "Percent reduction in SE when adding NEFIN. Positive = improvement.",
-    biomass_change_pct = "Percent change in mean biomass FIA→FIA+NEFIN. Large values suggest compositional bias.",
+    biomass_change_pct = "Percent change in mean biomass FIA->FIA+NEFIN. Large values suggest compositional bias.",
     bias_warning = "TRUE if NEFIN comprises >50% of plots. May indicate non-representative sampling.",
     compositional_bias = "TRUE if biomass changes >10% AND NEFIN >20%. Pooling may be problematic.",
     use_nefin = "Recommendation to use NEFIN data at this scale.",
-    reliable = "Sufficient plots (≥3) AND no bias warning."
+    reliable = "Sufficient plots (>=3) AND no bias warning."
   ),
   
   usage_examples = list(
-    QGIS = "Load GeoJSON → Style by 'recommendation' → Create thematic map",
+    QGIS = "Load GeoJSON -> Style by 'recommendation' -> Create thematic map",
     Python = "gdf = gpd.read_file('hex_1kha_complete.geojson')",
     R = "hex <- st_read('hex_1kha_complete.geojson')",
     JavaScript = "L.geoJSON(data, {style: feature => styleByRecommendation(feature)})"
@@ -447,7 +447,7 @@ metadata <- list(
 metadata_file <- "data/processed/hex_geojson_with_stats/METADATA.json"
 write_json(metadata, metadata_file, pretty = TRUE, auto_unbox = TRUE)
 
-cat("✓ Saved metadata:", metadata_file, "\n\n")
+cat("ok Saved metadata:", metadata_file, "\n\n")
 
 # Save as Markdown (more readable)
 metadata_md <- "data/processed/hex_geojson_with_stats/README.md"
@@ -466,9 +466,9 @@ readme_content <- paste0(
   "- `hex_5kha_complete.geojson` - 5,000 hectare hexagons (intermediate scale)\n",
   "- `hex_10kha_complete.geojson` - 10,000 hectare hexagons (regional scale)\n",
   "- `hex_50kha_complete.geojson` - 50,000 hectare hexagons (large regional)\n",
-  "- `hex_64kha_complete.geojson` - 64,000 hectare hexagons (FIA big map) ⭐\n",
+  "- `hex_64kha_complete.geojson` - 64,000 hectare hexagons (FIA big map) \n",
   "- `hex_100kha_complete.geojson` - 100,000 hectare hexagons (macro scale)\n\n",
-  "**Note**: ⭐ marks FIA reference scale (big map hexagons).\n\n",
+  "**Note**:  marks FIA reference scale (big map hexagons).\n\n",
   "## Key Attributes\n\n",
   "### Plot Counts\n",
   "- `n_plots_total` - Total plots in hexagon (FIA + NEFIN)\n",
@@ -490,7 +490,7 @@ readme_content <- paste0(
   "### Warnings\n",
   "- `bias_warning` - TRUE if NEFIN >50% (may bias sample)\n",
   "- `compositional_bias` - TRUE if large biomass shift + high NEFIN %\n",
-  "- `reliable` - TRUE if ≥3 plots AND no bias warning\n\n",
+  "- `reliable` - TRUE if >=3 plots AND no bias warning\n\n",
   "## Recommendation Categories\n\n",
   "| Category | Scale Range | Description |\n",
   "|----------|-------------|-------------|\n",
@@ -501,11 +501,11 @@ readme_content <- paste0(
   "## Usage Examples\n\n",
   "### QGIS\n",
   "```\n",
-  "1. Layer → Add Layer → Add Vector Layer\n",
+  "1. Layer -> Add Layer -> Add Vector Layer\n",
   "2. Select hex_1kha_complete.geojson\n",
-  "3. Right-click → Properties → Symbology\n",
-  "4. Categorized → Column: recommendation\n",
-  "5. Classify → Apply custom colors\n",
+  "3. Right-click -> Properties -> Symbology\n",
+  "4. Categorized -> Column: recommendation\n",
+  "5. Classify -> Apply custom colors\n",
   "```\n\n",
   "### Python\n",
   "```python\n",
@@ -544,15 +544,15 @@ readme_content <- paste0(
 )
 
 writeLines(readme_content, metadata_md)
-cat("✓ Saved README:", metadata_md, "\n\n")
+cat("ok Saved README:", metadata_md, "\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("══════════════════════════════════════════════════════════════════\n")
+cat("==================================================================\n")
 cat("  HEXAGON GEOJSON CREATION COMPLETE\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 cat("Created GeoJSON files in: data/processed/hex_geojson_with_stats/\n\n")
 
@@ -560,27 +560,27 @@ cat("Files created:\n")
 for (scale in scales) {
   file <- paste0("hex_", scale, "_complete.geojson")
   if (file.exists(paste0("data/processed/hex_geojson_with_stats/", file))) {
-    cat("  ✓", file, "\n")
+    cat("  ok", file, "\n")
   }
 }
 
-cat("\n  ✓ METADATA.json\n")
-cat("  ✓ README.md\n\n")
+cat("\n  ok METADATA.json\n")
+cat("  ok README.md\n\n")
 
 cat("These GeoJSONs include:\n")
-cat("  • Plot counts (FIA, NEFIN, total)\n")
-cat("  • Biomass statistics (FIA-only vs augmented)\n")
-cat("  • Improvement metrics\n")
-cat("  • Recommendations (when to use NEFIN)\n")
-cat("  • Bias warnings\n")
-cat("  • Covariates (NDVI, climate)\n")
-cat("  • Quality flags\n\n")
+cat("  - Plot counts (FIA, NEFIN, total)\n")
+cat("  - Biomass statistics (FIA-only vs augmented)\n")
+cat("  - Improvement metrics\n")
+cat("  - Recommendations (when to use NEFIN)\n")
+cat("  - Bias warnings\n")
+cat("  - Covariates (NDVI, climate)\n")
+cat("  - Quality flags\n\n")
 
 cat("Use these for:\n")
-cat("  • Interactive web maps\n")
-cat("  • QGIS visualization\n")
-cat("  • Python/R spatial analysis\n")
-cat("  • Supplementary materials\n")
-cat("  • Sharing with collaborators\n\n")
+cat("  - Interactive web maps\n")
+cat("  - QGIS visualization\n")
+cat("  - Python/R spatial analysis\n")
+cat("  - Supplementary materials\n")
+cat("  - Sharing with collaborators\n\n")
 
-cat("Complete! ✨\n\n")
+cat("Complete! \n\n")

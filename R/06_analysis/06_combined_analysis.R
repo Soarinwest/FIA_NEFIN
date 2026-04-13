@@ -7,9 +7,9 @@ source("R/00_config/config.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  COMBINED ANALYSIS: SYNTHESIZING RESULTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD ALL RESULTS
@@ -25,16 +25,16 @@ comparison_metrics <- read_csv("data/processed/comparison_metrics.csv",
 mc_uncertainty <- read_csv("data/processed/monte_carlo/plot_uncertainty.csv",
                            show_col_types = FALSE)
 
-cat("  ✓ Direct comparison metrics\n")
-cat("  ✓ Monte Carlo uncertainty\n")
+cat("  ok Direct comparison metrics\n")
+cat("  ok Monte Carlo uncertainty\n")
 
 # =============================================================================
 # KEY FINDINGS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  KEY FINDINGS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # 1. Fuzzing uncertainty
 ndvi_uncertainty <- mean(mc_uncertainty$ndvi_s2_sd, na.rm = TRUE)
@@ -43,10 +43,10 @@ temp_uncertainty <- mean(mc_uncertainty$tmean_sd, na.rm = TRUE)
 ppt_uncertainty <- mean(mc_uncertainty$ppt_sd, na.rm = TRUE)
 
 cat("1. COORDINATE FUZZING INTRODUCES SUBSTANTIAL UNCERTAINTY:\n")
-cat(sprintf("   NDVI:         ±%.4f units (±%.1f%% relative)\n", 
+cat(sprintf("   NDVI:         +/-%.4f units (+/-%.1f%% relative)\n", 
             ndvi_uncertainty, ndvi_uncertainty_pct))
-cat(sprintf("   Temperature:  ±%.2f °C\n", temp_uncertainty))
-cat(sprintf("   Precipitation: ±%.1f mm\n\n", ppt_uncertainty))
+cat(sprintf("   Temperature:  +/-%.2f  deg C\n", temp_uncertainty))
+cat(sprintf("   Precipitation: +/-%.1f mm\n\n", ppt_uncertainty))
 
 # 2. Augmentation improvement
 best_improvement <- comparison_metrics %>%
@@ -75,20 +75,20 @@ scale_trend <- cor(log(comparison_metrics$area_ha),
 cat("3. SCALE-DEPENDENCY CONFIRMED:\n")
 cat(sprintf("   Correlation (log scale vs RMSE): %.3f\n", scale_trend))
 if (scale_trend > 0.5) {
-  cat("   → Unexpected: Precision appears to matter at coarse scales\n\n")
+  cat("   -> Unexpected: Precision appears to matter at coarse scales\n\n")
 } else if (scale_trend < -0.5) {
-  cat("   → As expected: Precision matters more at fine scales\n\n")
+  cat("   -> As expected: Precision matters more at fine scales\n\n")
 } else {
-  cat("   → No clear scale dependency detected\n\n")
+  cat("   -> No clear scale dependency detected\n\n")
 }
 
 # =============================================================================
 # COMPARATIVE ANALYSIS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  COMPARATIVE ANALYSIS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load augmented for NEFIN variance
 augmented <- read_csv("data/processed/augmented_with_covariates.csv",
@@ -133,9 +133,9 @@ cat(sprintf("NEFIN reduces covariate uncertainty by %.1fx-%.1fx\n\n",
 # RECOMMENDATIONS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  RECOMMENDATIONS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Find threshold scale
 threshold_scale <- comparison_metrics %>%
@@ -144,17 +144,17 @@ threshold_scale <- comparison_metrics %>%
   slice(1)
 
 if (nrow(threshold_scale) > 0) {
-  cat(sprintf("✓ Use precise coordinates for analyses at scales < %s (%.0f ha)\n",
+  cat(sprintf("ok Use precise coordinates for analyses at scales < %s (%.0f ha)\n",
               threshold_scale$scale,
               threshold_scale$area_ha))
 } else {
-  cat("✓ Precise coordinates valuable at ALL analyzed scales\n")
+  cat("ok Precise coordinates valuable at ALL analyzed scales\n")
 }
 
-cat(sprintf("✓ FIA coordinates adequate for regional analyses (>%.0f ha)\n",
+cat(sprintf("ok FIA coordinates adequate for regional analyses (>%.0f ha)\n",
             max(comparison_metrics$area_ha) / 2))
 
-cat(sprintf("✓ Coordinate precision critical when NDVI uncertainty (±%.4f) exceeds\n",
+cat(sprintf("ok Coordinate precision critical when NDVI uncertainty (+/-%.4f) exceeds\n",
             ndvi_uncertainty))
 cat("  measurement error of biomass estimates\n\n")
 
@@ -175,14 +175,14 @@ combined_results <- list(
 
 saveRDS(combined_results, "data/processed/combined_analysis_results.rds")
 
-cat("✓ Saved combined results: data/processed/combined_analysis_results.rds\n\n")
+cat("ok Saved combined results: data/processed/combined_analysis_results.rds\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  ANALYSIS COMPLETE! 🎉\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n")
+cat("  ANALYSIS COMPLETE! \n")
+cat("===================================================================\n\n")
 
 cat("Key Takeaway:\n")
-cat(sprintf("  Coordinate fuzzing introduces ±%.4f NDVI uncertainty.\n", 
+cat(sprintf("  Coordinate fuzzing introduces +/-%.4f NDVI uncertainty.\n", 
             ndvi_uncertainty))
 cat(sprintf("  NEFIN's precise coordinates reduce this by %.1fx.\n",
             comparison$Reduction_Factor[comparison$Variable == "NDVI"]))

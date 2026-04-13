@@ -15,9 +15,9 @@ library(terra)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  EXTRACT BASELINE COVARIATES (Phase 4 Config + Naming)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD BASELINE DATA
@@ -58,12 +58,12 @@ for (cov_key in covariates_to_extract) {
   cov <- COVARIATES[[cov_key]]
   
   if (is.null(cov)) {
-    cat("  ⚠ Covariate not found in config:", cov_key, "\n")
+    cat("  WARNING Covariate not found in config:", cov_key, "\n")
     next
   }
   
   if (!cov$active) {
-    cat("  ⊘ Covariate not active:", cov$display_name, "\n")
+    cat("  -- Covariate not active:", cov$display_name, "\n")
     next
   }
   
@@ -71,7 +71,7 @@ for (cov_key in covariates_to_extract) {
   
   # Check if file exists
   if (!file.exists(cov$path)) {
-    cat(sprintf("    ⚠ File not found: %s\n", cov$path))
+    cat(sprintf("    WARNING File not found: %s\n", cov$path))
     cat(sprintf("    Creating NA column...\n\n"))
     
     # Create column with scale-specific name
@@ -90,7 +90,7 @@ for (cov_key in covariates_to_extract) {
   col_name <- paste0(cov$name, "_", gsub("m", "", cov$resolution), "m")
   baseline[[col_name]] <- vals[[2]]
   
-  cat(sprintf("    ✓ Extracted → %s\n", col_name))
+  cat(sprintf("    ok Extracted -> %s\n", col_name))
   cat(sprintf("    Range: %.3f - %.3f\n",
               min(baseline[[col_name]], na.rm = TRUE),
               max(baseline[[col_name]], na.rm = TRUE)))
@@ -106,7 +106,7 @@ cat("Saving enriched baseline dataset...\n")
 output_path <- "data/processed/baseline_with_covariates.csv"
 write_csv(baseline, output_path)
 
-cat("  ✓ Saved:", output_path, "\n")
+cat("  ok Saved:", output_path, "\n")
 cat("  Rows:", nrow(baseline), "\n")
 cat("  Columns:", ncol(baseline), "\n\n")
 
@@ -114,9 +114,9 @@ cat("  Columns:", ncol(baseline), "\n\n")
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  COVARIATE SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Get the column names that were created
 extracted_cols <- grep("_(10m|250m)$", names(baseline), value = TRUE)
@@ -139,6 +139,6 @@ if (length(extracted_cols) > 0) {
       sprintf(" (%.1f%%)\n\n", 100 * nrow(complete) / nrow(baseline)))
 }
 
-cat("✓ Baseline covariates extracted using Phase 4 config!\n")
+cat("ok Baseline covariates extracted using Phase 4 config!\n")
 cat("Next: Extract augmented covariates\n")
 cat("      Rscript R/05_extract_covariates/02_extract_augmented_covariates.R\n\n")

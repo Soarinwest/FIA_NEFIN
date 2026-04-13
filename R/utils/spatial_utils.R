@@ -308,9 +308,9 @@ calculate_area <- function(sf_obj, units = "ha") {
   areas_numeric <- as.numeric(areas)
   
   if (units == "ha") {
-    areas_numeric <- areas_numeric / 10000  # m² to ha
+    areas_numeric <- areas_numeric / 10000  # m^2 to ha
   } else if (units == "km2") {
-    areas_numeric <- areas_numeric / 1e6    # m² to km²
+    areas_numeric <- areas_numeric / 1e6    # m^2 to km^2
   } else if (units != "m2") {
     stop("Unknown units: ", units)
   }

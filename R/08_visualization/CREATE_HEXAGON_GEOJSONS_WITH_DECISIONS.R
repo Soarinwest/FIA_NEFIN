@@ -12,9 +12,9 @@ suppressPackageStartupMessages({
   library(jsonlite)
 })
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("  ENHANCED HEXAGON GEOJSONS WITH DECISION FRAMEWORK\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 # Create output directory
 dir.create("data/processed/hex_geojson_with_decisions", 
@@ -96,26 +96,26 @@ names(scale_ha) <- scales
 
 for (scale in scales) {
   
-  cat("\n──────────────────────────────────────────────────────────────────\n")
+  cat("\n------------------------------------------------------------------\n")
   cat("Processing scale:", scale, "(", scale_ha[scale], "ha )\n")
-  cat("──────────────────────────────────────────────────────────────────\n\n")
+  cat("------------------------------------------------------------------\n\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Load geometry
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   geom_file <- paste0("data/hex/hex_grid_", scale, ".geojson")
   if (!file.exists(geom_file)) {
-    cat("  ⚠ Geometry not found, skipping\n")
+    cat("  WARNING Geometry not found, skipping\n")
     next
   }
   
   hex_geom <- st_read(geom_file, quiet = TRUE)
   cat("Step 1: Loaded", nrow(hex_geom), "hexagons\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Load data
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   # Try multiple file locations
   data_files <- c(
@@ -127,7 +127,7 @@ for (scale in scales) {
   data_file <- data_files[file.exists(data_files)][1]
   
   if (is.na(data_file)) {
-    cat("  ⚠ Data file not found, skipping\n")
+    cat("  WARNING Data file not found, skipping\n")
     next
   }
   
@@ -136,9 +136,9 @@ for (scale in scales) {
   
   cat("Step 2: Loaded", nrow(hex_data), "hex records\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Apply decision framework
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 3: Applying decision framework...\n")
   
@@ -203,11 +203,11 @@ for (scale in scales) {
       )
     )
   
-  cat("  ✓ Applied framework to", nrow(hex_data), "hexagons\n")
+  cat("  ok Applied framework to", nrow(hex_data), "hexagons\n")
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Join geometry and data
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   cat("Step 4: Creating enhanced GeoJSON...\n")
   
@@ -248,16 +248,16 @@ for (scale in scales) {
       geometry
     )
   
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   # Save GeoJSON
-  # ───────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------
   
   output_file <- paste0("data/processed/hex_geojson_with_decisions/hex_", 
                         scale, "_decision.geojson")
   
   st_write(hex_final, output_file, delete_dsn = TRUE, quiet = TRUE)
   
-  cat("  ✓ Saved:", output_file, "\n")
+  cat("  ok Saved:", output_file, "\n")
   cat("    Hexagons:", nrow(hex_final), "\n")
   
   # Summary statistics for this scale
@@ -268,7 +268,7 @@ for (scale in scales) {
   
   cat("    Recommendations:\n")
   for (i in seq_len(nrow(rec_summary))) {
-    cat("      •", rec_summary$recommendation_simple[i], ":", 
+    cat("      -", rec_summary$recommendation_simple[i], ":", 
         rec_summary$pct[i], "%\n")
   }
 }
@@ -277,9 +277,9 @@ for (scale in scales) {
 # CREATE METADATA
 # =============================================================================
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("Creating metadata documentation...\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 metadata <- list(
   title = "Hexagon GeoJSONs with Integrated Decision Framework",
@@ -334,7 +334,7 @@ metadata <- list(
 metadata_file <- "data/processed/hex_geojson_with_decisions/METADATA.json"
 write_json(metadata, metadata_file, pretty = TRUE, auto_unbox = TRUE)
 
-cat("✓ Saved metadata:", metadata_file, "\n\n")
+cat("ok Saved metadata:", metadata_file, "\n\n")
 
 # Create README
 readme_content <- paste0(
@@ -376,14 +376,14 @@ readme_content <- paste0(
   "- `precision_benefit` - Qualitative benefit level\n",
   "- `rec_rationale` - Justification for recommendation\n\n",
   "### Quality Flags\n",
-  "- `reliable` - TRUE if trustworthy (≥3 plots, <80% NEFIN)\n",
+  "- `reliable` - TRUE if trustworthy (>=3 plots, <80% NEFIN)\n",
   "- `high_variance` - TRUE if heterogeneous (SD >50)\n",
   "- `high_uncertainty` - TRUE if uncertain estimates\n\n",
   "## Usage Examples\n\n",
   "### QGIS\n",
   "```\n",
   "1. Load GeoJSON file\n",
-  "2. Symbology → Categorized\n",
+  "2. Symbology -> Categorized\n",
   "3. Column: recommendation_simple\n",
   "4. Colors: Green (NEFIN-only), Orange (FIA+NEFIN), Blue (FIA-only)\n",
   "```\n\n",
@@ -429,31 +429,31 @@ readme_content <- paste0(
 
 readme_file <- "data/processed/hex_geojson_with_decisions/README.md"
 writeLines(readme_content, readme_file)
-cat("✓ Saved README:", readme_file, "\n\n")
+cat("ok Saved README:", readme_file, "\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("══════════════════════════════════════════════════════════════════\n")
+cat("==================================================================\n")
 cat("  ENHANCED GEOJSON CREATION COMPLETE\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 cat("Location: data/processed/hex_geojson_with_decisions/\n\n")
 
 cat("Files include:\n")
-cat("  • Hexagon geometry\n")
-cat("  • Biomass statistics\n")
-cat("  • Decision recommendations\n")
-cat("  • Confidence scores\n")
-cat("  • Quality flags\n")
-cat("  • Interpretive rationale\n\n")
+cat("  - Hexagon geometry\n")
+cat("  - Biomass statistics\n")
+cat("  - Decision recommendations\n")
+cat("  - Confidence scores\n")
+cat("  - Quality flags\n")
+cat("  - Interpretive rationale\n\n")
 
 cat("Use these for:\n")
-cat("  • Publication figures\n")
-cat("  • Web mapping applications\n")
-cat("  • GIS analysis (QGIS, ArcGIS)\n")
-cat("  • Practitioner guidance\n")
-cat("  • Decision support tools\n\n")
+cat("  - Publication figures\n")
+cat("  - Web mapping applications\n")
+cat("  - GIS analysis (QGIS, ArcGIS)\n")
+cat("  - Practitioner guidance\n")
+cat("  - Decision support tools\n\n")
 
-cat("Complete! ✨\n\n")
+cat("Complete! \n\n")

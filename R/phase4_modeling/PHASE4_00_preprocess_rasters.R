@@ -8,7 +8,7 @@
 # KEY FEATURES:
 # - Uses YOUR template grids (guarantees exact grid match)
 # - EPSG:5070 (NAD83 Albers Equal Area - meters)
-# - Clips to AOI shapefile (PHASE4_CONFIG$paths$aoi — set EXTERNAL_DATA_ROOT in PHASE4_config.R)
+# - Clips to AOI shapefile (PHASE4_CONFIG$paths$aoi -- set EXTERNAL_DATA_ROOT in PHASE4_config.R)
 # - Verifies every output immediately after writing
 # - Deletes corrupt files and stops
 # - Never uses file.copy() - always projects through template
@@ -75,12 +75,12 @@ EXTENT_TOLERANCE <- 100.0      # 100 meters
 # Set to FALSE to skip files that already exist (faster for reruns)
 OVERWRITE <- FALSE  # Change to TRUE to force reprocessing
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE 4: TEMPLATE-ALIGNED RASTER PREPROCESSING\n")
 cat("  EPSG:5070 (NAD83 Albers) with AOI Clipping\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
-cat("✓ Cleared PostgreSQL PROJ paths (prevents CRS read errors)\n\n")
+cat("ok Cleared PostgreSQL PROJ paths (prevents CRS read errors)\n\n")
 
 cat("Configuration:\n")
 cat("  Fine template:", TEMPLATE_FINE, "\n")
@@ -126,9 +126,9 @@ log_entry <- function(cov, scale, src, out, method, status, error = "") {
 # LOAD TEMPLATE GRIDS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  LOADING TEMPLATE GRIDS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load fine scale template
 if (!file.exists(TEMPLATE_FINE)) {
@@ -138,7 +138,7 @@ if (!file.exists(TEMPLATE_FINE)) {
 cat("Loading fine scale (10m) template...\n")
 template_fine <- rast(TEMPLATE_FINE)
 
-cat("  ✓ Loaded\n")
+cat("  ok Loaded\n")
 crs_proj_fine <- crs(template_fine, proj = TRUE)
 cat("    CRS:", substr(crs_proj_fine, 1, 80), "...\n")
 cat("    Resolution:", paste(res(template_fine), collapse = " x "), "meters\n")
@@ -153,7 +153,7 @@ if (!file.exists(TEMPLATE_COARSE)) {
 cat("Loading coarse scale (250m) template...\n")
 template_coarse <- rast(TEMPLATE_COARSE)
 
-cat("  ✓ Loaded\n")
+cat("  ok Loaded\n")
 crs_proj_coarse <- crs(template_coarse, proj = TRUE)
 cat("    CRS:", substr(crs_proj_coarse, 1, 80), "...\n")
 cat("    Resolution:", paste(res(template_coarse), collapse = " x "), "meters\n")
@@ -193,15 +193,15 @@ verify_is_5070 <- function(r, template_name) {
 verify_is_5070(template_fine, "Fine template")
 verify_is_5070(template_coarse, "Coarse template")
 
-cat("✓ Both templates verified to be EPSG:5070 (NAD83 Conus Albers)\n\n")
+cat("ok Both templates verified to be EPSG:5070 (NAD83 Conus Albers)\n\n")
 
 # =============================================================================
 # LOAD AOI SHAPEFILE
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  LOADING AOI SHAPEFILE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 if (!file.exists(AOI_SHAPEFILE)) {
   stop(sprintf("FATAL: AOI shapefile not found: %s", AOI_SHAPEFILE))
@@ -219,7 +219,7 @@ aoi_proj <- st_transform(aoi, 5070)
 
 aoi_bbox <- st_bbox(aoi_proj)
 
-cat("  ✓ AOI ready\n")
+cat("  ok AOI ready\n")
 cat("    Extent:\n")
 cat("      xmin:", sprintf("%.0f", aoi_bbox["xmin"]), "meters\n")
 cat("      xmax:", sprintf("%.0f", aoi_bbox["xmax"]), "meters\n")
@@ -316,9 +316,9 @@ verify_output <- function(output_path, template, covariate_name) {
 
 process_covariate <- function(cov_key, cov, template, output_dir) {
   
-  cat("\n──────────────────────────────────────────────────────────────────\n")
+  cat("\n------------------------------------------------------------------\n")
   cat("Processing:", cov$display_name, "(", cov$resolution, ")\n")
-  cat("──────────────────────────────────────────────────────────────────\n")
+  cat("------------------------------------------------------------------\n")
   
   output_path <- file.path(output_dir, basename(cov$path))
   
@@ -328,18 +328,18 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
   # Check if output exists and OVERWRITE setting
   if (file.exists(output_path)) {
     if (!OVERWRITE) {
-      cat("  ✓ Output exists, skipping (OVERWRITE=FALSE)\n")
+      cat("  ok Output exists, skipping (OVERWRITE=FALSE)\n")
       log_entry(cov$display_name, cov$resolution, cov$path, output_path,
                 "skipped", "skipped_exists", "")
       return(TRUE)
     } else {
-      cat("  ⊘ Output exists, will overwrite (OVERWRITE=TRUE)\n")
+      cat("  -- Output exists, will overwrite (OVERWRITE=TRUE)\n")
     }
   }
   
   # Check source exists
   if (!file.exists(cov$path)) {
-    cat("  ✗ Source not found\n")
+    cat("  FAIL Source not found\n")
     log_entry(cov$display_name, cov$resolution, cov$path, output_path,
               "none", "failed_source_missing", "Source file not found")
     return(FALSE)
@@ -350,9 +350,9 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
   r_source <- NULL
   tryCatch({
     r_source <- rast(cov$path)
-    cat("  ✓ Loaded\n")
+    cat("  ok Loaded\n")
   }, error = function(e) {
-    cat("  ✗ Load failed:", e$message, "\n")
+    cat("  FAIL Load failed:", e$message, "\n")
     log_entry(cov$display_name, cov$resolution, cov$path, output_path,
               "none", "failed_load", e$message)
     return(FALSE)
@@ -369,9 +369,9 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
   r_proj <- NULL
   tryCatch({
     r_proj <- project(r_source, template, method = method, align = TRUE)
-    cat("  ✓ Projected\n")
+    cat("  ok Projected\n")
   }, error = function(e) {
-    cat("  ✗ Projection failed:", e$message, "\n")
+    cat("  FAIL Projection failed:", e$message, "\n")
     log_entry(cov$display_name, cov$resolution, cov$path, output_path,
               method, "failed_project", e$message)
     return(FALSE)
@@ -385,9 +385,9 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
   tryCatch({
     r_clipped <- crop(r_proj, aoi_vect)
     r_clipped <- mask(r_clipped, aoi_vect)
-    cat("  ✓ Clipped\n")
+    cat("  ok Clipped\n")
   }, error = function(e) {
-    cat("  ✗ Clipping failed:", e$message, "\n")
+    cat("  FAIL Clipping failed:", e$message, "\n")
     log_entry(cov$display_name, cov$resolution, cov$path, output_path,
               method, "failed_clip", e$message)
     return(FALSE)
@@ -402,9 +402,9 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
                 overwrite = TRUE,
                 gdal = GDAL_OPTIONS,
                 datatype = "FLT4S")
-    cat("  ✓ Written\n")
+    cat("  ok Written\n")
   }, error = function(e) {
-    cat("  ✗ Write failed:", e$message, "\n")
+    cat("  FAIL Write failed:", e$message, "\n")
     log_entry(cov$display_name, cov$resolution, cov$path, output_path,
               method, "failed_write", e$message)
     return(FALSE)
@@ -415,8 +415,8 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
   verify_result <- verify_output(output_path, template, cov$display_name)
   
   if (!verify_result$success) {
-    cat("  ✗ VERIFICATION FAILED:", verify_result$message, "\n")
-    cat("  → Deleting corrupt output\n")
+    cat("  FAIL VERIFICATION FAILED:", verify_result$message, "\n")
+    cat("  -> Deleting corrupt output\n")
     
     if (file.exists(output_path)) file.remove(output_path)
     
@@ -427,7 +427,7 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
     return(FALSE)
   }
   
-  cat("  ✓ VERIFIED\n")
+  cat("  ok VERIFIED\n")
   
   log_entry(cov$display_name, cov$resolution, cov$path, output_path,
             method, "success", "")
@@ -444,9 +444,9 @@ process_covariate <- function(cov_key, cov, template, output_dir) {
 # MAIN PROCESSING LOOP
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PROCESSING COVARIATES\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 
 active_covs <- Filter(function(x) x$active, COVARIATES)
 
@@ -482,9 +482,9 @@ for (cov_key in names(active_covs)) {
 log_path <- "preprocessing_log.csv"
 write.csv(processing_log, log_path, row.names = FALSE)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Summary:\n")
 cat("  Total:", n_total, "\n")
@@ -495,11 +495,11 @@ cat("  Failed:", n_failed, "\n\n")
 cat("Log:", log_path, "\n\n")
 
 if (n_failed > 0) {
-  cat("⚠ Some failures detected - see log\n")
+  cat("WARNING Some failures detected - see log\n")
   failed <- processing_log[grepl("^failed", processing_log$status), ]
   cat("\nFailed covariates:\n")
   for (i in 1:nrow(failed)) {
-    cat(sprintf("  • %s: %s\n", failed$covariate[i], failed$error_msg[i]))
+    cat(sprintf("  - %s: %s\n", failed$covariate[i], failed$error_msg[i]))
   }
   cat("\n")
 }
@@ -538,20 +538,20 @@ for (cov_name in names(COVARIATES)) {
 }
 
 if (preprocessed_count > 0) {
-  cat("✓ Using", preprocessed_count, "preprocessed rasters (EPSG:5070, template-aligned)\\n")
+  cat("ok Using", preprocessed_count, "preprocessed rasters (EPSG:5070, template-aligned)\\n")
 }
 
 if (missing_count > 0) {
-  cat("ℹ", missing_count, "rasters using originals\\n")
+  cat("INFO", missing_count, "rasters using originals\\n")
 }
 '
 
 writeLines(config_content, "R/00_config/PHASE4_config_covariates_PREPROCESSED.R")
 
-cat("✓ Config updated: R/00_config/PHASE4_config_covariates_PREPROCESSED.R\n\n")
+cat("ok Config updated: R/00_config/PHASE4_config_covariates_PREPROCESSED.R\n\n")
 
 if (n_processed + n_skipped == n_total) {
-  cat("✓✓ All covariates ready!\n\n")
+  cat("okok All covariates ready!\n\n")
 } else {
   cat("Next: Review failures and rerun if needed\n\n")
 }

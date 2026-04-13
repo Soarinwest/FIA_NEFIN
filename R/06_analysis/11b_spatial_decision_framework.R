@@ -37,9 +37,9 @@ MIN_GAP_CM <- 10
 
 inch_to_cm <- function(x) x * 2.54
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  ENHANCED ECDF WITH EXTREME TAIL ANALYSIS - FIXED\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD DATA
@@ -51,7 +51,7 @@ if (!file.exists(path_fhm_mapping)) {
 }
 
 fhm_mapping <- read_csv(path_fhm_mapping, show_col_types = FALSE)
-cat("  ✓ Loaded", nrow(fhm_mapping), "species codes\n")
+cat("  ok Loaded", nrow(fhm_mapping), "species codes\n")
 
 cat("\nLoading FIA data...\n")
 fia_raw <- read_csv(path_fia_tree, show_col_types = FALSE)
@@ -68,7 +68,7 @@ fia <- fia_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-cat("  ✓ FIA:", format(nrow(fia), big.mark = ","), "trees\n")
+cat("  ok FIA:", format(nrow(fia), big.mark = ","), "trees\n")
 
 cat("\nLoading NEFIN data...\n")
 nefin_raw <- read_csv(path_nefin_tree, show_col_types = FALSE)
@@ -85,7 +85,7 @@ nefin <- nefin_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-cat("  ✓ NEFIN:", format(nrow(nefin), big.mark = ","), "trees\n")
+cat("  ok NEFIN:", format(nrow(nefin), big.mark = ","), "trees\n")
 
 # =============================================================================
 # FIND SHARED SPECIES
@@ -105,7 +105,7 @@ if (nrow(species_counts) == 0) {
   stop("No shared species meet MIN_N_PER_DATASET = ", MIN_N_PER_DATASET)
 }
 
-cat("\n✓ Species with ≥", MIN_N_PER_DATASET, " trees in BOTH datasets:", 
+cat("\nok Species with >=", MIN_N_PER_DATASET, " trees in BOTH datasets:", 
     nrow(species_counts), "\n\n")
 
 cat("Top 20 species by total count:\n")
@@ -146,7 +146,7 @@ gap_metrics <- tree_species %>%
   ) %>%
   arrange(desc(gap_cm))
 
-cat("  ✓ Computed metrics for", nrow(gap_metrics), "species\n")
+cat("  ok Computed metrics for", nrow(gap_metrics), "species\n")
 
 # Show gap summary
 cat("\nGap Summary:\n")
@@ -266,7 +266,7 @@ p_ecdf_full <- ggplot(plot_df, aes(x = dbh_cm, color = dataset)) +
 
 out_file1 <- file.path(fig_dir, "ecdf_full_with_gaps.png")
 ggsave(out_file1, p_ecdf_full, width = 16, height = 10, dpi = 300)
-cat("  ✓ Saved:", out_file1, "\n")
+cat("  ok Saved:", out_file1, "\n")
 
 # =============================================================================
 # 2. SIMPLIFIED ECDF - TOP GAP SPECIES ONLY
@@ -337,7 +337,7 @@ if (length(gap_species_only) > 0) {
   
   out_file2 <- file.path(fig_dir, "ecdf_gap_species_only.png")
   ggsave(out_file2, p_gaps_only, width = 14, height = 10, dpi = 300)
-  cat("  ✓ Saved:", out_file2, "\n")
+  cat("  ok Saved:", out_file2, "\n")
 }
 
 # =============================================================================
@@ -398,7 +398,7 @@ if (length(top_gaps) > 0) {
   
   out_file3 <- file.path(fig_dir, "distributions_with_gap_zones.png")
   ggsave(out_file3, p_distributions, width = 13, height = 9, dpi = 300)
-  cat("  ✓ Saved:", out_file3, "\n")
+  cat("  ok Saved:", out_file3, "\n")
   
   # =============================================================================
   # 3B. BOX PLOTS SHOWING GAP DETAIL
@@ -441,7 +441,7 @@ if (length(top_gaps) > 0) {
   
   out_file3b <- file.path(fig_dir, "distributions_boxplots_with_outliers.png")
   ggsave(out_file3b, p_boxes, width = 13, height = 9, dpi = 300)
-  cat("  ✓ Saved:", out_file3b, "\n")
+  cat("  ok Saved:", out_file3b, "\n")
 }
 
 # =============================================================================
@@ -461,25 +461,25 @@ gap_table_full <- gap_metrics %>%
   mutate(across(where(is.numeric), ~round(., 2)))
 
 write_csv(gap_table_full, file.path(tab_dir, "extreme_tail_gap_analysis_all_species.csv"))
-cat("  ✓ Saved: extreme_tail_gap_analysis_all_species.csv\n")
+cat("  ok Saved: extreme_tail_gap_analysis_all_species.csv\n")
 
 gap_table_substantial <- gap_table_full %>%
   filter(gap_cm >= MIN_GAP_CM, n_nefin_beyond_fia_max >= 5)
 
 write_csv(gap_table_substantial, 
           file.path(tab_dir, "extreme_tail_gap_analysis_substantial_gaps.csv"))
-cat("  ✓ Saved: extreme_tail_gap_analysis_substantial_gaps.csv\n")
+cat("  ok Saved: extreme_tail_gap_analysis_substantial_gaps.csv\n")
 
 # =============================================================================
 # SUMMARY OUTPUT
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  EXTREME TAIL GAP ANALYSIS SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 if (nrow(gap_table_substantial) > 0) {
-  cat("Species with substantial extreme tail gaps (≥", MIN_GAP_CM, " cm):\n\n")
+  cat("Species with substantial extreme tail gaps (>=", MIN_GAP_CM, " cm):\n\n")
   
   print(gap_table_substantial %>%
           select(common_name, gap_cm, fia_max, nefin_max, 
@@ -488,7 +488,7 @@ if (nrow(gap_table_substantial) > 0) {
         n = 15)
   
   cat("\n")
-  cat(sprintf("✓ %d species show NEFIN captures tree sizes FIA doesn't\n",
+  cat(sprintf("ok %d species show NEFIN captures tree sizes FIA doesn't\n",
               nrow(gap_table_substantial)))
   cat(sprintf("  Average gap: %.1f cm\n", mean(gap_table_substantial$gap_cm)))
   cat(sprintf("  Maximum gap: %.1f cm (%s)\n", 
@@ -501,9 +501,9 @@ if (nrow(gap_table_substantial) > 0) {
   cat("No species show substantial gaps with current threshold (", MIN_GAP_CM, " cm)\n")
 }
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PLOTS CREATED:\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 cat("1. ecdf_full_with_gaps.png - All", length(top_species_ordered), "species with gaps highlighted\n")
 if (length(gap_species_only) > 0) {
   cat("2. ecdf_gap_species_only.png -", length(gap_species_only), "species with substantial gaps\n")
@@ -511,5 +511,5 @@ if (length(gap_species_only) > 0) {
 if (length(top_gaps) > 0) {
   cat("3. distributions_with_gap_zones.png -", length(top_gaps), "species density plots\n")
 }
-cat("\n✓ All outputs saved to:", out_dir, "\n")
-cat("\n═══════════════════════════════════════════════════════════════════\n\n")
+cat("\nok All outputs saved to:", out_dir, "\n")
+cat("\n===================================================================\n\n")

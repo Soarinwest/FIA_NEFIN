@@ -5,7 +5,7 @@
 #   Compare FIA vs NEFIN DBH distributions by species using violin plots
 #
 # Approach:
-#   1. Load FHM species mapping (SPCD → Latin names)
+#   1. Load FHM species mapping (SPCD -> Latin names)
 #   2. Join FIA via SPCD
 #   3. Join NEFIN via Latin name (already in treeSpecies)
 #   4. Compare on shared species
@@ -47,7 +47,7 @@ if (!file.exists(path_fhm_mapping)) {
 }
 
 fhm_mapping <- read_csv(path_fhm_mapping, show_col_types = FALSE)
-message("  ✓ ", nrow(fhm_mapping), " species codes loaded")
+message("  ok ", nrow(fhm_mapping), " species codes loaded")
 
 # =============================================================================
 # PROCESS FIA DATA
@@ -77,7 +77,7 @@ fia <- fia_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-message("  ✓ FIA: ", format(nrow(fia), big.mark = ","), " trees")
+message("  ok FIA: ", format(nrow(fia), big.mark = ","), " trees")
 message("    Unique species: ", n_distinct(fia$common_name))
 
 # =============================================================================
@@ -107,7 +107,7 @@ nefin <- nefin_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-message("  ✓ NEFIN: ", format(nrow(nefin), big.mark = ","), " trees")
+message("  ok NEFIN: ", format(nrow(nefin), big.mark = ","), " trees")
 message("    Unique species: ", n_distinct(nefin$common_name))
 
 # =============================================================================
@@ -125,7 +125,7 @@ species_counts <- tree_species %>%
   mutate(n_total = FIA + NEFIN) %>%
   arrange(desc(n_total))
 
-message("\n✓ Species with ≥", MIN_N_PER_DATASET, " trees in BOTH datasets: ", 
+message("\nok Species with >=", MIN_N_PER_DATASET, " trees in BOTH datasets: ", 
         nrow(species_counts))
 
 if (nrow(species_counts) == 0) {
@@ -166,7 +166,7 @@ p_violin <- ggplot(plot_df, aes(x = common_name, y = dbh_cm, fill = dataset)) +
   labs(
     title = paste0("DBH Distributions by Species (Top ", length(shared_top), 
                    " shared species)"),
-    subtitle = paste0("Both datasets have ≥", MIN_N_PER_DATASET, 
+    subtitle = paste0("Both datasets have >=", MIN_N_PER_DATASET, 
                       " trees per species"),
     x = NULL,
     y = "DBH (cm)",
@@ -175,7 +175,7 @@ p_violin <- ggplot(plot_df, aes(x = common_name, y = dbh_cm, fill = dataset)) +
 
 out_plot <- file.path(fig_dir, "species_dbh_violin_top.png")
 ggsave(out_plot, p_violin, width = 12, height = 6, dpi = 200)
-message("✓ Saved: ", out_plot)
+message("ok Saved: ", out_plot)
 
 # =============================================================================
 # TAIL ENRICHMENT ANALYSIS
@@ -215,7 +215,7 @@ species_tail <- plot_df %>%
 
 out_table <- file.path(tab_dir, "species_tail_enrichment.csv")
 write_csv(species_tail, out_table)
-message("✓ Saved: ", out_table)
+message("ok Saved: ", out_table)
 
 # =============================================================================
 # SUMMARY
@@ -230,4 +230,4 @@ print(species_tail %>%
         head(10), 
       n = 10)
 
-message("\n✓ DONE! Outputs in: ", out_dir)
+message("\nok DONE! Outputs in: ", out_dir)

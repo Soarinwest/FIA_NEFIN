@@ -7,9 +7,9 @@ source("R/00_config/config.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE F: COMPARE BASELINE VS AUGMENTED\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # COMPARE ACROSS SCALES
@@ -27,7 +27,7 @@ for (scale in CONFIG$hex_scales) {
                               paste0("augmented_hex_", scale$name, ".csv"))
   
   if (!file.exists(baseline_path) || !file.exists(augmented_path)) {
-    cat("  ⚠ Files not found, skipping\n\n")
+    cat("  WARNING Files not found, skipping\n\n")
     next
   }
   
@@ -41,7 +41,7 @@ for (scale in CONFIG$hex_scales) {
   cat("  Hexagons with both datasets:", nrow(comparison), "\n")
   
   if (nrow(comparison) == 0) {
-    cat("  ⚠ No overlapping hexagons, skipping\n\n")
+    cat("  WARNING No overlapping hexagons, skipping\n\n")
     next
   }
   
@@ -114,9 +114,9 @@ for (scale in CONFIG$hex_scales) {
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  COMPARISON SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 metrics_all <- bind_rows(results)
 
@@ -129,15 +129,15 @@ print(metrics_all %>%
         arrange(area_ha), 
       n = Inf)
 
-cat("\n✓ Saved: data/processed/comparison_metrics.csv\n\n")
+cat("\nok Saved: data/processed/comparison_metrics.csv\n\n")
 
 # =============================================================================
 # QUICK ANALYSIS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  INITIAL FINDINGS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Find scale with biggest improvement
 best_scale <- metrics_all %>% 
@@ -163,11 +163,11 @@ if (nrow(metrics_all) > 3) {
                      use = "complete.obs")
   cat("Scale vs RMSE correlation:", sprintf("%.3f", scale_trend), "\n")
   if (scale_trend < 0) {
-    cat("  → RMSE decreases as scale increases (precision matters at fine scales)\n")
+    cat("  -> RMSE decreases as scale increases (precision matters at fine scales)\n")
   } else if (scale_trend > 0) {
-    cat("  → RMSE increases as scale increases (unexpected pattern)\n")
+    cat("  -> RMSE increases as scale increases (unexpected pattern)\n")
   } else {
-    cat("  → No clear trend with scale\n")
+    cat("  -> No clear trend with scale\n")
   }
 }
 

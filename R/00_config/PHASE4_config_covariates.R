@@ -12,15 +12,15 @@
 # Author: Soren Donisvitch
 # Updated: January 2026
 # =============================================================================
-# PRODUCTION CONFIG — used in final analysis pipeline
+# PRODUCTION CONFIG -- used in final analysis pipeline
 # Sources: data/raw/daymet/ (Daymet V4, 4 variables: tmean, tmin, tmax, ppt)
-# ETH Global canopy height 2020 — confirmed predictor
+# ETH Global canopy height 2020 -- confirmed predictor
 
 # =============================================================================
 # COVARIATE DEFINITIONS
 # =============================================================================
 
-# Path helpers — resolved from EXTERNAL_DATA_ROOT (defined in PHASE4_config.R)
+# Path helpers -- resolved from EXTERNAL_DATA_ROOT (defined in PHASE4_config.R)
 if (!exists("EXTERNAL_DATA_ROOT")) {
   stop("EXTERNAL_DATA_ROOT not defined. Source R/00_config/PHASE4_config.R before this file.")
 }
@@ -147,7 +147,7 @@ COVARIATES <- list(
     category = "band",
     scale = "fine",
     active = FALSE,
-    notes = "Short-wave infrared band (B11) — excluded from preprocessing (multicollinearity); not in any final model. See PHASE4_00_preprocess_rasters.R"
+    notes = "Short-wave infrared band (B11) -- excluded from preprocessing (multicollinearity); not in any final model. See PHASE4_00_preprocess_rasters.R"
   ),
   
   # ---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ COVARIATES <- list(
     category = "temperature",
     scale = "fine",
     active = TRUE,
-    notes = "Daymet V4 resampled to 10m"  # ← Updated note
+    notes = "Daymet V4 resampled to 10m"  # <- Updated note
   ),
   
   # === ADD THESE TWO NEW ENTRIES ===
@@ -241,7 +241,7 @@ COVARIATES <- list(
     category = "precipitation",
     scale = "fine",
     active = TRUE,
-    notes = "Daymet V4 resampled to 10m"  # ← Updated note
+    notes = "Daymet V4 resampled to 10m"  # <- Updated note
   ),
   
   # ===========================================================================
@@ -261,7 +261,7 @@ COVARIATES <- list(
     category = "canopy",
     scale = "coarse",
     active = TRUE,
-    notes = "ETH Global Canopy Height 2020 — confirmed predictor, 100% variable importance"
+    notes = "ETH Global Canopy Height 2020 -- confirmed predictor, 100% variable importance"
   ),
   
   # ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ COVARIATES <- list(
     category = "temperature",
     scale = "coarse",
     active = TRUE,
-    notes = "Daymet V4 resampled to 250m"  # ← Updated note
+    notes = "Daymet V4 resampled to 250m"  # <- Updated note
   ),
   
   # === ADD THESE TWO NEW ENTRIES ===
@@ -528,19 +528,19 @@ check_covariate_availability <- function() {
 print_active_covariates <- function() {
   active <- get_active_covariates()
   
-  cat("\n═══════════════════════════════════════════════════════════════\n")
+  cat("\n===============================================================\n")
   cat("  ACTIVE COVARIATES FOR MODELING\n")
-  cat("═══════════════════════════════════════════════════════════════\n\n")
+  cat("===============================================================\n\n")
   
   for (scale in c("fine", "coarse")) {
     scale_covs <- Filter(function(x) x$scale == scale, active)
     
     if (length(scale_covs) > 0) {
-      cat(sprintf("──────────────────────────────────────────────────────────────\n"))
+      cat(sprintf("--------------------------------------------------------------\n"))
       cat(sprintf("  %s SCALE (%s)\n", 
                   toupper(scale), 
                   ifelse(scale == "fine", "10m", "250m")))
-      cat(sprintf("──────────────────────────────────────────────────────────────\n"))
+      cat(sprintf("--------------------------------------------------------------\n"))
       
       types <- unique(sapply(scale_covs, function(x) x$type))
       
@@ -549,7 +549,7 @@ print_active_covariates <- function() {
         cat(sprintf("  %s:\n", toupper(type)))
         
         for (cov in type_covs) {
-          status <- if(file.exists(cov$path)) "✓" else "⚠"
+          status <- if(file.exists(cov$path)) "ok" else "WARNING"
           cat(sprintf("    %s %s\n", status, cov$display_name))
         }
       }
@@ -566,7 +566,7 @@ print_active_covariates <- function() {
 # EXPORT
 # =============================================================================
 
-cat("\n✓ Covariate configuration loaded (MATCHES YOUR FILE STRUCTURE)\n")
+cat("\nok Covariate configuration loaded (MATCHES YOUR FILE STRUCTURE)\n")
 cat("  Total covariates defined:", length(COVARIATES), "\n")
 cat("  Currently active:", length(get_active_covariates()), "\n")
 cat("  Fine scale (10m):", length(get_scale_covariates("fine")), "\n")
@@ -578,9 +578,9 @@ active_avail <- avail[avail$active, ]
 missing <- active_avail[!active_avail$exists, ]
 
 if (nrow(missing) > 0) {
-  cat("⚠ Active covariates that need file setup:\n")
+  cat("WARNING Active covariates that need file setup:\n")
   for (i in 1:nrow(missing)) {
-    cat(sprintf("  • %s (%s)\n", missing$display_name[i], missing$scale[i]))
+    cat(sprintf("  - %s (%s)\n", missing$display_name[i], missing$scale[i]))
     cat(sprintf("    Expected: %s\n", missing$path[i]))
   }
   cat("\n")

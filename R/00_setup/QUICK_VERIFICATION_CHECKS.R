@@ -2,9 +2,9 @@
 # QUICK DATA QUALITY VERIFICATION (5 minutes)
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  QUICK DATA QUALITY CHECKS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 library(dplyr)
 library(readr)
@@ -14,7 +14,7 @@ library(readr)
 # =============================================================================
 
 cat("CHECK 1: Empty Hexagons\n")
-cat("───────────────────────────────────────────────────────────────────\n")
+cat("-------------------------------------------------------------------\n")
 
 hex_files <- c(
   "100ha" = "data/processed/hex_aggregated/fia_hex_100ha.csv",
@@ -34,11 +34,11 @@ for (scale in names(hex_files)) {
                 scale, nrow(hex), empty, pct_empty))
     
     if (pct_empty > 50) {
-      cat("⚠ HIGH\n")
+      cat("WARNING HIGH\n")
     } else if (pct_empty > 20) {
-      cat("⚠\n")
+      cat("WARNING\n")
     } else {
-      cat("✓\n")
+      cat("ok\n")
     }
   }
 }
@@ -50,7 +50,7 @@ cat("\n")
 # =============================================================================
 
 cat("CHECK 2: Missing Values (NAs)\n")
-cat("───────────────────────────────────────────────────────────────────\n")
+cat("-------------------------------------------------------------------\n")
 
 # FIA plots
 if (file.exists("data/processed/fia_plots.csv")) {
@@ -68,11 +68,11 @@ if (file.exists("data/processed/fia_plots.csv")) {
       cat(sprintf("  %-20s: %5d NAs (%4.1f%%) ", var, na_count, pct_na))
       
       if (pct_na > 10) {
-        cat("⚠ HIGH\n")
+        cat("WARNING HIGH\n")
       } else if (pct_na > 0) {
-        cat("⚠\n")
+        cat("WARNING\n")
       } else {
-        cat("✓\n")
+        cat("ok\n")
       }
     }
   }
@@ -101,14 +101,14 @@ if (!is.na(nefin_file)) {
     na_count <- sum(is.na(nefin[[biomass_col]]))
     pct_na <- round(100 * na_count / nrow(nefin), 1)
     cat(sprintf("  %-20s: %5d NAs (%4.1f%%) ", biomass_col, na_count, pct_na))
-    if (pct_na > 0) cat("⚠\n") else cat("✓\n")
+    if (pct_na > 0) cat("WARNING\n") else cat("ok\n")
   }
   
   if (!is.na(ndvi_col)) {
     na_count <- sum(is.na(nefin[[ndvi_col]]))
     pct_na <- round(100 * na_count / nrow(nefin), 1)
     cat(sprintf("  %-20s: %5d NAs (%4.1f%%) ", ndvi_col, na_count, pct_na))
-    if (pct_na > 0) cat("⚠\n") else cat("✓\n")
+    if (pct_na > 0) cat("WARNING\n") else cat("ok\n")
   }
   
   cat("\n")
@@ -119,7 +119,7 @@ if (!is.na(nefin_file)) {
 # =============================================================================
 
 cat("CHECK 3: Zero Biomass Values\n")
-cat("───────────────────────────────────────────────────────────────────\n")
+cat("-------------------------------------------------------------------\n")
 
 if (file.exists("data/processed/fia_plots.csv")) {
   fia <- read_csv("data/processed/fia_plots.csv", show_col_types = FALSE)
@@ -131,9 +131,9 @@ if (file.exists("data/processed/fia_plots.csv")) {
     cat(sprintf("  FIA:   %5d zeros (%4.1f%%) ", zero_count, pct_zero))
     
     if (pct_zero > 5) {
-      cat("⚠ Check if legitimate\n")
+      cat("WARNING Check if legitimate\n")
     } else {
-      cat("✓\n")
+      cat("ok\n")
     }
     
     # Check distribution
@@ -152,9 +152,9 @@ if (!is.na(nefin_file) && !is.na(biomass_col)) {
   cat(sprintf("  NEFIN: %5d zeros (%4.1f%%) ", zero_count, pct_zero))
   
   if (pct_zero > 5) {
-    cat("⚠ Check if legitimate\n")
+    cat("WARNING Check if legitimate\n")
   } else {
-    cat("✓\n")
+    cat("ok\n")
   }
   
   cat(sprintf("  Range: %.1f - %.1f Mg/ha\n", 
@@ -169,7 +169,7 @@ cat("\n")
 # =============================================================================
 
 cat("CHECK 4: Monte Carlo Uncertainty Outliers\n")
-cat("───────────────────────────────────────────────────────────────────\n")
+cat("-------------------------------------------------------------------\n")
 
 if (file.exists("data/processed/monte_carlo/plot_uncertainty.csv")) {
   mc <- read_csv("data/processed/monte_carlo/plot_uncertainty.csv", 
@@ -188,11 +188,11 @@ if (file.exists("data/processed/monte_carlo/plot_uncertainty.csv")) {
   
   cat(sprintf("  Outliers (>3 SD): %d ", outliers))
   if (outliers > 100) {
-    cat("⚠ HIGH\n")
+    cat("WARNING HIGH\n")
   } else if (outliers > 0) {
-    cat("⚠\n")
+    cat("WARNING\n")
   } else {
-    cat("✓\n")
+    cat("ok\n")
   }
   
   cat("\n")
@@ -203,7 +203,7 @@ if (file.exists("data/processed/monte_carlo/plot_uncertainty.csv")) {
 # =============================================================================
 
 cat("CHECK 5: Augmented Hex Data\n")
-cat("───────────────────────────────────────────────────────────────────\n")
+cat("-------------------------------------------------------------------\n")
 
 if (file.exists("data/processed/hex_aggregated/augmented_hex_100ha.csv")) {
   aug <- read_csv("data/processed/hex_aggregated/augmented_hex_100ha.csv",
@@ -232,9 +232,9 @@ if (file.exists("data/processed/hex_aggregated/augmented_hex_100ha.csv")) {
       cat(sprintf("  Mean SE augmented: %.2f\n", aug_se))
       
       if (aug_se < base_se) {
-        cat("  ✓ Augmentation reduced SE\n")
+        cat("  ok Augmentation reduced SE\n")
       } else {
-        cat("  ⚠ Augmentation INCREASED SE (composition issue!)\n")
+        cat("  WARNING Augmentation INCREASED SE (composition issue!)\n")
       }
     }
   }
@@ -246,28 +246,28 @@ cat("\n")
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Key Issues to Address:\n\n")
 
 cat("1. Empty Hexagons:\n")
-cat("   → Filter out hexes with n_plots == 0\n")
-cat("   → Recalculate all hex statistics\n\n")
+cat("   -> Filter out hexes with n_plots == 0\n")
+cat("   -> Recalculate all hex statistics\n\n")
 
 cat("2. Missing Values:\n")
-cat("   → Document which variables have NAs\n")
-cat("   → Decide: impute or exclude?\n\n")
+cat("   -> Document which variables have NAs\n")
+cat("   -> Decide: impute or exclude?\n\n")
 
 cat("3. Zero Biomass:\n")
-cat("   → Verify if legitimate (clear-cuts, urban, water)\n")
-cat("   → Or data extraction errors?\n\n")
+cat("   -> Verify if legitimate (clear-cuts, urban, water)\n")
+cat("   -> Or data extraction errors?\n\n")
 
 cat("4. Composition Bias:\n")
-cat("   → NEFIN plots systematically different\n")
-cat("   → Don't pool naively!\n")
-cat("   → Separate precision from composition effects\n\n")
+cat("   -> NEFIN plots systematically different\n")
+cat("   -> Don't pool naively!\n")
+cat("   -> Separate precision from composition effects\n\n")
 
 cat("Verification complete!\n")
 cat("See DATA_QUALITY_AND_STRUCTURE_REVIEW.md for full details\n\n")

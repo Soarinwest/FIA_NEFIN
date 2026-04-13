@@ -19,9 +19,9 @@ library(dplyr)
 library(readr)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: EXTRACT COVARIATES (SCALE-SPECIFIC NAMING)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # CHECK ACTIVE COVARIATES
@@ -40,11 +40,11 @@ cat("Active covariates:", length(active_covs), "\n\n")
 cat("By scale:\n")
 cat("  FINE (10m):", length(fine_covs), "covariates\n")
 for (cov in fine_covs) {
-  cat("    ✓", cov$display_name, "\n")
+  cat("    ok", cov$display_name, "\n")
 }
 cat("  COARSE (250m):", length(coarse_covs), "covariates\n")
 for (cov in coarse_covs) {
-  cat("    ✓", cov$display_name, "\n")
+  cat("    ok", cov$display_name, "\n")
 }
 cat("\n")
 
@@ -57,8 +57,8 @@ cat("Step 2: Loading plot locations...\n")
 baseline <- read_csv("data/processed/baseline.csv", show_col_types = FALSE)
 augmented <- read_csv("data/processed/augmented.csv", show_col_types = FALSE)
 
-cat("  ✓ Baseline plots:", nrow(baseline), "\n")
-cat("  ✓ Augmented plots:", nrow(augmented), "\n\n")
+cat("  ok Baseline plots:", nrow(baseline), "\n")
+cat("  ok Augmented plots:", nrow(augmented), "\n\n")
 
 # =============================================================================
 # CREATE SPATIAL POINTS
@@ -73,7 +73,7 @@ create_spatial_points <- function(data, name) {
     filter(lon >= -180, lon <= 180, lat >= -90, lat <= 90)
   
   if (nrow(data_clean) < nrow(data)) {
-    cat("  ⚠ Removed", nrow(data) - nrow(data_clean), "plots with invalid coordinates\n")
+    cat("  WARNING Removed", nrow(data) - nrow(data_clean), "plots with invalid coordinates\n")
   }
   
   data_sf <- st_as_sf(
@@ -82,14 +82,14 @@ create_spatial_points <- function(data, name) {
     crs = 4326
   )
   
-  cat("  ✓", name, ":", nrow(data_sf), "plots with valid coordinates\n")
+  cat("  ok", name, ":", nrow(data_sf), "plots with valid coordinates\n")
   return(data_sf)
 }
 
 baseline_sf <- create_spatial_points(baseline, "Baseline")
 augmented_sf <- create_spatial_points(augmented, "Augmented")
 
-cat("  ✓ Created spatial points with WGS84 CRS\n\n")
+cat("  ok Created spatial points with WGS84 CRS\n\n")
 
 # =============================================================================
 # EXTRACT COVARIATES WITH SCALE-SPECIFIC NAMES
@@ -108,7 +108,7 @@ extract_covariate <- function(cov, data_sf, data_name) {
   
   # Check if raster file exists
   if (!file.exists(cov$path)) {
-    cat("    ⚠ File not found:", cov$path, "\n")
+    cat("    WARNING File not found:", cov$path, "\n")
     cat("    Skipping...\n\n")
     return(NULL)
   }
@@ -128,7 +128,7 @@ extract_covariate <- function(cov, data_sf, data_name) {
     if (ncol(extracted) == 1) {
       colnames(extracted) <- col_name
     } else {
-      cat("    ⚠ Multiple bands detected, using first band\n")
+      cat("    WARNING Multiple bands detected, using first band\n")
       extracted <- extracted[, 1, drop = FALSE]
       colnames(extracted) <- col_name
     }
@@ -138,14 +138,14 @@ extract_covariate <- function(cov, data_sf, data_name) {
     pct_na <- round(100 * n_na / nrow(extracted), 1)
     val_range <- range(extracted[[col_name]], na.rm = TRUE)
     
-    cat("    ✓ Extracted as '", col_name, "'\n", sep = "")
+    cat("    ok Extracted as '", col_name, "'\n", sep = "")
     cat("     ", data_name, ":", n_na, "NA (", pct_na, "%), range: [",
         round(val_range[1], 2), ", ", round(val_range[2], 2), "]\n", sep = "")
     
     return(extracted)
     
   }, error = function(e) {
-    cat("    ✗ ERROR:", e$message, "\n\n")
+    cat("    FAIL ERROR:", e$message, "\n\n")
     return(NULL)
   })
 }
@@ -178,8 +178,8 @@ for (cov in coarse_covs) {
 }
 
 cat("\nExtraction summary:\n")
-cat("  ✓ Baseline:", ncol(baseline_extracted) - 1, "covariates extracted\n")
-cat("  ✓ Augmented:", ncol(augmented_extracted) - 1, "covariates extracted\n\n")
+cat("  ok Baseline:", ncol(baseline_extracted) - 1, "covariates extracted\n")
+cat("  ok Augmented:", ncol(augmented_extracted) - 1, "covariates extracted\n\n")
 
 # =============================================================================
 # MERGE WITH PLOT DATA
@@ -194,19 +194,19 @@ baseline_with_covs <- baseline %>%
 augmented_with_covs <- augmented %>%
   left_join(augmented_extracted, by = "CN")
 
-cat("  ✓ Baseline:", nrow(baseline_with_covs), "plots with", 
+cat("  ok Baseline:", nrow(baseline_with_covs), "plots with", 
     ncol(baseline_with_covs) - ncol(baseline), "covariates\n")
-cat("  ✓ Augmented:", nrow(augmented_with_covs), "plots with", 
+cat("  ok Augmented:", nrow(augmented_with_covs), "plots with", 
     ncol(augmented_with_covs) - ncol(augmented), "covariates\n\n")
 
 # Check for unexpected row expansion
 if (nrow(baseline_with_covs) != nrow(baseline)) {
-  cat("  ⚠ WARNING: Baseline row count changed during merge!\n")
+  cat("  WARNING WARNING: Baseline row count changed during merge!\n")
   cat("    Before:", nrow(baseline), "After:", nrow(baseline_with_covs), "\n\n")
 }
 
 if (nrow(augmented_with_covs) != nrow(augmented)) {
-  cat("  ⚠ WARNING: Augmented row count changed during merge!\n")
+  cat("  WARNING WARNING: Augmented row count changed during merge!\n")
   cat("    Before:", nrow(augmented), "After:", nrow(augmented_with_covs), "\n\n")
 }
 
@@ -223,7 +223,7 @@ cov_cols <- setdiff(names(augmented_with_covs), metadata_cols)
 
 cat("  Extracted covariate columns:\n")
 for (col in cov_cols) {
-  cat("    •", col, "\n")
+  cat("    -", col, "\n")
 }
 cat("\n")
 
@@ -246,22 +246,22 @@ if (file.exists("data/processed/baseline_with_covariates.csv")) {
   file.copy("data/processed/baseline_with_covariates.csv",
             "data/processed/baseline_with_covariates_backup.csv",
             overwrite = TRUE)
-  cat("  ✓ Backed up existing baseline_with_covariates.csv\n")
+  cat("  ok Backed up existing baseline_with_covariates.csv\n")
 }
 
 if (file.exists("data/processed/augmented_with_covariates.csv")) {
   file.copy("data/processed/augmented_with_covariates.csv",
             "data/processed/augmented_with_covariates_backup.csv",
             overwrite = TRUE)
-  cat("  ✓ Backed up existing augmented_with_covariates.csv\n")
+  cat("  ok Backed up existing augmented_with_covariates.csv\n")
 }
 
 # Save
 write_csv(baseline_with_covs, "data/processed/baseline_with_covariates.csv")
 write_csv(augmented_with_covs, "data/processed/augmented_with_covariates.csv")
 
-cat("  ✓ baseline_with_covariates.csv\n")
-cat("  ✓ augmented_with_covariates.csv\n\n")
+cat("  ok baseline_with_covariates.csv\n")
+cat("  ok augmented_with_covariates.csv\n\n")
 
 # Save metadata
 metadata <- data.frame(
@@ -276,40 +276,40 @@ metadata <- data.frame(
 )
 
 write_csv(metadata, "data/processed/covariate_extraction_metadata.csv")
-cat("  ✓ Extraction metadata saved\n\n")
+cat("  ok Extraction metadata saved\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  COVARIATE EXTRACTION COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Extracted covariates:", length(cov_cols), "\n\n")
 
 cat("FINE scale (10m):", length(fine_cov_names), "covariates\n")
 for (col in fine_cov_names) {
-  cat("  •", col, "\n")
+  cat("  -", col, "\n")
 }
 cat("\n")
 
 cat("COARSE scale (250m):", length(coarse_cov_names), "covariates\n")
 for (col in coarse_cov_names) {
-  cat("  •", col, "\n")
+  cat("  -", col, "\n")
 }
 cat("\n")
 
 cat("Output files:\n")
-cat("  • data/processed/baseline_with_covariates.csv\n")
-cat("  • data/processed/augmented_with_covariates.csv\n")
-cat("  • data/processed/covariate_extraction_metadata.csv\n\n")
+cat("  - data/processed/baseline_with_covariates.csv\n")
+cat("  - data/processed/augmented_with_covariates.csv\n")
+cat("  - data/processed/covariate_extraction_metadata.csv\n\n")
 
 cat("Row counts (should match input):\n")
-cat("  Baseline: ", nrow(baseline), " → ", nrow(baseline_with_covs), 
-    ifelse(nrow(baseline) == nrow(baseline_with_covs), " ✓", " ⚠"), "\n", sep = "")
-cat("  Augmented: ", nrow(augmented), " → ", nrow(augmented_with_covs),
-    ifelse(nrow(augmented) == nrow(augmented_with_covs), " ✓", " ⚠"), "\n\n", sep = "")
+cat("  Baseline: ", nrow(baseline), " -> ", nrow(baseline_with_covs), 
+    ifelse(nrow(baseline) == nrow(baseline_with_covs), " ok", " WARNING"), "\n", sep = "")
+cat("  Augmented: ", nrow(augmented), " -> ", nrow(augmented_with_covs),
+    ifelse(nrow(augmented) == nrow(augmented_with_covs), " ok", " WARNING"), "\n\n", sep = "")
 
 cat("Next steps:\n")
 cat("  1. Prepare data for modeling:\n")
@@ -317,4 +317,4 @@ cat("     Rscript R/phase4_modeling/PHASE4_01_prep_data.R\n")
 cat("  2. Run spatial cross-validation:\n")
 cat("     Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

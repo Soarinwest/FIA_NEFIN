@@ -1,9 +1,9 @@
-# 🌲 ETH Global Canopy Height - The Gold Standard
+# ETH Global Canopy Height - The Gold Standard
 ## 10m Canopy Height & Structural Complexity for Biomass Modeling
 
 ---
 
-## 🎯 **What You Have**
+## **What You Have**
 
 ```javascript
 var canopy_height = ee.Image('users/nlang/ETH_GlobalCanopyHeight_2020_10m_v1');
@@ -14,7 +14,7 @@ var standard_deviation = ee.Image('users/nlang/ETH_GlobalCanopyHeightSD_2020_10m
 
 ---
 
-## 📊 **Dataset Specifications**
+## **Dataset Specifications**
 
 | Property | Value |
 |----------|-------|
@@ -29,45 +29,45 @@ var standard_deviation = ee.Image('users/nlang/ETH_GlobalCanopyHeightSD_2020_10m
 
 ---
 
-## 📦 **Script Exports**
+## **Script Exports**
 
 ### **Updated: `CANOPY_01_height_10m_2020.js`**
 
 **Exports 4 files:**
 
 1. **`canopy_height_10m_2020_NE.tif`**
-   - Mean canopy height at 10m
-   - Units: meters above ground
-   - Use for: Fine-scale (10m) biomass models
+- Mean canopy height at 10m
+- Units: meters above ground
+- Use for: Fine-scale (10m) biomass models
 
-2. **`canopy_height_SD_10m_2020_NE.tif`** ⭐ NEW
-   - Standard deviation of canopy height at 10m
-   - Units: meters
-   - Use for: Structural complexity, biomass uncertainty
+2. **`canopy_height_SD_10m_2020_NE.tif`** NEW
+- Standard deviation of canopy height at 10m
+- Units: meters
+- Use for: Structural complexity, biomass uncertainty
 
 3. **`canopy_height_250m_2020_NE.tif`**
-   - Mean canopy height aggregated to 250m
-   - Use for: Coarse-scale (250m) MODIS models
+- Mean canopy height aggregated to 250m
+- Use for: Coarse-scale (250m) MODIS models
 
-4. **`canopy_height_SD_250m_2020_NE.tif`** ⭐ NEW
-   - Standard deviation aggregated to 250m
-   - Use for: Landscape-scale heterogeneity
+4. **`canopy_height_SD_250m_2020_NE.tif`** NEW
+- Standard deviation aggregated to 250m
+- Use for: Landscape-scale heterogeneity
 
 ---
 
-## 🔬 **Why Canopy Height is Critical for Biomass**
+## **Why Canopy Height is Critical for Biomass**
 
 ### **Strongest Single Predictor**
-- **Typical r² with biomass: 0.6 - 0.8**
-- Much stronger than NDVI (r² ~0.4-0.6)
+- **Typical r^2 with biomass: 0.6 - 0.8**
+- Much stronger than NDVI (r^2 ~0.4-0.6)
 - Direct relationship: taller trees = more wood = more biomass
 
 ### **Biomass-Height Allometry**
 ```
-Biomass ∝ Height^2.5 to Height^3
+Biomass ~ Height^2.5 to Height^3
 
 Common model form:
-AGB = a × H^b
+AGB = a x H^b
 where H = height, a & b are fitted parameters
 ```
 
@@ -79,23 +79,23 @@ where H = height, a & b are fitted parameters
 
 ---
 
-## 💎 **Why Standard Deviation (SD) Matters**
+## **Why Standard Deviation (SD) Matters**
 
 ### **What SD Represents**
 **Structural Complexity / Canopy Heterogeneity**
 
 ```
 Low SD (< 3m):
-├─ Uniform canopy
-├─ Even-aged stands
-├─ Plantation-like structure
-└─ Lower biodiversity
+|--- Uniform canopy
+|--- Even-aged stands
+|--- Plantation-like structure
+`--- Lower biodiversity
 
 High SD (> 8m):
-├─ Heterogeneous canopy
-├─ Mixed ages/sizes
-├─ Multi-layered structure
-└─ Higher biodiversity
+|--- Heterogeneous canopy
+|--- Mixed ages/sizes
+|--- Multi-layered structure
+`--- Higher biodiversity
 ```
 
 ### **Applications in Biomass Modeling**
@@ -103,7 +103,7 @@ High SD (> 8m):
 **1. As a Predictor Variable:**
 - Structural complexity relates to stand age and composition
 - Mixed stands often have different biomass:height ratios
-- Can improve model predictions (additional 2-5% R²)
+- Can improve model predictions (additional 2-5% R^2)
 
 **2. For Uncertainty Estimation:**
 - High SD = higher prediction uncertainty
@@ -120,19 +120,19 @@ High SD (> 8m):
 Example analysis:
 - NEFIN plots in high-SD areas: better predictions (precise coords matter)
 - FIA plots in low-SD areas: acceptable predictions (fuzzing OK)
-→ Fuzzing effects are scale AND structure dependent!
+-> Fuzzing effects are scale AND structure dependent!
 ```
 
 ---
 
-## 🎯 **Recommended Modeling Approach**
+## **Recommended Modeling Approach**
 
 ### **Model Set 1: Height-Based (Simple, Strong)**
 ```r
 # Simple height model
 biomass ~ height + height^2
 
-# Expected R²: 0.65 - 0.75
+# Expected R^2: 0.65 - 0.75
 ```
 
 ### **Model Set 2: Height + Structure**
@@ -140,7 +140,7 @@ biomass ~ height + height^2
 # Add complexity
 biomass ~ height + height^2 + height_SD + height:height_SD
 
-# Expected R²: 0.70 - 0.80
+# Expected R^2: 0.70 - 0.80
 # Tests if height-biomass varies by structure
 ```
 
@@ -148,23 +148,23 @@ biomass ~ height + height^2 + height_SD + height:height_SD
 ```r
 # Full model
 biomass ~ height + height^2 + height_SD + 
-          NDVI + EVI + NIR + treecover
+ NDVI + EVI + NIR + treecover
 
-# Expected R²: 0.75 - 0.85
+# Expected R^2: 0.75 - 0.85
 # Best of structure + spectral information
 ```
 
 ---
 
-## 📊 **Expected Results**
+## **Expected Results**
 
 ### **Hypothesis Testing with Height:**
 
 **H1: Fine Scale (10m)**
 ```
-NEFIN with height:  R² = 0.78
-FIA with height:    R² = 0.71
-→ Difference: 0.07 (fuzzing still hurts!)
+NEFIN with height: R^2 = 0.78
+FIA with height: R^2 = 0.71
+-> Difference: 0.07 (fuzzing still hurts!)
 
 Interpretation: Even with strong predictor, 
 coordinate precision matters at 10m
@@ -172,9 +172,9 @@ coordinate precision matters at 10m
 
 **H2: Coarse Scale (250m)**
 ```
-NEFIN with height:  R² = 0.74
-FIA with height:    R² = 0.73
-→ Difference: 0.01 (fuzzing doesn't matter)
+NEFIN with height: R^2 = 0.74
+FIA with height: R^2 = 0.73
+-> Difference: 0.01 (fuzzing doesn't matter)
 
 Interpretation: At 250m, height dominates
 and fuzzing effects disappear
@@ -183,17 +183,17 @@ and fuzzing effects disappear
 **H3: Structural Complexity**
 ```
 Simple stands (SD < 3m):
-  NEFIN vs FIA difference: small (0.02)
-  
+ NEFIN vs FIA difference: small (0.02)
+
 Complex stands (SD > 8m):
-  NEFIN vs FIA difference: large (0.10)
-  
-→ Fuzzing matters MORE in heterogeneous forests!
+ NEFIN vs FIA difference: large (0.10)
+
+-> Fuzzing matters MORE in heterogeneous forests!
 ```
 
 ---
 
-## 🔍 **Data Quality Checks**
+## **Data Quality Checks**
 
 ### **Before Using in Models:**
 
@@ -202,11 +202,11 @@ Complex stands (SD > 8m):
 // In GEE
 var heightMask = canopy_height.mask();
 var coverage = heightMask.reduceRegion({
-  reducer: ee.Reducer.mean(),
-  geometry: region,
-  scale: 1000
+ reducer: ee.Reducer.mean(),
+ geometry: region,
+ scale: 1000
 });
-print('Coverage:', coverage);  // Should be ~1.0
+print('Coverage:', coverage); // Should be ~1.0
 ```
 
 2. **Verify reasonable range:**
@@ -228,7 +228,7 @@ abline(0, 1)
 
 ---
 
-## 💡 **Pro Tips**
+## **Pro Tips**
 
 ### **Handling Height in Models:**
 
@@ -264,48 +264,48 @@ h[treecover < 30] <- NA
 
 ---
 
-## 📈 **Expected Impact on Your Study**
+## **Expected Impact on Your Study**
 
 ### **Without Height (Current):**
 ```
 Fine scale (10m):
-  NEFIN R²: 0.55 (spectral only)
-  FIA R²:   0.45
-  Difference: 0.10 ⭐ Shows fuzzing matters
+ NEFIN R^2: 0.55 (spectral only)
+ FIA R^2: 0.45
+ Difference: 0.10 Shows fuzzing matters
 
 Coarse scale (250m):
-  NEFIN R²: 0.50
-  FIA R²:   0.48
-  Difference: 0.02 → Fuzzing doesn't matter much
+ NEFIN R^2: 0.50
+ FIA R^2: 0.48
+ Difference: 0.02 -> Fuzzing doesn't matter much
 ```
 
 ### **With Height (Proposed):**
 ```
 Fine scale (10m):
-  NEFIN R²: 0.78 (spectral + height)
-  FIA R²:   0.71
-  Difference: 0.07 ⭐ STILL shows fuzzing matters
-  
-  → Stronger conclusion: Even with best predictor,
-    precise coordinates improve predictions
+ NEFIN R^2: 0.78 (spectral + height)
+ FIA R^2: 0.71
+ Difference: 0.07 STILL shows fuzzing matters
+
+-> Stronger conclusion: Even with best predictor,
+ precise coordinates improve predictions
 
 Coarse scale (250m):
-  NEFIN R²: 0.74
-  FIA R²:   0.73
-  Difference: 0.01 → Confirms fuzzing doesn't matter
-  
-  → Height dominates at coarse scale
+ NEFIN R^2: 0.74
+ FIA R^2: 0.73
+ Difference: 0.01 -> Confirms fuzzing doesn't matter
+
+-> Height dominates at coarse scale
 ```
 
 ### **Scientific Impact:**
-- **Higher R² = more credible models**
+- **Higher R^2 = more credible models**
 - **Height validates spectral-based predictions**
 - **Can decompose errors:** spectral vs structural
 - **Stronger manuscript:** "We used best available data..."
 
 ---
 
-## 🚀 **Processing Workflow**
+## **Processing Workflow**
 
 ### **Step 1: Export from GEE**
 ```javascript
@@ -317,10 +317,10 @@ Coarse scale (250m):
 ### **Step 2: Download & Organize**
 ```
 data/raw/canopy/
-├── canopy_height_10m_2020_NE.tif
-├── canopy_height_SD_10m_2020_NE.tif
-├── canopy_height_250m_2020_NE.tif
-└── canopy_height_SD_250m_2020_NE.tif
+|---- canopy_height_10m_2020_NE.tif
+|---- canopy_height_SD_10m_2020_NE.tif
+|---- canopy_height_250m_2020_NE.tif
+`---- canopy_height_SD_250m_2020_NE.tif
 ```
 
 ### **Step 3: Extract to Plots**
@@ -351,15 +351,15 @@ m1 <- ranger(biomass ~ NDVI + EVI + elevation, data = baseline_df)
 m2 <- ranger(biomass ~ height + I(height^2), data = baseline_df)
 m3 <- ranger(biomass ~ height + NDVI + treecover, data = baseline_df)
 
-# Compare R²
-print(m1$r.squared)  # ~0.55
-print(m2$r.squared)  # ~0.70 (height alone!)
-print(m3$r.squared)  # ~0.78 (height + spectral)
+# Compare R^2
+print(m1$r.squared) # ~0.55
+print(m2$r.squared) # ~0.70 (height alone!)
+print(m3$r.squared) # ~0.78 (height + spectral)
 ```
 
 ---
 
-## 📚 **Key References**
+## **Key References**
 
 **ETH Global Canopy Height:**
 - Lang, N., et al. (2023). "A high-resolution canopy height model of the Earth." 
@@ -372,26 +372,26 @@ print(m3$r.squared)  # ~0.78 (height + spectral)
 
 ---
 
-## ✅ **Bottom Line**
+## **Bottom Line**
 
-### **This is a GAME CHANGER for your study! 🎉**
+### **This is a GAME CHANGER for your study! **
 
 **Why:**
-1. ⭐ Strongest biomass predictor available
-2. ⭐ 10m resolution matches your analysis perfectly
-3. ⭐ 2020 timestamp aligns with plot period
-4. ⭐ SD adds structural complexity dimension
-5. ⭐ Will dramatically improve model performance
+1. Strongest biomass predictor available
+2. 10m resolution matches your analysis perfectly
+3. 2020 timestamp aligns with plot period
+4. SD adds structural complexity dimension
+5. Will dramatically improve model performance
 
 **Action Items:**
-1. ✅ Run `CANOPY_01_height_10m_2020.js` (updated script)
-2. ✅ Export 4 files (mean height + SD at 10m & 250m)
-3. ✅ Integrate into both fine-scale and coarse-scale models
-4. ✅ Test height-only, spectral-only, and combined models
-5. ✅ Analyze how fuzzing affects height-biomass relationships
+1. Run `CANOPY_01_height_10m_2020.js` (updated script)
+2. Export 4 files (mean height + SD at 10m & 250m)
+3. Integrate into both fine-scale and coarse-scale models
+4. Test height-only, spectral-only, and combined models
+5. Analyze how fuzzing affects height-biomass relationships
 
 **Expected Outcome:**
-- Model R² improvement: +15-25%
+- Model R^2 improvement: +15-25%
 - Stronger fuzzing effect demonstration
 - More robust conclusions
 - Higher impact manuscript
@@ -401,7 +401,7 @@ print(m3$r.squared)  # ~0.78 (height + spectral)
 **Updated Total Exports:**
 - Core layers: 27 files
 - Forest structure: 6 files (tree cover + VCF)
-- Canopy height: 4 files ⭐
+- Canopy height: 4 files 
 - **Grand Total: ~37 files**
 
-**This is worth the extra processing time!** 🚀
+**This is worth the extra processing time!** 

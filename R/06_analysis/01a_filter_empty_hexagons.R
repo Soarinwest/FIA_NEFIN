@@ -7,9 +7,9 @@
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  FILTER EMPTY HEXAGONS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -37,7 +37,7 @@ for (scale in scales) {
     
     write_csv(hex_filtered, output_file)
     
-    cat(sprintf("  %s: %5d → %5d hexes (removed %d empty, %.1f%%)\n",
+    cat(sprintf("  %s: %5d -> %5d hexes (removed %d empty, %.1f%%)\n",
                 scale, before, after, removed, 100*removed/before))
   }
 }
@@ -64,7 +64,7 @@ for (scale in scales) {
     
     write_csv(hex_filtered, output_file)
     
-    cat(sprintf("  %s: %5d → %5d hexes (removed %d empty, %.1f%%)\n",
+    cat(sprintf("  %s: %5d -> %5d hexes (removed %d empty, %.1f%%)\n",
                 scale, before, after, removed, 100*removed/before))
   }
 }
@@ -118,15 +118,15 @@ for (scale in scales) {
 comparison_df <- bind_rows(comparison_results)
 write_csv(comparison_df, "data/processed/comparison_metrics_filtered.csv")
 
-cat("\n✓ Saved: comparison_metrics_filtered.csv\n\n")
+cat("\nok Saved: comparison_metrics_filtered.csv\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Filtered files created with '_filtered' suffix:\n")
 cat("  - fia_hex_[scale]_filtered.csv\n")

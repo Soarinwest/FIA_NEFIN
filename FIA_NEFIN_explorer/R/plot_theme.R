@@ -79,14 +79,14 @@ scale_color_significance <- function(...) {
   )
 }
 
-# Scenario colors (for modeling tab — matches manuscript Fig S2)
+# Scenario colors (for modeling tab -- matches manuscript Fig S2)
 SCENARIO_COLORS <- c(
   "FIA Only"   = "#3b82f6",
   "NEFIN Only" = "#f59e0b",
   "Pooled"     = "#14b8a6"
 )
 
-# Plotly dark layout helper — apply after ggplotly()
+# Plotly dark layout helper -- apply after ggplotly()
 plotly_dark_layout <- function(p) {
   plotly::layout(p,
     paper_bgcolor = SLATE_BG,

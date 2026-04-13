@@ -5,7 +5,7 @@
 #
 # All rasters aligned to template grids in EPSG:5070 and clipped to AOI
 # =============================================================================
-# PREPROCESSED VARIANT — use when rasters are already resampled/aligned to target grid
+# PREPROCESSED VARIANT -- use when rasters are already resampled/aligned to target grid
 # If rasters need resampling first, use PHASE4_config_covariates.R instead
 
 preprocessed_count <- 0
@@ -30,10 +30,10 @@ for (cov_name in names(COVARIATES)) {
 }
 
 if (preprocessed_count > 0) {
-  cat("✓ Using", preprocessed_count, "preprocessed rasters (EPSG:5070, template-aligned)\n")
+  cat("ok Using", preprocessed_count, "preprocessed rasters (EPSG:5070, template-aligned)\n")
 }
 
 if (missing_count > 0) {
-  cat("ℹ", missing_count, "rasters using originals\n")
+  cat("INFO", missing_count, "rasters using originals\n")
 }
 

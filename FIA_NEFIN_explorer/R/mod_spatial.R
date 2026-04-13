@@ -1,10 +1,10 @@
 # ============================================================================
-# mod_spatial.R — Tab 3: Spatial Explorer
+# mod_spatial.R -- Tab 3: Spatial Explorer
 # Three sub-tabs: A) Plot Locations & Fuzzing, B) Hexagon Overview,
 #                 C) Chittenden Detail (10m Predictions)
 # ============================================================================
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# -- UI ------------------------------------------------------------------------
 
 spatial_ui <- function(id) {
   ns <- NS(id)
@@ -32,9 +32,6 @@ spatial_ui <- function(id) {
             ),
             selected = "measyear"
           ),
-          hr(),
-          checkboxInput(ns("show_fia"),   "Show FIA plots",   value = TRUE),
-          checkboxInput(ns("show_nefin"), "Show NEFIN plots", value = TRUE),
           hr(),
           tags$small(class = "text-muted",
             "FIA coordinates are pre-fuzzed up to 1 mile. Circles show the",
@@ -174,14 +171,14 @@ spatial_ui <- function(id) {
 }
 
 
-# ── Server ────────────────────────────────────────────────────────────────────
+# -- Server --------------------------------------------------------------------
 
 spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
                             hex_1kha, states_sf, cv_results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    # ── Sub-tab A: Plot Locations & Fuzzing ───────────────────────────────────
+    # -- Sub-tab A: Plot Locations & Fuzzing -----------------------------------
 
     # FIA subsample (fixed seed for reproducibility)
     fia_sample <- reactive({
@@ -199,7 +196,6 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
     # Update FIA markers + uncertainty circles
     observe({
-      req(input$show_fia)
       data <- fia_sample()
 
       proxy <- leafletProxy("plot_map", session)
@@ -207,15 +203,14 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
         clearGroup("fia_circles") |>
         clearGroup("fia_points")
 
-      if (input$show_fia) {
-        proxy |>
-          addCircles(
-            data    = data,
-            lng     = ~lon,
-            lat     = ~lat,
-            radius  = input$fuzz_radius * 1000,  # km → m
-            color   = "#E69F00",
-            fill    = FALSE,
+      proxy |>
+        addCircles(
+          data    = data,
+          lng     = ~lon,
+          lat     = ~lat,
+          radius  = input$fuzz_radius * 1000,  # km -> m
+          color   = "#E69F00",
+          fill    = FALSE,
             opacity = 0.25,
             weight  = 1,
             group   = "fia_circles"
@@ -240,16 +235,13 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
               "<i>Click for Monte Carlo uncertainty</i>"
             )
           )
-      }
     }) |>
-      bindEvent(fia_sample(), input$fuzz_radius, input$show_fia)
+      bindEvent(fia_sample(), input$fuzz_radius)
 
     # Update NEFIN markers
     observe({
       proxy <- leafletProxy("plot_map", session)
       proxy |> clearGroup("nefin_points")
-
-      if (!isTRUE(input$show_nefin)) return()
 
       color_col <- input$nefin_color
       pal <- switch(color_col,
@@ -300,9 +292,9 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           opacity  = 0.85
         )
     }) |>
-      bindEvent(input$nefin_color, input$show_nefin, ignoreInit = FALSE)
+      bindEvent(input$nefin_color, ignoreInit = FALSE)
 
-    # Monte Carlo panel — triggered by FIA marker click
+    # Monte Carlo panel -- triggered by FIA marker click
     selected_cn <- reactiveVal(NULL)
 
     observeEvent(input$plot_map_marker_click, {
@@ -319,7 +311,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
       plot_info <- dplyr::filter(fia_plots, CN == cn)
       plot_label <- if (nrow(plot_info) > 0) {
-        paste0("Plot CN ", cn, " — ", plot_info$state[1], ", Year ", plot_info$MEASYEAR[1])
+        paste0("Plot CN ", cn, " -- ", plot_info$state[1], ", Year ", plot_info$MEASYEAR[1])
       } else {
         paste0("Plot CN ", cn)
       }
@@ -357,7 +349,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       unc <- dplyr::filter(plot_uncertainty, CN == cn)
       req(nrow(unc) > 0)
 
-      # Compute tmean and ppt min/max from mean ± range/2
+      # Compute tmean and ppt min/max from mean +/- range/2
       bar_data <- tibble::tibble(
         covariate = c(
           "NDVI (Sentinel-2)",
@@ -410,7 +402,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
     })
 
 
-    # ── Sub-tab B: Hexagon Overview ───────────────────────────────────────────
+    # -- Sub-tab B: Hexagon Overview -------------------------------------------
 
     # Cache for loaded GeoJSON scales (reactiveValues scoped to this module)
     hex_cache <- reactiveValues()
@@ -562,7 +554,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
     })
 
 
-    # ── Sub-tab C: Chittenden Detail ──────────────────────────────────────────
+    # -- Sub-tab C: Chittenden Detail ------------------------------------------
 
     # Debounced opacity inputs
     opacity_pred_d <- debounce(reactive(input$opacity_pred), 400)

@@ -54,7 +54,7 @@ compute_plot_biomass_fia <- function(tree_df,
 
 #' Convert tree-level biomass to plot-level
 #'
-#' Generic function for tree → plot aggregation.
+#' Generic function for tree -> plot aggregation.
 #' Assumes biomass is already in correct units (Mg/ha or needs conversion)
 #'
 #' @param tree_df Data frame with tree-level data
@@ -298,9 +298,9 @@ print_biomass_summary <- function(df, biomass_col = "biomass") {
   stats <- summarize_biomass(df, biomass_col)
   
   cat("\n")
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   cat("  BIOMASS SUMMARY\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   cat("Sample size:", stats$n, "plots\n\n")
   cat("Mean:   ", sprintf("%.2f Mg/ha\n", stats$mean))
@@ -310,7 +310,7 @@ print_biomass_summary <- function(df, biomass_col = "biomass") {
   cat("Range:  ", sprintf("%.2f - %.2f Mg/ha\n", stats$min, stats$max))
   cat("IQR:    ", sprintf("%.2f - %.2f Mg/ha\n", stats$q25, stats$q75))
   cat("\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   invisible(stats)
 }

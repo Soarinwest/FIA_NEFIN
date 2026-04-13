@@ -15,9 +15,9 @@ library(terra)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  MONTE CARLO: EXTRACT COVARIATES (Phase 4 Config + Naming)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD JITTER LIBRARY
@@ -30,7 +30,7 @@ jitter_files <- list.files(replicates_dir, pattern = "^rep_\\d{4}\\.csv$",
                            full.names = TRUE)
 
 if (length(jitter_files) == 0) {
-  cat("✗ No jittered coordinates found!\n")
+  cat("FAIL No jittered coordinates found!\n")
   cat("  Run: Rscript R/06_analysis/03_monte_carlo_generate_jitter.R\n\n")
   stop("Jitter library not found")
 }
@@ -62,12 +62,12 @@ cat("  Remaining:", length(remaining_reps), "\n\n")
 
 # UPDATED: Skip if all complete (don't quit)
 if (length(remaining_reps) == 0) {
-  cat("✓ All replicates already extracted!\n")
+  cat("ok All replicates already extracted!\n")
   cat("  Skipping covariate extraction...\n")
   cat("  Location:", extracted_dir, "\n\n")
-  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("===================================================================\n")
   cat("  MONTE CARLO COVARIATES: SKIPPED (ALREADY COMPLETE)\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   invisible(NULL)
   
@@ -93,18 +93,18 @@ if (length(remaining_reps) == 0) {
     cov <- COVARIATES[[cov_def$key]]
     
     if (is.null(cov)) {
-      cat("  ⚠ Covariate not found in config:", cov_def$key, "\n")
+      cat("  WARNING Covariate not found in config:", cov_def$key, "\n")
       next
     }
     
     if (!file.exists(cov$path)) {
-      cat("  ✗ File not found:", cov$display_name, "\n")
+      cat("  FAIL File not found:", cov$display_name, "\n")
       cat("    Expected:", cov$path, "\n")
       stop("Missing covariate raster")
     }
     
     rasters[[cov_def$col_name]] <- suppressWarnings(rast(cov$path))
-    cat("  ✓", cov$display_name, "→", cov_def$col_name, "\n")
+    cat("  ok", cov$display_name, "->", cov_def$col_name, "\n")
   }
   
   cat("\n")
@@ -215,7 +215,7 @@ if (length(remaining_reps) == 0) {
   }
   
   elapsed <- difftime(Sys.time(), start_time, units = "hours")
-  cat(sprintf("\n✓ Extraction complete in %.2f hours\n", elapsed))
+  cat(sprintf("\nok Extraction complete in %.2f hours\n", elapsed))
   cat(sprintf("  Actual speed: %.1f replicates/hour\n\n", 
               length(remaining_reps) / as.numeric(elapsed)))
   
@@ -223,9 +223,9 @@ if (length(remaining_reps) == 0) {
   # SUMMARY
   # =============================================================================
   
-  cat("═══════════════════════════════════════════════════════════════════\n")
-  cat("  EXTRACTION COMPLETE! 🎉\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n")
+  cat("  EXTRACTION COMPLETE! \n")
+  cat("===================================================================\n\n")
   
   all_extracted <- list.files(extracted_dir, pattern = "^rep_\\d{4}_covariates\\.csv$",
                               full.names = TRUE)
@@ -236,10 +236,10 @@ if (length(remaining_reps) == 0) {
   cat("  Total size:", round(sum(file.size(all_extracted)) / 1024^2, 1), "MB\n\n")
   
   cat("Column naming:\n")
-  cat("  • ndvi_modis_250m (MODIS NDVI)\n")
-  cat("  • ndvi_s2_10m (Sentinel-2 NDVI)\n")
-  cat("  • tmean_250m (Temperature)\n")
-  cat("  • ppt_250m (Precipitation)\n\n")
+  cat("  - ndvi_modis_250m (MODIS NDVI)\n")
+  cat("  - ndvi_s2_10m (Sentinel-2 NDVI)\n")
+  cat("  - tmean_250m (Temperature)\n")
+  cat("  - ppt_250m (Precipitation)\n\n")
   
   cat("Next: Analyze uncertainty distributions\n")
   cat("  Rscript R/06_analysis/05_monte_carlo_analyze_uncertainty.R\n\n")

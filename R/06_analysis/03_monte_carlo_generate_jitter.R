@@ -12,9 +12,9 @@ library(sf)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  MONTE CARLO: GENERATE JITTERED COORDINATES\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 set.seed(CONFIG$monte_carlo$seed)
 
@@ -54,13 +54,13 @@ remaining <- setdiff(1:N_REPLICATES, existing_reps)
 
 # UPDATED: Skip if all replicates complete (don't quit)
 if (length(remaining) == 0) {
-  cat("✓ All", N_REPLICATES, "replicates already complete!\n")
+  cat("ok All", N_REPLICATES, "replicates already complete!\n")
   cat("  Skipping jitter generation...\n")
   cat("  Location:", replicates_dir, "\n\n")
   cat("  To regenerate, delete the replicates directory and re-run.\n\n")
-  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("===================================================================\n")
   cat("  MONTE CARLO JITTER: SKIPPED (ALREADY COMPLETE)\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   # Return early - don't stop entire script
   # This allows run_analysis.R to continue
@@ -83,7 +83,7 @@ if (length(remaining) == 0) {
         stop("User aborted")
       }
     } else {
-      cat("  → Auto-resuming (non-interactive mode)\n\n")
+      cat("  -> Auto-resuming (non-interactive mode)\n\n")
     }
   } else {
     remaining <- 1:N_REPLICATES
@@ -138,7 +138,7 @@ if (length(remaining) == 0) {
     
     if (file.exists(hex_path)) {
       hex_grids_list[[scale$name]] <- st_read(hex_path, quiet = TRUE)
-      cat("  ✓", scale$name, "-", nrow(hex_grids_list[[scale$name]]), "hexagons\n")
+      cat("  ok", scale$name, "-", nrow(hex_grids_list[[scale$name]]), "hexagons\n")
     }
   }
   
@@ -216,9 +216,9 @@ if (length(remaining) == 0) {
   # SUMMARY
   # =============================================================================
   
-  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("===================================================================\n")
   cat("  MONTE CARLO GENERATION COMPLETE\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   cat("Generated replicates:", length(remaining), "\n")
   cat("Total replicates:", N_REPLICATES, "\n")

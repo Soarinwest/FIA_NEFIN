@@ -31,9 +31,9 @@ suppressPackageStartupMessages({
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  STEP 3: CREATE FINAL FIA DATASET\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Input path
 input_path <- file.path(CONFIG$paths$interim_fia, "biomass", "fia_plot_biomass.csv")
@@ -62,9 +62,9 @@ cat("Input plots:", nrow(fia_raw), "\n")
 # =============================================================================
 
 cat("\n")
-cat("───────────────────────────────────────\n")
+cat("---------------------------------------\n")
 cat("Standardizing to Common Schema\n")
-cat("───────────────────────────────────────\n\n")
+cat("---------------------------------------\n\n")
 
 fia_standardized <- fia_raw %>%
   mutate(
@@ -122,9 +122,9 @@ cat("Rows:", nrow(fia_standardized), "\n")
 # =============================================================================
 
 cat("\n")
-cat("───────────────────────────────────────\n")
+cat("---------------------------------------\n")
 cat("Final Validation\n")
-cat("───────────────────────────────────────\n\n")
+cat("---------------------------------------\n\n")
 
 # Run comprehensive validation
 validation_report <- run_validation_suite(
@@ -141,14 +141,14 @@ cat("\nFIA-specific checks:\n")
 if (!all(fia_standardized$coord_source == "fuzzed")) {
   stop("ERROR: Not all FIA coordinates marked as fuzzed!")
 }
-cat("✓ All coordinates marked as fuzzed\n")
+cat("ok All coordinates marked as fuzzed\n")
 
 # 2. Check year range
 year_range <- range(fia_standardized$MEASYEAR)
 if (year_range[1] < CONFIG$year_start || year_range[2] > CONFIG$year_end) {
   warning("Some plots outside configured year range")
 }
-cat("✓ Year range:", year_range[1], "-", year_range[2], "\n")
+cat("ok Year range:", year_range[1], "-", year_range[2], "\n")
 
 # 3. Check state coverage
 states_present <- unique(fia_standardized$STATECD)
@@ -160,7 +160,7 @@ if (length(missing_states) > 0) {
           paste(names(CONFIG$state_codes)[match(missing_states, CONFIG$state_codes)], 
                 collapse = ", "))
 } else {
-  cat("✓ All states represented\n")
+  cat("ok All states represented\n")
 }
 
 # =============================================================================
@@ -168,9 +168,9 @@ if (length(missing_states) > 0) {
 # =============================================================================
 
 cat("\n")
-cat("───────────────────────────────────────\n")
+cat("---------------------------------------\n")
 cat("Saving Final Dataset\n")
-cat("───────────────────────────────────────\n\n")
+cat("---------------------------------------\n\n")
 
 # Save with metadata
 metadata <- list(
@@ -197,17 +197,17 @@ report_path <- file.path(CONFIG$paths$processed, "fia_processing_report.txt")
 
 sink(report_path)
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  FIA DATA PROCESSING REPORT\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Processing completed:", as.character(Sys.time()), "\n")
 cat("Configuration version:", CONFIG$version, "\n\n")
 
 cat("PROCESSING STEPS:\n\n")
-cat("  1. Extract from SQLite → data/interim/fia/extracted/\n")
-cat("  2. Compute biomass     → data/interim/fia/biomass/\n")
-cat("  3. Standardize schema  → data/processed/fia_complete.csv\n\n")
+cat("  1. Extract from SQLite -> data/interim/fia/extracted/\n")
+cat("  2. Compute biomass     -> data/interim/fia/biomass/\n")
+cat("  3. Standardize schema  -> data/processed/fia_complete.csv\n\n")
 
 cat("FINAL DATASET:\n\n")
 cat("  Output file:", output_path, "\n")
@@ -247,7 +247,7 @@ cat(sprintf("  IQR:    %.2f - %.2f Mg/ha\n", stats$q25, stats$q75))
 
 cat("\n")
 cat("DATA QUALITY:\n\n")
-cat("  Coordinate source:    100% fuzzed (±", CONFIG$fia$fuzz_distance_km, "km)\n")
+cat("  Coordinate source:    100% fuzzed (+/-", CONFIG$fia$fuzz_distance_km, "km)\n")
 cat("  Missing coordinates:  ", sum(is.na(fia_standardized$lat)), "\n")
 cat("  Missing biomass:      ", sum(is.na(fia_standardized$biomass)), "\n")
 cat("  Duplicate CNs:        ", sum(duplicated(fia_standardized$CN)), "\n")
@@ -257,7 +257,7 @@ cat("STANDARD COLUMNS PRESENT:\n\n")
 for (col in CONFIG$standard_columns) {
   present <- col %in% names(fia_standardized)
   cat(sprintf("  %s %-25s %s\n", 
-              ifelse(present, "✓", "✗"),
+              ifelse(present, "ok", "FAIL"),
               col,
               ifelse(present, "", "MISSING")))
 }
@@ -269,20 +269,20 @@ cat("  2. Create comparison datasets:   R/03_create_comparison_datasets/\n")
 cat("  3. Assign to hexagons:           R/04_assign_to_hexagons/\n")
 cat("  4. Extract covariates:           R/05_extract_covariates/\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 
 sink()
 
-cat("✓ Report written:", report_path, "\n")
+cat("ok Report written:", report_path, "\n")
 
 # =============================================================================
 # COMPLETE
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  FIA PROCESSING COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 print_biomass_summary(fia_standardized)
 

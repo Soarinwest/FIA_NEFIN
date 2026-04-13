@@ -27,9 +27,9 @@ suppressPackageStartupMessages({
 
 set.seed(42)  # matches CONFIG$monte_carlo$seed
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  EXTREME TAIL GAP ANALYSIS: NEFIN vs FIA\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -366,7 +366,7 @@ p_gap_bars <- gap_analysis %>%
   ) +
   labs(
     title = "Extreme Tail Gap: NEFIN Max - FIA Max",
-    subtitle = paste0("Top 20 species where NEFIN captures trees FIA doesn't (≥",
+    subtitle = paste0("Top 20 species where NEFIN captures trees FIA doesn't (>=",
                      MIN_GAP_SIZE_CM, " cm gap)"),
     x = "Gap Size (cm): NEFIN Maximum - FIA Maximum",
     y = NULL
@@ -496,7 +496,7 @@ p_ecdf_gaps <- ggplot(dist_data, aes(x = dbh_cm, color = dataset)) +
 ggsave(file.path(fig_dir, "05_ecdf_with_gap_zones.png"), 
        p_ecdf_gaps, width = 12, height = 10, dpi = 300)
 
-cat("  ✓ Visualizations saved\n\n")
+cat("  ok Visualizations saved\n\n")
 
 # =============================================================================
 # SAVE TABLES
@@ -523,15 +523,15 @@ summary_report <- gap_analysis %>%
 
 write_csv(summary_report, file.path(tab_dir, "gap_summary_report.csv"))
 
-cat("  ✓ Tables saved\n\n")
+cat("  ok Tables saved\n\n")
 
 # =============================================================================
 # SUMMARY OUTPUT
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  EXTREME TAIL GAP ANALYSIS SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Species with extreme tail gaps (NEFIN extends beyond FIA):\n\n")
 
@@ -541,7 +541,7 @@ print(gap_analysis %>%
         head(15))
 
 cat("\n")
-cat(sprintf("✓ %d species show substantial gaps (≥%.1f cm, ≥%d NEFIN trees)\n",
+cat(sprintf("ok %d species show substantial gaps (>=%.1f cm, >=%d NEFIN trees)\n",
             nrow(gap_analysis), MIN_GAP_SIZE_CM, MIN_NEFIN_IN_GAP))
 
 cat(sprintf("  Average gap size: %.1f cm\n", mean(gap_analysis$max_gap_cm)))
@@ -562,13 +562,13 @@ if (nrow(major_gaps) > 0) {
   cat("\n")
 }
 
-cat("\n✓ NEFIN captures tree sizes that FIA simply doesn't observe\n")
-cat("✓ This is critical for:\n")
+cat("\nok NEFIN captures tree sizes that FIA simply doesn't observe\n")
+cat("ok This is critical for:\n")
 cat("  - Allometric equation development (large tree biomass)\n")
 cat("  - Understanding maximum size potential\n")
 cat("  - Carbon stock estimation in old-growth forests\n")
 cat("  - Ecological studies of large tree distributions\n")
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  Outputs saved to:", output_dir, "\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

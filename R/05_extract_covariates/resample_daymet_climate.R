@@ -21,16 +21,16 @@ library(terra)
 # =============================================================================
 
 # Daymet input directory (where your 1km Daymet files from GEE are stored)
-# Relative to project root — adjust if your Daymet files are elsewhere
+# Relative to project root -- adjust if your Daymet files are elsewhere
 DAYMET_INPUT_DIR <- "data/raw/daymet"
 
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  RESAMPLING DAYMET CLIMATE DATA (1km → 10m & 250m)\n")
+cat("===================================================================\n")
+cat("  RESAMPLING DAYMET CLIMATE DATA (1km -> 10m & 250m)\n")
 cat("  Temperature (Tmin, Tmax, Tmean) & Precipitation\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD CONFIGURATION
@@ -50,7 +50,7 @@ if (!file.exists(config_file)) {
 }
 
 source(config_file, verbose = FALSE)
-cat("✓ Configuration loaded\n\n")
+cat("ok Configuration loaded\n\n")
 
 # =============================================================================
 # EXTRACT PATHS FROM CONFIG
@@ -87,7 +87,7 @@ cat("Daymet directory:", daymet_dir, "\n\n")
 
 # Verify Daymet directory exists
 if (!dir.exists(daymet_dir)) {
-  cat("⚠ WARNING: Daymet directory not found at:", daymet_dir, "\n")
+  cat("WARNING WARNING: Daymet directory not found at:", daymet_dir, "\n")
   cat("Please update 'DAYMET_INPUT_DIR' at the top of this script.\n")
   cat("Common locations:\n")
   cat("  - data/raw/daymet  (relative to project root)\n")
@@ -124,15 +124,15 @@ missing_files <- c()
 for (var_name in names(daymet_files)) {
   file_path <- file.path(daymet_dir, daymet_files[var_name])
   if (file.exists(file_path)) {
-    cat("  ✓ Found:", daymet_files[var_name], "\n")
+    cat("  ok Found:", daymet_files[var_name], "\n")
   } else {
-    cat("  ✗ Missing:", daymet_files[var_name], "\n")
+    cat("  FAIL Missing:", daymet_files[var_name], "\n")
     missing_files <- c(missing_files, daymet_files[var_name])
   }
 }
 
 if (length(missing_files) > 0) {
-  cat("\n⚠ WARNING: Missing", length(missing_files), "Daymet file(s)\n")
+  cat("\nWARNING WARNING: Missing", length(missing_files), "Daymet file(s)\n")
   cat("Expected location:", daymet_dir, "\n")
   cat("Missing files:\n")
   for (f in missing_files) {
@@ -144,7 +144,7 @@ if (length(missing_files) > 0) {
   # Continue with available files
   cat("Continuing with available files...\n\n")
 } else {
-  cat("\n✓ All Daymet files found!\n\n")
+  cat("\nok All Daymet files found!\n\n")
 }
 
 # =============================================================================
@@ -190,13 +190,13 @@ for (var_name in names(daymet_files)) {
   
   daymet_file <- file.path(daymet_dir, daymet_files[var_name])
   
-  cat("───────────────────────────────────────────────────────────────\n")
+  cat("---------------------------------------------------------------\n")
   cat("  Variable:", toupper(var_name), "\n")
-  cat("───────────────────────────────────────────────────────────────\n")
+  cat("---------------------------------------------------------------\n")
   
   # Check file exists
   if (!file.exists(daymet_file)) {
-    cat("  ⚠ File not found:", basename(daymet_file), "\n")
+    cat("  WARNING File not found:", basename(daymet_file), "\n")
     cat("  Skipping...\n\n")
     next
   }
@@ -209,7 +209,7 @@ for (var_name in names(daymet_files)) {
   cat("    Dimensions:", paste(dim(daymet)[1:2], collapse = " x "), "pixels\n")
   cat("    Value range:", round(minmax(daymet)[1], 2), "to", 
       round(minmax(daymet)[2], 2), "\n")
-  cat("    Units:", ifelse(var_name == "prcp", "mm/day", "°C"), "\n")
+  cat("    Units:", ifelse(var_name == "prcp", "mm/day", " deg C"), "\n")
   
   # -------------------------------------------------------------------------
   # Resample to FINE scale (10m)
@@ -235,9 +235,9 @@ for (var_name in names(daymet_files)) {
   range_diff <- abs(minmax(daymet_fine)[1] - minmax(daymet)[1]) + 
     abs(minmax(daymet_fine)[2] - minmax(daymet)[2])
   if (range_diff < 1) {
-    cat("    ✓ Smooth interpolation verified (range preserved)\n")
+    cat("    ok Smooth interpolation verified (range preserved)\n")
   } else {
-    cat("    ⚠ Warning: Value range changed significantly\n")
+    cat("    WARNING Warning: Value range changed significantly\n")
   }
   
   # Save (use simple filename, config already has full path pattern)
@@ -245,7 +245,7 @@ for (var_name in names(daymet_files)) {
   writeRaster(daymet_fine, output_fine, overwrite = TRUE,
               gdal = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=YES"))
   
-  cat("    ✓ Saved:", basename(output_fine), "\n")
+  cat("    ok Saved:", basename(output_fine), "\n")
   cat("    File size:", round(file.size(output_fine) / 1024^2, 1), "MB\n")
   
   processed_files$fine <- c(processed_files$fine, output_fine)
@@ -275,7 +275,7 @@ for (var_name in names(daymet_files)) {
   writeRaster(daymet_coarse, output_coarse, overwrite = TRUE,
               gdal = c("COMPRESS=LZW", "TILED=YES"))
   
-  cat("    ✓ Saved:", basename(output_coarse), "\n")
+  cat("    ok Saved:", basename(output_coarse), "\n")
   cat("    File size:", round(file.size(output_coarse) / 1024^2, 1), "MB\n\n")
   
   processed_files$coarse <- c(processed_files$coarse, output_coarse)
@@ -285,9 +285,9 @@ for (var_name in names(daymet_files)) {
 # STEP 4: VERIFY OUTPUTS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  VERIFICATION\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # List output files
 cat("Fine scale (10m) outputs:\n")
@@ -296,8 +296,8 @@ if (length(fine_files) > 0) {
   for (f in fine_files) {
     r <- rast(f)
     var_name <- gsub("\\.tif$", "", basename(f))
-    units <- ifelse(var_name == "prcp", "mm/day", "°C")
-    cat("  ✓", basename(f), "\n")
+    units <- ifelse(var_name == "prcp", "mm/day", " deg C")
+    cat("  ok", basename(f), "\n")
     cat("     Resolution:", paste(round(res(r), 4), collapse = " x "), "meters\n")
     cat("     Dimensions:", paste(dim(r)[1:2], collapse = " x "), "pixels\n")
     cat("     Range:", round(minmax(r)[1], 2), "to", round(minmax(r)[2], 2), units, "\n")
@@ -312,8 +312,8 @@ if (length(coarse_files) > 0) {
   for (f in coarse_files) {
     r <- rast(f)
     var_name <- gsub("\\.tif$", "", basename(f))
-    units <- ifelse(var_name == "prcp", "mm/day", "°C")
-    cat("  ✓", basename(f), "\n")
+    units <- ifelse(var_name == "prcp", "mm/day", " deg C")
+    cat("  ok", basename(f), "\n")
     cat("     Resolution:", paste(round(res(r), 4), collapse = " x "), "meters\n")
     cat("     Dimensions:", paste(dim(r)[1:2], collapse = " x "), "pixels\n")
     cat("     Range:", round(minmax(r)[1], 2), "to", round(minmax(r)[2], 2), units, "\n")
@@ -327,9 +327,9 @@ if (length(coarse_files) > 0) {
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  ALIGNMENT CHECK\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Checking fine scale (10m) alignment...\n")
 if (length(fine_files) >= 2) {
@@ -337,19 +337,19 @@ if (length(fine_files) >= 2) {
   r2 <- rast(fine_files[2])
   
   if (identical(ext(r1), ext(r2)) && identical(res(r1), res(r2))) {
-    cat("  ✓ All fine scale rasters perfectly aligned\n")
+    cat("  ok All fine scale rasters perfectly aligned\n")
   } else {
-    cat("  ⚠ Warning: Fine scale rasters have different extents/resolutions\n")
+    cat("  WARNING Warning: Fine scale rasters have different extents/resolutions\n")
   }
   
   # Check alignment with template
   if (identical(ext(r1), ext(template_10m)) && identical(res(r1), res(template_10m))) {
-    cat("  ✓ Climate rasters match Sentinel-2 template grid\n")
+    cat("  ok Climate rasters match Sentinel-2 template grid\n")
   } else {
-    cat("  ⚠ Warning: Climate rasters don't perfectly match S2 grid\n")
+    cat("  WARNING Warning: Climate rasters don't perfectly match S2 grid\n")
   }
 } else {
-  cat("  ⚠ Less than 2 files - cannot check alignment\n")
+  cat("  WARNING Less than 2 files - cannot check alignment\n")
 }
 
 cat("\nChecking coarse scale (250m) alignment...\n")
@@ -358,19 +358,19 @@ if (length(coarse_files) >= 2) {
   r2 <- rast(coarse_files[2])
   
   if (identical(ext(r1), ext(r2)) && identical(res(r1), res(r2))) {
-    cat("  ✓ All coarse scale rasters perfectly aligned\n")
+    cat("  ok All coarse scale rasters perfectly aligned\n")
   } else {
-    cat("  ⚠ Warning: Coarse scale rasters have different extents/resolutions\n")
+    cat("  WARNING Warning: Coarse scale rasters have different extents/resolutions\n")
   }
   
   # Check alignment with template
   if (identical(ext(r1), ext(template_250m)) && identical(res(r1), res(template_250m))) {
-    cat("  ✓ Climate rasters match MODIS template grid\n")
+    cat("  ok Climate rasters match MODIS template grid\n")
   } else {
-    cat("  ⚠ Warning: Climate rasters don't perfectly match MODIS grid\n")
+    cat("  WARNING Warning: Climate rasters don't perfectly match MODIS grid\n")
   }
 } else {
-  cat("  ⚠ Less than 2 files - cannot check alignment\n")
+  cat("  WARNING Less than 2 files - cannot check alignment\n")
 }
 
 # =============================================================================
@@ -378,9 +378,9 @@ if (length(coarse_files) >= 2) {
 # =============================================================================
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  DAYMET RESAMPLING COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Source data: Daymet V4 1km (2020-2024 mean, May-Sep)\n")
 cat("Method: Bilinear interpolation (creates smooth gradients)\n\n")
@@ -399,9 +399,9 @@ if (length(fine_files) > 0) {
   for (f in fine_files) {
     var <- gsub("\\.tif$", "", basename(f))
     desc <- switch(var,
-                   tmin = "Minimum temperature (°C)",
-                   tmax = "Maximum temperature (°C)",
-                   tmean = "Mean temperature (°C)",
+                   tmin = "Minimum temperature ( deg C)",
+                   tmax = "Maximum temperature ( deg C)",
+                   tmean = "Mean temperature ( deg C)",
                    prcp = "Precipitation (mm/day)",
                    var)
     cat("  -", desc, "\n")
@@ -410,12 +410,12 @@ if (length(fine_files) > 0) {
 
 cat("\n")
 cat("IMPORTANT NOTES:\n")
-cat("  • Output paths from PHASE4_config_covariates.R\n")
-cat("  • Daymet input path configured separately (may be on different drive)\n")
-cat("  • 10m and 250m files are INTERPOLATED from 1km\n")
-cat("  • Smooth appearance is CORRECT for climate data\n")
-cat("  • Climate varies gradually, not at pixel boundaries\n")
-cat("  • These files match your Sentinel-2 and MODIS grids\n\n")
+cat("  - Output paths from PHASE4_config_covariates.R\n")
+cat("  - Daymet input path configured separately (may be on different drive)\n")
+cat("  - 10m and 250m files are INTERPOLATED from 1km\n")
+cat("  - Smooth appearance is CORRECT for climate data\n")
+cat("  - Climate varies gradually, not at pixel boundaries\n")
+cat("  - These files match your Sentinel-2 and MODIS grids\n\n")
 
 cat("TO CHANGE DAYMET INPUT LOCATION:\n")
 cat("  Edit 'daymet_dir' variable near top of this script\n")
@@ -429,16 +429,16 @@ cat("  3. Config will automatically find these new climate files!\n\n")
 
 cat("Files created (config should already have these):\n")
 cat("  Fine scale:\n")
-cat("    • tmean.tif → matches:", COVARIATES$tmean_fine$path, "\n")
-cat("    • prcp.tif  → matches:", COVARIATES$ppt_fine$path, "\n")
-cat("    • tmin.tif  (NEW - add to config if needed)\n")
-cat("    • tmax.tif  (NEW - add to config if needed)\n")
+cat("    - tmean.tif -> matches:", COVARIATES$tmean_fine$path, "\n")
+cat("    - prcp.tif  -> matches:", COVARIATES$ppt_fine$path, "\n")
+cat("    - tmin.tif  (NEW - add to config if needed)\n")
+cat("    - tmax.tif  (NEW - add to config if needed)\n")
 cat("  Coarse scale:\n")
-cat("    • tmean.tif → matches:", COVARIATES$tmean_coarse$path, "\n")
-cat("    • prcp.tif  → matches:", COVARIATES$ppt_coarse$path, "\n")
-cat("    • tmin.tif  (NEW - add to config if needed)\n")
-cat("    • tmax.tif  (NEW - add to config if needed)\n\n")
+cat("    - tmean.tif -> matches:", COVARIATES$tmean_coarse$path, "\n")
+cat("    - prcp.tif  -> matches:", COVARIATES$ppt_coarse$path, "\n")
+cat("    - tmin.tif  (NEW - add to config if needed)\n")
+cat("    - tmax.tif  (NEW - add to config if needed)\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  DONE! Climate covariates ready for modeling.\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

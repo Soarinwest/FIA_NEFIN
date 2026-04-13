@@ -176,8 +176,5 @@ SPECIES_CHOICES <- species_summary |>
   dplyr::select(label, species_code) |>
   tibble::deframe()
 
-message("[global] SPECIES_CHOICES: ", length(SPECIES_CHOICES),
-        " species with tree data (of ", nrow(species_summary), " total)")
-
 # Add "All Species" option at top
 SPECIES_CHOICES <- c("All Species" = "ALL", SPECIES_CHOICES)

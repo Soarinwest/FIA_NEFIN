@@ -46,16 +46,16 @@ save_with_metadata <- function(df, file_path, metadata = NULL, overwrite = FALSE
   
   # Save main data
   write_csv(df, file_path)
-  message("✓ Saved: ", file_path, " (", nrow(df), " rows)")
+  message("ok Saved: ", file_path, " (", nrow(df), " rows)")
   
   # Save metadata if provided
   if (!is.null(metadata)) {
     meta_path <- paste0(tools::file_path_sans_ext(file_path), "_metadata.txt")
     
     sink(meta_path)
-    cat("═══════════════════════════════════════\n")
+    cat("=======================================\n")
     cat("  FILE METADATA\n")
-    cat("═══════════════════════════════════════\n\n")
+    cat("=======================================\n\n")
     cat("File:", basename(file_path), "\n")
     cat("Created:", as.character(Sys.time()), "\n")
     cat("Rows:", nrow(df), "\n")
@@ -69,7 +69,7 @@ save_with_metadata <- function(df, file_path, metadata = NULL, overwrite = FALSE
     }
     sink()
     
-    message("✓ Metadata saved: ", meta_path)
+    message("ok Metadata saved: ", meta_path)
   }
   
   invisible(file_path)
@@ -104,7 +104,7 @@ load_csv_validated <- function(file_path, required_cols = NULL, verbose = TRUE) 
       stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
     }
     if (verbose) {
-      message("  ✓ All required columns present")
+      message("  ok All required columns present")
     }
   }
   
@@ -187,7 +187,7 @@ copy_with_backup <- function(from, to, backup = TRUE) {
   
   # Copy file
   file.copy(from, to, overwrite = TRUE)
-  message("Copied: ", basename(from), " → ", basename(to))
+  message("Copied: ", basename(from), " -> ", basename(to))
   
   invisible(to)
 }
@@ -316,9 +316,9 @@ create_manifest <- function(output_dir, script_name, inputs = NULL, outputs = NU
   
   sink(manifest_path)
   
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   cat("  PROCESSING MANIFEST\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   cat("Script:", script_name, "\n")
   cat("Run time:", as.character(Sys.time()), "\n")
@@ -341,11 +341,11 @@ create_manifest <- function(output_dir, script_name, inputs = NULL, outputs = NU
     cat("\n")
   }
   
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   
   sink()
   
-  message("✓ Manifest written: ", manifest_path)
+  message("ok Manifest written: ", manifest_path)
   invisible(manifest_path)
 }
 

@@ -23,10 +23,10 @@ library(pROC)
 library(caret)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: SPATIAL CROSS-VALIDATION (CORRECTED)\n")
 cat("  Proper train/test split with universal test set\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Print configuration
 print_phase4_config()
@@ -75,7 +75,7 @@ test_data <- read_csv(
   show_col_types = FALSE
 )
 
-cat("  ✓ Test set loaded:", nrow(test_data), "plots\n")
+cat("  ok Test set loaded:", nrow(test_data), "plots\n")
 cat("    (Same for ALL models)\n\n")
 
 # =============================================================================
@@ -98,8 +98,8 @@ coarse_covs <- sapply(
   function(x) paste0(x$name, "_", gsub("m", "", x$resolution), "m")
 )
 
-cat("  ✓ Fine scale (10m):", length(fine_covs), "covariates\n")
-cat("  ✓ Coarse scale (250m):", length(coarse_covs), "covariates\n\n")
+cat("  ok Fine scale (10m):", length(fine_covs), "covariates\n")
+cat("  ok Coarse scale (250m):", length(coarse_covs), "covariates\n\n")
 
 fold_predictions <- list()
 
@@ -138,17 +138,17 @@ for (model_idx in seq_along(model_types)) {
   model_type <- model_types[model_idx]
   model_name <- model_names[model_idx]
   
-  cat("\n═══════════════════════════════════════════════════════════════════\n")
+  cat("\n===================================================================\n")
   cat("  MODEL:", toupper(model_name), "\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   for (scale_name in names(scales)) {
     
     scale <- scales[[scale_name]]
     
-    cat("\n═══════════════════════════════════════════════════════════════════\n")
+    cat("\n===================================================================\n")
     cat("  ", toupper(scale$name), "\n")
-    cat("═══════════════════════════════════════════════════════════════════\n\n")
+    cat("===================================================================\n\n")
     
     cat("  Using", length(scale$covariates), "covariates:\n")
     cat("  ", paste(head(scale$covariates, 10), collapse = ", "), "\n")
@@ -161,14 +161,14 @@ for (model_idx in seq_along(model_types)) {
     available_covs <- intersect(scale$covariates, names(test_data))
     
     if (length(available_covs) == 0) {
-      cat("  ⚠ WARNING: No covariates available for this scale\n")
+      cat("  WARNING WARNING: No covariates available for this scale\n")
       cat("  Skipping...\n\n")
       next
     }
     
     if (length(available_covs) < length(scale$covariates)) {
       missing <- setdiff(scale$covariates, available_covs)
-      cat("  ⚠ Missing covariates:", paste(missing, collapse = ", "), "\n")
+      cat("  WARNING Missing covariates:", paste(missing, collapse = ", "), "\n")
       cat("  Using", length(available_covs), "available covariates\n\n")
     }
     
@@ -176,9 +176,9 @@ for (model_idx in seq_along(model_types)) {
       
       scenario <- scenarios[[scenario_name]]
       
-      cat("\n───────────────────────────────────────────────────────────────\n")
+      cat("\n---------------------------------------------------------------\n")
       cat("  ", scenario$name, "\n")
-      cat("───────────────────────────────────────────────────────────────\n\n")
+      cat("---------------------------------------------------------------\n\n")
       
       # -----------------------------------------------------------------------
       # LOAD TRAINING DATA
@@ -187,7 +187,7 @@ for (model_idx in seq_along(model_types)) {
       train_file_path <- file.path("data/processed/phase4_modeling", scenario$train_file)
       
       if (!file.exists(train_file_path)) {
-        cat("  ⚠ WARNING: Training file not found:", scenario$train_file, "\n")
+        cat("  WARNING WARNING: Training file not found:", scenario$train_file, "\n")
         cat("  Skipping this scenario...\n\n")
         next
       }
@@ -242,7 +242,7 @@ for (model_idx in seq_along(model_types)) {
           "(", sum(test_subset$biomass == 0), "water/urban)\n\n")
       
       if (nrow(train_subset) < 50 || nrow(test_subset) < 10) {
-        cat("  ⚠ WARNING: Insufficient data after filtering\n")
+        cat("  WARNING WARNING: Insufficient data after filtering\n")
         cat("  Skipping this scenario...\n\n")
         next
       }
@@ -278,14 +278,14 @@ for (model_idx in seq_along(model_types)) {
           )
         )
         
-        cat("  ✓ Created", PHASE4_CONFIG$cv$n_folds, "spatial folds\n")
+        cat("  ok Created", PHASE4_CONFIG$cv$n_folds, "spatial folds\n")
         
         # Show fold sizes
         fold_sizes <- table(spatial_blocks$folds_ids)
         cat("    Fold sizes: ", paste(as.vector(fold_sizes), collapse = ", "), "\n\n")
         
       }, error = function(e) {
-        cat("  ✗ ERROR creating spatial blocks:", e$message, "\n")
+        cat("  FAIL ERROR creating spatial blocks:", e$message, "\n")
         cat("  Skipping this scenario...\n\n")
         return(NULL)
       })
@@ -414,14 +414,14 @@ for (model_idx in seq_along(model_types)) {
       # Aggregate CV results
       cv_results <- bind_rows(cv_metrics)
       
-      cat("\n  ✓", nrow(cv_results), "-fold CV complete\n\n")
+      cat("\n  ok", nrow(cv_results), "-fold CV complete\n\n")
       
       cat("  CROSS-VALIDATION RESULTS:\n")
-      cat("    RMSE: ", round(mean(cv_results$rmse), 2), "±", 
+      cat("    RMSE: ", round(mean(cv_results$rmse), 2), "+/-", 
           round(sd(cv_results$rmse), 2), "Mg/ha\n")
-      cat("    R²:   ", round(mean(cv_results$r2), 3), "±", 
+      cat("    R^2:   ", round(mean(cv_results$r2), 3), "+/-", 
           round(sd(cv_results$r2), 3), "\n")
-      cat("    MAE:  ", round(mean(cv_results$mae), 2), "±", 
+      cat("    MAE:  ", round(mean(cv_results$mae), 2), "+/-", 
           round(sd(cv_results$mae), 2), "Mg/ha\n\n")
       
       # -----------------------------------------------------------------------
@@ -483,11 +483,11 @@ for (model_idx in seq_along(model_types)) {
       test_ss_tot <- sum((y_test_full - mean(y_test_full))^2)
       test_r2 <- 1 - (test_ss_res / test_ss_tot)
       
-      cat("  ✓ Final model trained\n\n")
+      cat("  ok Final model trained\n\n")
       
       cat("  HOLDOUT TEST SET RESULTS:\n")
       cat("    RMSE: ", round(test_rmse, 2), "Mg/ha\n")
-      cat("    R²:   ", round(test_r2, 3), "\n")
+      cat("    R^2:   ", round(test_r2, 3), "\n")
       cat("    MAE:  ", round(test_mae, 2), "Mg/ha\n\n")
       
       # -----------------------------------------------------------------------
@@ -522,7 +522,7 @@ for (model_idx in seq_along(model_types)) {
         file.path("data/processed/phase4_models", model_filename)
       )
       
-      cat("  ✓ Model saved:", model_filename, "\n")
+      cat("  ok Model saved:", model_filename, "\n")
       
       # -----------------------------------------------------------------------
       # STORE RESULTS
@@ -558,9 +558,9 @@ for (model_idx in seq_along(model_types)) {
 # COMBINE AND SAVE RESULTS
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  SAVING RESULTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Combine results
 results_df <- bind_rows(all_results)
@@ -570,7 +570,7 @@ fold_results_df <- bind_rows(fold_results)
 write_csv(results_df, "data/processed/phase4_cv_results/cv_summary.csv")
 write_csv(fold_results_df, "data/processed/phase4_cv_results/fold_results.csv")
 
-cat("  ✓ Results saved to data/processed/phase4_cv_results/\n\n")
+cat("  ok Results saved to data/processed/phase4_cv_results/\n\n")
 
 # =============================================================================
 # SAVE FOLD-LEVEL PREDICTIONS FOR EDGE CASE ANALYSIS
@@ -636,15 +636,15 @@ if (length(fold_predictions) > 0) {
       ) %>%
       write_csv(filepath)
     
-    cat("  ✓", filename, 
+    cat("  ok", filename, 
         "(", nrow(model_preds), "predictions)\n")
   }
   
-  cat("\n✓ All fold predictions saved to:", pred_dir, "\n")
+  cat("\nok All fold predictions saved to:", pred_dir, "\n")
   cat("  These files are now ready for edge case analysis\n\n")
   
 } else {
-  cat("⚠ Warning: No fold predictions were collected\n")
+  cat("WARNING Warning: No fold predictions were collected\n")
   cat("  Check that CV loops completed successfully\n\n")
 }
 
@@ -652,9 +652,9 @@ if (length(fold_predictions) > 0) {
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SPATIAL CV COMPLETE - SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 print(results_df %>% 
         select(model_name, scale, scenario, n_train, n_test, 
@@ -668,9 +668,9 @@ cat("\n")
 
 if ("rf" %in% results_df$model_type && "xgb" %in% results_df$model_type) {
   
-  cat("\n═══════════════════════════════════════════════════════════════════\n")
+  cat("\n===================================================================\n")
   cat("  MODEL COMPARISON: Random Forest vs XGBoost\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   comparison <- results_df %>%
     select(scale, scenario, model_type, test_rmse, test_r2) %>%
@@ -694,15 +694,15 @@ if ("rf" %in% results_df$model_type && "xgb" %in% results_df$model_type) {
   xgb_wins <- sum(comparison$rmse_winner == "XGB", na.rm = TRUE)
   
   if (rf_wins > xgb_wins) {
-    cat("✓ Random Forest performs BETTER overall (lower RMSE in", rf_wins, "of", nrow(comparison), "scenarios)\n")
+    cat("ok Random Forest performs BETTER overall (lower RMSE in", rf_wins, "of", nrow(comparison), "scenarios)\n")
   } else if (xgb_wins > rf_wins) {
-    cat("✓ XGBoost performs BETTER overall (lower RMSE in", xgb_wins, "of", nrow(comparison), "scenarios)\n")
+    cat("ok XGBoost performs BETTER overall (lower RMSE in", xgb_wins, "of", nrow(comparison), "scenarios)\n")
   } else {
-    cat("✓ Models perform EQUALLY (tied)\n")
+    cat("ok Models perform EQUALLY (tied)\n")
   }
 }
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  NEXT STEP: Generate predictions\n")
 cat("  Rscript R/phase4_modeling/PHASE4_03_predict_biomass.R\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

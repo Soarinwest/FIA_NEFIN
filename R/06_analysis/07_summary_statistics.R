@@ -14,9 +14,9 @@ library(dplyr)
 library(readr)
 library(tidyr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE 1: SUMMARY STATISTICS - METRICS FRAMEWORK\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD DATA
@@ -42,9 +42,9 @@ cat("  Augmented:", nrow(augmented), "plots\n\n")
 # 1. VARIANCE / UNCERTAINTY METRICS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  1. VARIANCE / UNCERTAINTY METRICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 variance_metrics <- list()
 
@@ -92,7 +92,7 @@ for (scale in CONFIG$hex_scales) {
 se_summary <- bind_rows(se_results)
 variance_metrics$se_ratio <- se_summary
 
-cat("  ✓ SE ratio computed\n")
+cat("  ok SE ratio computed\n")
 print(se_summary)
 cat("\n")
 
@@ -149,7 +149,7 @@ variance_metrics$bootstrap <- bootstrap_summary
 
 cat("  Baseline variance:  ", sprintf("%.4f\n", var_baseline))
 cat("  Augmented variance: ", sprintf("%.4f\n", var_augmented))
-cat("  Δ Variance:         ", sprintf("%.4f (%.2f%% reduction)\n\n", 
+cat("  delta Variance:         ", sprintf("%.4f (%.2f%% reduction)\n\n", 
                                       delta_var, delta_var_pct))
 
 # 1.4 Effective Sample Size
@@ -177,13 +177,13 @@ cat("  Ratio:         ", sprintf("%.3f\n\n", ess_augmented / ess_baseline))
 # 2. BIAS / SHIFT METRICS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  2. BIAS / SHIFT METRICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 shift_metrics <- list()
 
-# 2.1 Mean Shift (ΔMean)
+# 2.1 Mean Shift (deltaMean)
 cat("2.1 Computing mean shift by scale...\n")
 
 mean_shift_results <- list()
@@ -223,7 +223,7 @@ for (scale in CONFIG$hex_scales) {
 mean_shift_summary <- bind_rows(mean_shift_results)
 shift_metrics$mean_shift <- mean_shift_summary
 
-cat("  ✓ Mean shift computed\n")
+cat("  ok Mean shift computed\n")
 print(mean_shift_summary %>% select(scale, mean_delta, median_delta, ci_lower, ci_upper))
 cat("\n")
 
@@ -278,7 +278,7 @@ for (scale in CONFIG$hex_scales) {
 smd_summary <- bind_rows(smd_results)
 shift_metrics$smd <- smd_summary
 
-cat("  ✓ SMD computed\n")
+cat("  ok SMD computed\n")
 print(smd_summary)
 cat("\n")
 
@@ -299,7 +299,7 @@ quantile_shift <- tibble(
 
 shift_metrics$quantiles <- quantile_shift
 
-cat("  ✓ Quantile shifts computed\n")
+cat("  ok Quantile shifts computed\n")
 print(quantile_shift)
 cat("\n")
 
@@ -307,9 +307,9 @@ cat("\n")
 # 3. BIAS-VARIANCE TRADEOFF
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  3. BIAS-VARIANCE TRADEOFF\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 tradeoff_metrics <- list()
 
@@ -361,7 +361,7 @@ for (scale in CONFIG$hex_scales) {
 mse_summary <- bind_rows(mse_results)
 tradeoff_metrics$mse_star <- mse_summary
 
-cat("  ✓ MSE* computed\n")
+cat("  ok MSE* computed\n")
 print(mse_summary)
 cat("\n")
 
@@ -369,9 +369,9 @@ cat("\n")
 # 4. DIAGNOSTIC METRICS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  4. DIAGNOSTIC METRICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 diagnostic_metrics <- list()
 
@@ -407,7 +407,7 @@ composition_tests <- tibble(
 
 diagnostic_metrics$composition <- composition_tests
 
-cat("  ✓ Composition tests completed\n")
+cat("  ok Composition tests completed\n")
 print(composition_tests)
 cat("\n")
 
@@ -431,7 +431,7 @@ summary_stats <- augmented %>%
 
 diagnostic_metrics$summary_by_dataset <- summary_stats
 
-cat("  ✓ Summary statistics computed\n")
+cat("  ok Summary statistics computed\n")
 print(summary_stats)
 cat("\n")
 
@@ -439,9 +439,9 @@ cat("\n")
 # SAVE ALL RESULTS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SAVING RESULTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 output_dir <- "data/processed/summary_statistics"
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
@@ -465,15 +465,15 @@ saveRDS(list(
   diagnostic = diagnostic_metrics
 ), file.path(output_dir, "all_metrics.rds"))
 
-cat("✓ All results saved to:", output_dir, "\n\n")
+cat("ok All results saved to:", output_dir, "\n\n")
 
 # =============================================================================
 # SUMMARY REPORT
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY REPORT\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("KEY FINDINGS:\n\n")
 
@@ -484,8 +484,8 @@ cat("   - Bootstrap variance reduction:",
     sprintf("%.2f%%\n", delta_var_pct))
 cat("   - Interpretation:", 
     ifelse(mean(se_summary$mean_se_ratio) < 1, 
-           "NEFIN reduces uncertainty ✓\n\n",
-           "NEFIN does not reduce uncertainty ✗\n\n"))
+           "NEFIN reduces uncertainty ok\n\n",
+           "NEFIN does not reduce uncertainty FAIL\n\n"))
 
 cat("2. ESTIMATE SHIFTS:\n")
 cat("   - Mean shift across scales:",
@@ -504,21 +504,21 @@ cat("   - Mean MSE* improvement:",
     sprintf("%.2f%%\n", mean(mse_summary$improvement_pct)))
 cat("   - Interpretation:",
     ifelse(mean(mse_summary$improvement_pct) > 0,
-           "Augmentation improves estimates ✓\n\n",
-           "Augmentation does not improve estimates ✗\n\n"))
+           "Augmentation improves estimates ok\n\n",
+           "Augmentation does not improve estimates FAIL\n\n"))
 
 cat("4. COMPOSITION DIFFERENCES:\n")
 cat("   - Significant composition shifts in:\n")
 for (i in 1:nrow(composition_tests)) {
   if (composition_tests$significant[i]) {
-    cat("     •", composition_tests$covariate[i], "\n")
+    cat("     -", composition_tests$covariate[i], "\n")
   }
 }
 cat("\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 1 COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Next steps:\n")
 cat("  1. Review results in:", output_dir, "\n")

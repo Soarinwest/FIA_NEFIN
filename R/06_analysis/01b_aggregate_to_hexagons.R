@@ -11,9 +11,9 @@ source("R/utils/file_utils.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE E: AGGREGATE TO HEXAGONS (FIXED)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD DATA
@@ -48,7 +48,7 @@ cat("  Baseline: ", nrow(baseline), "rows,", n_unique_baseline, "unique plots\n"
 cat("  Augmented:", nrow(augmented), "rows,", n_unique_augmented, "unique plots\n")
 
 if (n_unique_augmented < nrow(augmented)) {
-  cat("\n  ⚠ NEFIN has temporal replicates (same plot, multiple years)\n")
+  cat("\n  WARNING NEFIN has temporal replicates (same plot, multiple years)\n")
   cat("  Using latest year per plot...\n\n")
   
   # For augmented, keep only latest year per plot
@@ -80,7 +80,7 @@ for (scale in CONFIG$hex_scales) {
     select(CN, hex_id)
   
   if (nrow(hex_for_scale) == 0) {
-    cat("    ⚠ No hex assignments for this scale, skipping\n")
+    cat("    WARNING No hex assignments for this scale, skipping\n")
     next
   }
   
@@ -118,7 +118,7 @@ for (scale in CONFIG$hex_scales) {
   output_path <- file.path(output_dir, paste0("baseline_hex_", scale$name, ".csv"))
   write_csv(hex_agg, output_path)
   
-  cat("    ✓ Saved:", nrow(hex_agg), "hexagons,", 
+  cat("    ok Saved:", nrow(hex_agg), "hexagons,", 
       sum(hex_agg$n_plots), "plots\n")
 }
 
@@ -140,7 +140,7 @@ for (scale in CONFIG$hex_scales) {
     distinct(CN, .keep_all = TRUE)  # Keep one row per CN
   
   if (nrow(hex_for_scale) == 0) {
-    cat("    ⚠ No hex assignments for this scale, skipping\n")
+    cat("    WARNING No hex assignments for this scale, skipping\n")
     next
   }
   
@@ -185,14 +185,14 @@ for (scale in CONFIG$hex_scales) {
   output_path <- file.path(output_dir, paste0("augmented_hex_", scale$name, ".csv"))
   write_csv(hex_agg, output_path)
   
-  cat("    ✓ Saved:", nrow(hex_agg), "hexagons,",
+  cat("    ok Saved:", nrow(hex_agg), "hexagons,",
       sum(hex_agg$n_plots), "plots\n")
   cat("      FIA:", sum(hex_agg$n_fia), "NEFIN:", sum(hex_agg$n_nefin), "\n")
 }
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  HEX AGGREGATION COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Output directory:", output_dir, "\n")
 cat("Files created:", length(CONFIG$hex_scales) * 2, "(baseline + augmented)\n\n")

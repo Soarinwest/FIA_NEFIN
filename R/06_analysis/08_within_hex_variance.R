@@ -11,9 +11,9 @@ library(dplyr)
 library(readr)
 library(ggplot2)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE 2: WITHIN-HEX VARIANCE ANALYSIS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD HEX-AGGREGATED DATA
@@ -80,9 +80,9 @@ all_results <- bind_rows(results_by_scale)
 # STATISTICAL TEST
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  STATISTICAL TESTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Test: Does biomass SD decrease with NEFIN %?
 for (scale in CONFIG$hex_scales) {
@@ -109,12 +109,12 @@ for (scale in CONFIG$hex_scales) {
     
     if (summary(model)$coefficients[2, 4] < 0.05) {
       if (coef(model)[2] < 0) {
-        cat("  → NEFIN reduces within-hex variance ✓\n\n")
+        cat("  -> NEFIN reduces within-hex variance ok\n\n")
       } else {
-        cat("  → NEFIN increases within-hex variance ✗\n\n")
+        cat("  -> NEFIN increases within-hex variance FAIL\n\n")
       }
     } else {
-      cat("  → No significant effect\n\n")
+      cat("  -> No significant effect\n\n")
     }
   }
 }
@@ -128,7 +128,7 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 write_csv(all_results, file.path(output_dir, "variance_by_nefin_percentage.csv"))
 
-cat("✓ Saved results:", file.path(output_dir, "variance_by_nefin_percentage.csv"), "\n\n")
+cat("ok Saved results:", file.path(output_dir, "variance_by_nefin_percentage.csv"), "\n\n")
 
 # =============================================================================
 # VISUALIZATION
@@ -181,15 +181,15 @@ p2 <- p2_data %>%
 ggsave(file.path(output_dir, "biomass_sd_trend_by_scale.png"),
        p2, width = 12, height = 8, dpi = 300)
 
-cat("✓ Saved visualizations\n\n")
+cat("ok Saved visualizations\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Find strongest effect
 best_reduction <- all_results %>%
@@ -211,10 +211,10 @@ if (nrow(nefin_effect) > 0) {
   cat("\n")
   
   if (any(nefin_effect$reduction_pct > 5)) {
-    cat("✓ NEFIN demonstrates within-hex variance reduction\n")
+    cat("ok NEFIN demonstrates within-hex variance reduction\n")
     cat("  Effect strongest at:", nefin_effect$scale[1], "\n")
   } else {
-    cat("→ Minimal within-hex variance reduction from NEFIN\n")
+    cat("-> Minimal within-hex variance reduction from NEFIN\n")
     cat("  Compositional differences dominate\n")
   }
 } else {

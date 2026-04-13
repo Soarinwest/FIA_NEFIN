@@ -12,9 +12,9 @@ source("R/utils/validation_utils.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE B - STEP 3: STANDARDIZE TO FIA SCHEMA (COMPREHENSIVE FIX)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load biomass data
 input_path <- file.path(CONFIG$paths$interim_nefin, "biomass", "nefin_plot_biomass.csv")
@@ -67,7 +67,7 @@ nefin_one_per_plot <- nefin_dedup %>%
   slice_max(year, n = 1, with_ties = FALSE) %>%
   ungroup()
 
-cat("  ✓ Aggregated to", nrow(nefin_one_per_plot), "plots (one per plot)\n\n")
+cat("  ok Aggregated to", nrow(nefin_one_per_plot), "plots (one per plot)\n\n")
 
 # Show what we prevented
 if (nrow(multi_year_plots) > 0) {
@@ -114,7 +114,7 @@ nefin_std <- nefin_one_per_plot %>%
     dataset, coord_source
   )
 
-cat("  ✓ Standardized to FIA schema\n\n")
+cat("  ok Standardized to FIA schema\n\n")
 
 # =============================================================================
 # VALIDATION
@@ -131,22 +131,22 @@ validate_columns(nefin_std, required_cols, "NEFIN")
 # Check for duplicates (CRITICAL!)
 n_dup <- sum(duplicated(nefin_std$CN))
 if (n_dup > 0) {
-  cat("  ✗ ERROR:", n_dup, "duplicate CNs found!\n")
+  cat("  FAIL ERROR:", n_dup, "duplicate CNs found!\n")
   cat("    This should NOT happen after deduplication\n")
   stop("Duplicate CNs detected - check deduplication logic")
 } else {
-  cat("  ✓ No duplicate CNs\n")
+  cat("  ok No duplicate CNs\n")
 }
 
 if (!all(nefin_std$coord_source == "true")) {
   stop("ERROR: Not all coordinates marked as 'true'!")
 }
-cat("  ✓ All coordinates marked as 'true'\n")
+cat("  ok All coordinates marked as 'true'\n")
 
 if (!all(nefin_std$dataset == "NEFIN")) {
   stop("ERROR: Not all rows marked as NEFIN!")
 }
-cat("  ✓ All rows marked as NEFIN\n")
+cat("  ok All rows marked as NEFIN\n")
 
 # =============================================================================
 # SUMMARY
@@ -173,23 +173,23 @@ output_path <- file.path(CONFIG$paths$processed, "nefin_complete.csv")
 if (file.exists(output_path)) {
   backup_path <- file.path(CONFIG$paths$processed, "nefin_complete_OLD.csv")
   file.copy(output_path, backup_path, overwrite = TRUE)
-  cat("⚠ Backed up old version to nefin_complete_OLD.csv\n")
+  cat("WARNING Backed up old version to nefin_complete_OLD.csv\n")
 }
 
 write_csv(nefin_std, output_path)
 
-cat("✓ Saved:", output_path, "\n\n")
+cat("ok Saved:", output_path, "\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE B COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("COMPREHENSIVE FIXES APPLIED:\n")
-cat("  ✓ Fix 1: Removed exact duplicates (same plot + year)\n")
-cat("  ✓ Fix 2: Temporal aggregation (kept most recent year per plot)\n")
-cat("  ✓ Result: One unique row per plot\n")
-cat("  ✓ No duplicate CNs\n")
-cat("  ✓ Ready for Phase C comparison\n\n")
+cat("  ok Fix 1: Removed exact duplicates (same plot + year)\n")
+cat("  ok Fix 2: Temporal aggregation (kept most recent year per plot)\n")
+cat("  ok Result: One unique row per plot\n")
+cat("  ok No duplicate CNs\n")
+cat("  ok Ready for Phase C comparison\n\n")
 
 cat("Next: Run Phase C!\n")
 cat("  Rscript run_scripts/run_phase_C.R\n\n")

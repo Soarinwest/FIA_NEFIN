@@ -9,9 +9,9 @@ library(dplyr)
 library(readr)
 library(sf)
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("  CREATING SPATIAL CONTEXT MAPS (UPDATED)\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 # Create output directory
 out_dir <- "data/processed/figures/spatial_context"
@@ -26,10 +26,10 @@ cat("Step 1: Loading plot data...\n")
 # Try both locations for FIA data
 if (file.exists("data/processed/fia_complete.csv")) {
   fia <- read_csv("data/processed/fia_complete.csv", show_col_types = FALSE)
-  cat("  ✓ FIA loaded:", nrow(fia), "plots from fia_complete.csv\n")
+  cat("  ok FIA loaded:", nrow(fia), "plots from fia_complete.csv\n")
 } else if (file.exists("data/processed/baseline.csv")) {
   fia <- read_csv("data/processed/baseline.csv", show_col_types = FALSE)
-  cat("  ✓ FIA loaded:", nrow(fia), "plots from baseline.csv\n")
+  cat("  ok FIA loaded:", nrow(fia), "plots from baseline.csv\n")
 } else {
   stop("FIA data not found!")
 }
@@ -37,15 +37,15 @@ if (file.exists("data/processed/fia_complete.csv")) {
 # Try both locations for NEFIN data
 if (file.exists("data/processed/nefin_complete.csv")) {
   nefin <- read_csv("data/processed/nefin_complete.csv", show_col_types = FALSE)
-  cat("  ✓ NEFIN loaded:", nrow(nefin), "plots from nefin_complete.csv\n")
+  cat("  ok NEFIN loaded:", nrow(nefin), "plots from nefin_complete.csv\n")
 } else if (file.exists("data/processed/nefin.csv")) {
   nefin <- read_csv("data/processed/nefin.csv", show_col_types = FALSE) %>%
     group_by(CN) %>%
     filter(MEASYEAR == max(MEASYEAR)) %>%
     ungroup()
-  cat("  ✓ NEFIN loaded:", nrow(nefin), "plots from nefin.csv (deduplicated)\n")
+  cat("  ok NEFIN loaded:", nrow(nefin), "plots from nefin.csv (deduplicated)\n")
 } else {
-  cat("  ⚠ NEFIN data not found, using FIA only\n")
+  cat("  WARNING NEFIN data not found, using FIA only\n")
   nefin <- data.frame()
 }
 
@@ -87,7 +87,7 @@ if (nrow(nefin) > 0) {
   combined_sf <- fia_sf %>% select(dataset, geometry)
 }
 
-cat("  ✓ Combined:", nrow(combined_sf), "plots\n")
+cat("  ok Combined:", nrow(combined_sf), "plots\n")
 cat("    FIA:", sum(combined_sf$dataset == "FIA"), "\n")
 if (nrow(nefin) > 0) {
   cat("    NEFIN:", sum(combined_sf$dataset == "NEFIN"), "\n")
@@ -134,7 +134,7 @@ ggsave(
   dpi = 300
 )
 
-cat("  ✓ Saved: fig1_study_area.png\n\n")
+cat("  ok Saved: fig1_study_area.png\n\n")
 
 # =============================================================================
 # STEP 4: HEXAGON MAP (from GeoJSON)
@@ -146,13 +146,13 @@ cat("Step 4: Creating hexagon map from GeoJSON...\n")
 hex_dir <- "data/hex"
 
 if (!dir.exists(hex_dir)) {
-  cat("  ⚠ Hexagon directory not found, skipping hexagon map\n\n")
+  cat("  WARNING Hexagon directory not found, skipping hexagon map\n\n")
 } else {
   
   hex_files <- list.files(hex_dir, pattern = "^hex_grid_.*\\.geojson$", full.names = TRUE)
   
   if (length(hex_files) == 0) {
-    cat("  ⚠ No hexagon GeoJSON files found, skipping hexagon map\n\n")
+    cat("  WARNING No hexagon GeoJSON files found, skipping hexagon map\n\n")
   } else {
     
     # Use a medium-sized hex grid (e.g., 1kha or 2_4kha)
@@ -223,7 +223,7 @@ if (!dir.exists(hex_dir)) {
       dpi = 300
     )
     
-    cat("  ✓ Saved: fig2_hexagon_grid.png\n\n")
+    cat("  ok Saved: fig2_hexagon_grid.png\n\n")
   }
 }
 
@@ -279,18 +279,18 @@ if (nrow(nefin) > 0) {
     dpi = 300
   )
   
-  cat("  ✓ Saved: fig3_fuzzing_concept.png\n\n")
+  cat("  ok Saved: fig3_fuzzing_concept.png\n\n")
 } else {
-  cat("  ⚠ NEFIN data not available, skipping fuzzing visualization\n\n")
+  cat("  WARNING NEFIN data not available, skipping fuzzing visualization\n\n")
 }
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("══════════════════════════════════════════════════════════════════\n")
+cat("==================================================================\n")
 cat("  SUMMARY\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 cat("Maps created:\n")
 cat("  1. fig1_study_area.png - Plot locations\n")

@@ -14,9 +14,9 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
 })
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("  GENERATING COMPLETE FIGURE SUITE FOR MANUSCRIPT\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 # Create output directories
 dir.create("manuscript_figures", showWarnings = FALSE, recursive = TRUE)
@@ -33,13 +33,13 @@ cat("Step 1: Loading data...\n")
 fia_plots <- read_csv("data/processed/fia_complete.csv", show_col_types = FALSE)
 nefin_plots <- read_csv("data/processed/nefin_complete.csv", show_col_types = FALSE)
 
-cat("  ✓ FIA plots:", nrow(fia_plots), "\n")
-cat("  ✓ NEFIN plots:", nrow(nefin_plots), "\n")
+cat("  ok FIA plots:", nrow(fia_plots), "\n")
+cat("  ok NEFIN plots:", nrow(nefin_plots), "\n")
 
 # Load Monte Carlo results
 mc_data <- read_csv("data/processed/monte_carlo/plot_uncertainty.csv", 
                     show_col_types = FALSE)
-cat("  ✓ Monte Carlo data:", nrow(mc_data), "plots\n\n")
+cat("  ok Monte Carlo data:", nrow(mc_data), "plots\n\n")
 
 # =============================================================================
 # FIGURE 1: STUDY AREA MAP (Enhanced Version)
@@ -62,7 +62,7 @@ fig1 <- ggplot(all_plots, aes(x = lon, y = lat, color = dataset)) +
   geom_point(aes(alpha = dataset, size = dataset)) +
   scale_color_manual(
     values = c("FIA" = "#d62728", "NEFIN" = "#1f77b4"),
-    labels = c(paste0("FIA (fuzzed ±1.6 km, n=", 
+    labels = c(paste0("FIA (fuzzed +/-1.6 km, n=", 
                       sum(all_plots$dataset == "FIA"), ")"),
                paste0("NEFIN (precise coords, n=", 
                       sum(all_plots$dataset == "NEFIN"), ")"))
@@ -73,8 +73,8 @@ fig1 <- ggplot(all_plots, aes(x = lon, y = lat, color = dataset)) +
   labs(
     title = "Study Area: Forest Inventory Plots Across Northeastern United States",
     subtitle = paste0("Total: ", nrow(all_plots), " plots from 7 states (VT, NH, ME, MA, NY, CT, RI)"),
-    x = "Longitude (°W)",
-    y = "Latitude (°N)",
+    x = "Longitude ( degreesW)",
+    y = "Latitude ( degreesN)",
     color = "Dataset"
   ) +
   theme_minimal(base_size = 14) +
@@ -89,7 +89,7 @@ fig1 <- ggplot(all_plots, aes(x = lon, y = lat, color = dataset)) +
 
 ggsave("manuscript_figures/main/Fig1_Study_Area.png", fig1, 
        width = 12, height = 9, dpi = 300)
-cat("  ✓ Saved: Fig1_Study_Area.png\n\n")
+cat("  ok Saved: Fig1_Study_Area.png\n\n")
 
 # =============================================================================
 # FIGURE 2: HEXAGON MAPS - Multi-Scale Comparison
@@ -103,7 +103,7 @@ load_hex_with_geometry <- function(scale) {
   # Load hex geometry
   hex_geom_file <- paste0("data/hex/hex_grid_", scale, ".geojson")
   if (!file.exists(hex_geom_file)) {
-    cat("  ⚠ Geometry file not found:", hex_geom_file, "\n")
+    cat("  WARNING Geometry file not found:", hex_geom_file, "\n")
     return(NULL)
   }
   
@@ -119,7 +119,7 @@ load_hex_with_geometry <- function(scale) {
   hex_data_file <- hex_data_files[file.exists(hex_data_files)][1]
   
   if (is.na(hex_data_file)) {
-    cat("  ⚠ Data file not found for scale:", scale, "\n")
+    cat("  WARNING Data file not found for scale:", scale, "\n")
     return(NULL)
   }
   
@@ -188,7 +188,7 @@ if (length(hex_panels) > 0) {
   
   ggsave("manuscript_figures/main/Fig2_Hexagon_MultiScale.png", fig2,
          width = 14, height = 12, dpi = 300)
-  cat("  ✓ Saved: Fig2_Hexagon_MultiScale.png\n\n")
+  cat("  ok Saved: Fig2_Hexagon_MultiScale.png\n\n")
 }
 
 # =============================================================================
@@ -244,7 +244,7 @@ fig3 <- panel_a / panel_b +
 
 ggsave("manuscript_figures/main/Fig3_Monte_Carlo_Uncertainty.png", fig3,
        width = 10, height = 10, dpi = 300)
-cat("  ✓ Saved: Fig3_Monte_Carlo_Uncertainty.png\n\n")
+cat("  ok Saved: Fig3_Monte_Carlo_Uncertainty.png\n\n")
 
 # =============================================================================
 # FIGURE 4: BIOMASS DISTRIBUTION COMPARISON (FIXED)
@@ -316,7 +316,7 @@ fig4 <- panel_a + panel_b +
 
 ggsave("manuscript_figures/main/Fig4_Compositional_Differences.png", fig4,
        width = 14, height = 6, dpi = 300)
-cat("  ✓ Saved: Fig4_Compositional_Differences.png\n\n")
+cat("  ok Saved: Fig4_Compositional_Differences.png\n\n")
 
 # =============================================================================
 # COPY EXISTING FIGURES
@@ -339,7 +339,7 @@ for (fig in existing_figs) {
   if (file.exists(fig)) {
     new_name <- paste0("manuscript_figures/supplementary/", basename(fig))
     file.copy(fig, new_name, overwrite = TRUE)
-    cat("  ✓ Copied:", basename(fig), "\n")
+    cat("  ok Copied:", basename(fig), "\n")
   }
 }
 
@@ -347,9 +347,9 @@ for (fig in existing_figs) {
 # SUMMARY
 # =============================================================================
 
-cat("\n══════════════════════════════════════════════════════════════════\n")
+cat("\n==================================================================\n")
 cat("  FIGURE GENERATION COMPLETE\n")
-cat("══════════════════════════════════════════════════════════════════\n\n")
+cat("==================================================================\n\n")
 
 cat("Main Figures Created:\n")
 cat("  1. Fig1_Study_Area.png - Enhanced study area map\n")
@@ -367,4 +367,4 @@ cat("All figures ready for manuscript!\n")
 cat("Resolution: 300 DPI (publication quality)\n")
 cat("Format: PNG (can convert to PDF/EPS if needed)\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

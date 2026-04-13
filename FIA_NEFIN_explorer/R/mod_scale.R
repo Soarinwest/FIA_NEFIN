@@ -1,5 +1,5 @@
 # ============================================================================
-# mod_scale.R — Tab 4: Scale Analysis
+# mod_scale.R -- Tab 4: Scale Analysis
 # ============================================================================
 
 scale_ui <- function(id) {
@@ -60,7 +60,7 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
 
     selected_scale <- reactiveVal(NULL)
 
-    # ── Scale dependency curve ────────────────────────────────────────────────
+    # -- Scale dependency curve ------------------------------------------------
     output$scale_curve <- plotly::renderPlotly({
       data <- scale_metrics |>
         dplyr::arrange(area_ha_num) |>
@@ -124,17 +124,12 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
       click <- plotly::event_data("plotly_click", source = "scale_curve")
       req(!is.null(click))
       x_val <- click$x
-      message("[scale] Click x_val: ", x_val,
-              " | area_ha_num values: ",
-              paste(scale_metrics$area_ha_num, collapse = ", "))
       # plotly log axis may return log10 value; try both raw and 10^x
       idx_raw <- which.min(abs(scale_metrics$area_ha_num - x_val))
       idx_log <- which.min(abs(scale_metrics$area_ha_num - 10^x_val))
-      # Use whichever is a closer match
       err_raw <- abs(scale_metrics$area_ha_num[idx_raw] - x_val)
       err_log <- abs(scale_metrics$area_ha_num[idx_log] - 10^x_val)
       idx <- if (err_log < err_raw) idx_log else idx_raw
-      message("[scale] Matched scale: ", scale_metrics$scale[idx])
       if (length(idx) > 0) selected_scale(scale_metrics$scale[idx])
     })
 
@@ -225,7 +220,7 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
       plotly::ggplotly(p, tooltip = "text")
     })
 
-    # ── Bootstrap variance ────────────────────────────────────────────────────
+    # -- Bootstrap variance ----------------------------------------------------
     output$bootstrap_table <- renderTable({
       if (is.null(bootstrap_variance)) {
         return(data.frame(
@@ -246,7 +241,7 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
                       `Bootstrap Variance`, `Change from Baseline`, `Change (%)`)
     }, striped = TRUE, hover = TRUE, bordered = TRUE)
 
-    # ── All-scales metrics chart ──────────────────────────────────────────────
+    # -- All-scales metrics chart ----------------------------------------------
     output$all_metrics_chart <- plotly::renderPlotly({
       data <- scale_metrics |>
         dplyr::arrange(area_ha_num) |>

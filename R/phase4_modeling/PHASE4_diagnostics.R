@@ -15,9 +15,9 @@ library(xgboost)
 library(tidyr)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: MODEL DIAGNOSTICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Create output directories
 dir.create("manuscript_figures/phase4/diagnostics", showWarnings = FALSE, recursive = TRUE)
@@ -118,7 +118,7 @@ for (model_name in names(models)) {
           stringsAsFactors = FALSE
         )
       } else {
-        cat("  ⚠ Warning:", model_name, "is not a randomForest object\n")
+        cat("  WARNING Warning:", model_name, "is not a randomForest object\n")
         next
       }
       
@@ -127,7 +127,7 @@ for (model_name in names(models)) {
       if (inherits(model, "xgb.Booster")) {
         imp <- xgb.importance(model = model)
         if (nrow(imp) == 0) {
-          cat("  ⚠ Warning:", model_name, "has no importance scores\n")
+          cat("  WARNING Warning:", model_name, "has no importance scores\n")
           next
         }
         imp_df <- data.frame(
@@ -136,12 +136,12 @@ for (model_name in names(models)) {
           stringsAsFactors = FALSE
         )
       } else {
-        cat("  ⚠ Warning:", model_name, "is not an xgb.Booster object\n")
+        cat("  WARNING Warning:", model_name, "is not an xgb.Booster object\n")
         next
       }
       
     } else {
-      cat("  ⚠ Warning: Unknown model type for", model_name, "\n")
+      cat("  WARNING Warning: Unknown model type for", model_name, "\n")
       next
     }
     
@@ -157,20 +157,20 @@ for (model_name in names(models)) {
     }
     
   }, error = function(e) {
-    cat("  ✗ Error extracting importance from", model_name, ":", e$message, "\n")
+    cat("  FAIL Error extracting importance from", model_name, ":", e$message, "\n")
   })
 }
 
 # Combine all importance scores
 all_importance <- bind_rows(importance_list)
 
-cat("  ✓ Extracted importance for", length(importance_list), "models\n")
-cat("  ✓ Total variable-model combinations:", nrow(all_importance), "\n")
+cat("  ok Extracted importance for", length(importance_list), "models\n")
+cat("  ok Total variable-model combinations:", nrow(all_importance), "\n")
 
 # Validate data
 if (nrow(all_importance) == 0) {
   cat("\n")
-  cat("✗ ERROR: No importance data extracted!\n")
+  cat("FAIL ERROR: No importance data extracted!\n")
   cat("  This likely means model files are incompatible or corrupted.\n")
   cat("  Please check that models were saved correctly.\n\n")
   stop("Cannot proceed without importance data")
@@ -178,7 +178,7 @@ if (nrow(all_importance) == 0) {
 
 if (!"variable" %in% names(all_importance)) {
   cat("\n")
-  cat("✗ ERROR: 'variable' column missing from importance data!\n")
+  cat("FAIL ERROR: 'variable' column missing from importance data!\n")
   cat("  Available columns:", paste(names(all_importance), collapse = ", "), "\n\n")
   stop("Data structure error")
 }
@@ -191,7 +191,7 @@ write_csv(
   "data/processed/phase4_diagnostics/variable_importance.csv"
 )
 
-cat("  ✓ Saved: variable_importance.csv\n\n")
+cat("  ok Saved: variable_importance.csv\n\n")
 
 # =============================================================================
 # TOP FEATURES COMPARISON
@@ -208,9 +208,9 @@ cat("  Available scales:", paste(scales_available, collapse = ", "), "\n\n")
 
 for (scale in scales_available) {
   
-  cat("─────────────────────────────────────────────────────────────────\n")
+  cat("-----------------------------------------------------------------\n")
   cat("  ", scale, "\n")
-  cat("─────────────────────────────────────────────────────────────────\n\n")
+  cat("-----------------------------------------------------------------\n\n")
   
   # Get top features averaged across scenarios
   rf_top <- all_importance %>%
@@ -229,7 +229,7 @@ for (scale in scales_available) {
   
   # Check if we have data for both models
   if (nrow(rf_top) == 0 && nrow(xgb_top) == 0) {
-    cat("  ⚠ No importance data available for this scale\n\n")
+    cat("  WARNING No importance data available for this scale\n\n")
     next
   }
   
@@ -275,7 +275,7 @@ cat("Step 4: Creating importance plots...\n")
 
 # Check if we have data to plot
 if (nrow(all_importance) == 0) {
-  cat("  ⚠ Skipping plots - no importance data available\n\n")
+  cat("  WARNING Skipping plots - no importance data available\n\n")
 } else {
   
   # Aggregate importance plot (averaged across scenarios)
@@ -320,7 +320,7 @@ if (nrow(all_importance) == 0) {
       dpi = 300
     )
     
-    cat("  ✓ Saved: importance_comparison.png\n")
+    cat("  ok Saved: importance_comparison.png\n")
     
     # Separate plots for each scale
     for (scale in c("Fine (10m)", "Coarse (250m)")) {
@@ -357,11 +357,11 @@ if (nrow(all_importance) == 0) {
         dpi = 300
       )
       
-      cat("  ✓ Saved:", filename, "\n")
+      cat("  ok Saved:", filename, "\n")
     }
     
   } else {
-    cat("  ⚠ No data to plot for avg_importance\n")
+    cat("  WARNING No data to plot for avg_importance\n")
   }
   
   cat("\n")
@@ -379,8 +379,8 @@ rf_data <- all_importance %>%
   filter(model_type == "Random Forest")
 
 if (nrow(rf_data) == 0) {
-  cat("  ⚠ No Random Forest data available\n")
-  cat("  ⚠ Skipping feature selection for XGBoost\n\n")
+  cat("  WARNING No Random Forest data available\n")
+  cat("  WARNING Skipping feature selection for XGBoost\n\n")
   rf_top_features <- data.frame()
 } else {
   
@@ -403,8 +403,8 @@ if (nrow(rf_data) == 0) {
     "data/processed/phase4_diagnostics/rf_top_features_for_xgb.csv"
   )
   
-  cat("  ✓ Identified top 8 features per scale from Random Forest\n")
-  cat("  ✓ Saved: rf_top_features_for_xgb.csv\n\n")
+  cat("  ok Identified top 8 features per scale from Random Forest\n")
+  cat("  ok Saved: rf_top_features_for_xgb.csv\n\n")
   
   # Print recommendations
   for (scale in unique(rf_top_features$scale)) {
@@ -430,12 +430,12 @@ cat("Step 6: Loading CV results for performance analysis...\n")
 results_file <- "data/processed/phase4_cv_results/cv_results_summary.csv"
 
 if (!file.exists(results_file)) {
-  cat("  ⚠ CV results file not found\n")
+  cat("  WARNING CV results file not found\n")
   cat("  Skipping performance plots\n\n")
   cv_results <- NULL
 } else {
   cv_results <- read_csv(results_file, show_col_types = FALSE)
-  cat("  ✓ Loaded results for", nrow(cv_results), "models\n\n")
+  cat("  ok Loaded results for", nrow(cv_results), "models\n\n")
 }
 
 # =============================================================================
@@ -474,19 +474,19 @@ if (!is.null(cv_results)) {
     dpi = 300
   )
   
-  cat("  ✓ Saved: performance_rmse.png\n")
+  cat("  ok Saved: performance_rmse.png\n")
   
-  # R² comparison
+  # R^2 comparison
   p_r2 <- ggplot(cv_results, 
                  aes(x = scenario, y = test_r2, fill = model_name)) +
     geom_col(position = "dodge") +
     geom_hline(yintercept = 0, linetype = "dashed", color = "red", linewidth = 0.5) +
     facet_wrap(~scale, ncol = 1) +
     labs(
-      title = "Test Set R² by Model and Scenario",
+      title = "Test Set R^2 by Model and Scenario",
       subtitle = "Higher is better (negative = worse than mean)",
       x = "Training Scenario",
-      y = "Test R²",
+      y = "Test R^2",
       fill = "Model"
     ) +
     scale_fill_manual(values = c("Random Forest" = "#2E7D32", "XGBoost" = "#D32F2F")) +
@@ -505,7 +505,7 @@ if (!is.null(cv_results)) {
     dpi = 300
   )
   
-  cat("  ✓ Saved: performance_r2.png\n\n")
+  cat("  ok Saved: performance_r2.png\n\n")
   
 } else {
   cat("\nStep 7: Skipping performance plots (no CV results available)\n\n")
@@ -515,23 +515,23 @@ if (!is.null(cv_results)) {
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  DIAGNOSTICS COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("FILES CREATED:\n")
 cat("  Data:\n")
-cat("    • variable_importance.csv\n")
+cat("    - variable_importance.csv\n")
 if (nrow(rf_top_features) > 0) {
-  cat("    • rf_top_features_for_xgb.csv\n")
+  cat("    - rf_top_features_for_xgb.csv\n")
 }
 cat("  Plots:\n")
-cat("    • importance_comparison.png\n")
-cat("    • importance_fine10m.png\n")
-cat("    • importance_coarse250m.png\n")
+cat("    - importance_comparison.png\n")
+cat("    - importance_fine10m.png\n")
+cat("    - importance_coarse250m.png\n")
 if (!is.null(cv_results)) {
-  cat("    • performance_rmse.png\n")
-  cat("    • performance_r2.png\n")
+  cat("    - performance_rmse.png\n")
+  cat("    - performance_r2.png\n")
 }
 cat("\n")
 
@@ -545,7 +545,7 @@ if (nrow(all_importance) > 0) {
     arrange(desc(avg_imp)) %>%
     slice(1)
   
-  cat("  • Most important variable:", top_feature$variable, 
+  cat("  - Most important variable:", top_feature$variable, 
       "(", round(top_feature$avg_imp, 1), "% avg importance)\n")
   
   # Model agreement
@@ -567,31 +567,31 @@ if (nrow(all_importance) > 0) {
   
   if (length(rf_consensus) > 0 && length(xgb_consensus) > 0) {
     overlap <- intersect(rf_consensus, xgb_consensus)
-    cat("  • Models agree on", length(overlap), "of top 5 features\n")
+    cat("  - Models agree on", length(overlap), "of top 5 features\n")
     if (length(overlap) > 0) {
       cat("    Shared:", paste(overlap, collapse = ", "), "\n")
     }
   }
 } else {
-  cat("  ⚠ No importance data available for analysis\n")
+  cat("  WARNING No importance data available for analysis\n")
 }
 
 cat("\nRECOMMENDATIONS:\n")
 cat("  1. **Temperature dominates!** Climate (tmean, ppt) >> Remote sensing\n")
 cat("  2. Feature selection unlikely to help - models already agree\n")
 cat("  3. Consider adding more climate/topographic variables\n")
-cat("  4. Low R² suggests biomass has high local variability\n")
+cat("  4. Low R^2 suggests biomass has high local variability\n")
 cat("  5. XGBoost may need hyperparameter tuning, not feature selection\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  KEY INSIGHT: Climate Variables Dominate!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 cat("Temperature (tmean) is THE most important predictor (98-100%).\n")
 cat("Remote sensing (NDVI, NBR) are secondary (50-70%).\n\n")
 cat("This suggests:\n")
-cat("  • Biomass is driven by climate/site conditions\n")
-cat("  • Spectral data adds modest information\n")
-cat("  • Coordinate fuzzing matters because climate varies spatially\n\n")
+cat("  - Biomass is driven by climate/site conditions\n")
+cat("  - Spectral data adds modest information\n")
+cat("  - Coordinate fuzzing matters because climate varies spatially\n\n")
 cat("OPTIONAL: Try XGBoost retraining (may not help much):\n")
 cat("  Rscript R/phase4_modeling/PHASE4_retrain_xgb.R\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

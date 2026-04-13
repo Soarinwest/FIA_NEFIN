@@ -9,9 +9,9 @@ library(dplyr)
 library(readr)
 library(stringr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  MAX TREE PER PLOT ANALYSIS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD PLOT-LEVEL DATA
@@ -23,12 +23,12 @@ cat("Loading plot data...\n")
 nefin_plot_file <- "data/raw/nefin/TREE_PLOT_DATA.csv"
 
 if (!file.exists(nefin_plot_file)) {
-  cat("  ⚠ TREE_PLOT_DATA.csv not found, trying NEFIN_plots.csv...\n")
+  cat("  WARNING TREE_PLOT_DATA.csv not found, trying NEFIN_plots.csv...\n")
   nefin_plot_file <- "data/raw/nefin/NEFIN_plots.csv"
 }
 
 if (!file.exists(nefin_plot_file)) {
-  cat("  ⚠ Using processed plots file...\n")
+  cat("  WARNING Using processed plots file...\n")
   nefin_plot_file <- "data/processed/nefin_plots.csv"
 }
 
@@ -37,7 +37,7 @@ nefin_plots <- read_csv(nefin_plot_file, show_col_types = FALSE)
 # FIA plots - try multiple locations
 fia_plot_file <- "data/processed/fia_plots.csv"
 if (!file.exists(fia_plot_file)) {
-  cat("  ⚠ fia_plots.csv not found, will extract from trees\n")
+  cat("  WARNING fia_plots.csv not found, will extract from trees\n")
   fia_plots <- NULL
 } else {
   fia_plots <- read_csv(fia_plot_file, show_col_types = FALSE)
@@ -113,7 +113,7 @@ if (file.exists(fia_tree_file)) {
   
   cat("  FIA trees loaded:", format(nrow(fia_trees), big.mark = ","), "\n\n")
 } else {
-  cat("  ⚠ FIA tree file not found, will extract from databases...\n")
+  cat("  WARNING FIA tree file not found, will extract from databases...\n")
   
   # Extract from databases (simplified version)
   fia_base_dir <- "data/raw/fia_sqlite"
@@ -219,9 +219,9 @@ max_tree_metrics <- bind_rows(nefin_max, fia_max)
 # SUMMARY STATISTICS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY STATISTICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 summary_stats <- max_tree_metrics %>%
   group_by(dataset) %>%
@@ -258,7 +258,7 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 write_csv(max_tree_metrics, file.path(output_dir, "plot_max_tree_metrics.csv"))
 write_csv(summary_stats, file.path(output_dir, "summary_by_dataset.csv"))
 
-cat("✓ Saved results to:", output_dir, "\n")
+cat("ok Saved results to:", output_dir, "\n")
 cat("  - plot_max_tree_metrics.csv (", nrow(max_tree_metrics), "plots)\n")
 cat("  - summary_by_dataset.csv\n\n")
 
@@ -266,9 +266,9 @@ cat("  - summary_by_dataset.csv\n\n")
 # USAGE NOTES
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  USAGE FOR PHASE 4 MODELING\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("To use in predictive models:\n\n")
 cat("  plots <- read_csv('data/processed/fia_plots.csv') %>%\n")
@@ -283,6 +283,6 @@ cat("  Full:      biomass ~ ndvi + tmean_250m + ppt_250m + max_dbh_cm + max_ht_m
 cat("Expected benefit:\n")
 cat("  Max tree metrics capture stand development stage\n")
 cat("  Reduces within-plot correlation\n")
-cat("  Likely improves model R² by 0.05-0.10\n\n")
+cat("  Likely improves model R^2 by 0.05-0.10\n\n")
 
 cat("Analysis complete!\n\n")

@@ -18,9 +18,9 @@ suppressPackageStartupMessages({
   library(purrr)
 })
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  STEP 1: EXTRACT FIA DATA FROM SQLITE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 output_dir <- file.path(CONFIG$paths$interim_fia, "extracted")
 ensure_dir(output_dir)
@@ -31,9 +31,9 @@ ensure_dir(output_dir)
 
 process_state <- function(state_abbr, base_dir) {
   
-  cat("\n───────────────────────────────────────\n")
+  cat("\n---------------------------------------\n")
   cat("Processing:", state_abbr, "\n")
-  cat("───────────────────────────────────────\n")
+  cat("---------------------------------------\n")
   
   # Get state code
   state_code <- CONFIG$state_codes[[state_abbr]]
@@ -64,7 +64,7 @@ process_state <- function(state_abbr, base_dir) {
   tables$PLOT <- plot_df
   
   if (nrow(plot_df) == 0) {
-    cat("  ⚠ No plots found for this state/year range\n")
+    cat("  WARNING No plots found for this state/year range\n")
     return(tables)
   }
   
@@ -110,9 +110,9 @@ cat("Year range:", CONFIG$year_start, "-", CONFIG$year_end, "\n")
 all_tables <- map(CONFIG$states, ~process_state(.x, CONFIG$paths$raw_fia))
 
 # Combine
-cat("\n═══════════════════════════════════════\n")
+cat("\n=======================================\n")
 cat("Combining States\n")
-cat("═══════════════════════════════════════\n\n")
+cat("=======================================\n\n")
 
 combined_tables <- list()
 for (table_name in c("PLOT", "TREE", "COND")) {
@@ -126,21 +126,21 @@ for (table_name in c("PLOT", "TREE", "COND")) {
 }
 
 # Save
-cat("\n═══════════════════════════════════════\n")
+cat("\n=======================================\n")
 cat("Saving\n")
-cat("═══════════════════════════════════════\n\n")
+cat("=======================================\n\n")
 
 for (table_name in names(combined_tables)) {
   df <- combined_tables[[table_name]]
   output_path <- file.path(output_dir, paste0(tolower(table_name), ".csv"))
   write_csv(df, output_path)
-  cat("✓ Saved:", basename(output_path), "-", nrow(df), "rows\n")
+  cat("ok Saved:", basename(output_path), "-", nrow(df), "rows\n")
 }
 
 # Summary
-cat("\n═══════════════════════════════════════\n")
+cat("\n=======================================\n")
 cat("Summary\n")
-cat("═══════════════════════════════════════\n\n")
+cat("=======================================\n\n")
 
 if (length(combined_tables) > 0) {
   plot_df <- combined_tables$PLOT
@@ -156,5 +156,5 @@ if (length(combined_tables) > 0) {
   cat("  Live trees:", sum(tree_df$STATUSCD == 1, na.rm = TRUE), "\n\n")
 }
 
-cat("✓ Extraction complete!\n")
+cat("ok Extraction complete!\n")
 cat("Next: R/01_process_fia/02_compute_biomass.R\n\n")

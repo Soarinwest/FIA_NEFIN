@@ -6,7 +6,7 @@
 #   Strong visualization of tail support differences
 #
 # Approach:
-#   1. Load FHM species mapping (SPCD → Latin names)
+#   1. Load FHM species mapping (SPCD -> Latin names)
 #   2. Join FIA via SPCD
 #   3. Join NEFIN via Latin name (already in treeSpecies)
 #   4. Compare on shared species using ECDF plots
@@ -50,7 +50,7 @@ if (!file.exists(path_fhm_mapping)) {
 }
 
 fhm_mapping <- read_csv(path_fhm_mapping, show_col_types = FALSE)
-message("  ✓ ", nrow(fhm_mapping), " species codes loaded")
+message("  ok ", nrow(fhm_mapping), " species codes loaded")
 
 # =============================================================================
 # PROCESS FIA DATA
@@ -80,7 +80,7 @@ fia <- fia_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-message("  ✓ FIA: ", format(nrow(fia), big.mark = ","), " trees")
+message("  ok FIA: ", format(nrow(fia), big.mark = ","), " trees")
 message("    Unique species: ", n_distinct(fia$common_name))
 
 # =============================================================================
@@ -110,7 +110,7 @@ nefin <- nefin_raw %>%
   ) %>%
   select(dataset, latin_name, common_name, dbh_cm)
 
-message("  ✓ NEFIN: ", format(nrow(nefin), big.mark = ","), " trees")
+message("  ok NEFIN: ", format(nrow(nefin), big.mark = ","), " trees")
 message("    Unique species: ", n_distinct(nefin$common_name))
 
 # =============================================================================
@@ -132,7 +132,7 @@ if (nrow(species_counts) == 0) {
   stop("No shared species meet MIN_N_PER_DATASET = ", MIN_N_PER_DATASET)
 }
 
-message("\n✓ Species with ≥", MIN_N_PER_DATASET, " trees in BOTH datasets: ", 
+message("\nok Species with >=", MIN_N_PER_DATASET, " trees in BOTH datasets: ", 
         nrow(species_counts))
 
 message("\nTop 10 shared species:")
@@ -167,7 +167,7 @@ p_ecdf <- ggplot(plot_df, aes(x = dbh_cm, color = dataset)) +
   labs(
     title = paste0("DBH ECDF by Species (Top ", length(top_species), 
                    " shared species)"),
-    subtitle = paste0("Both datasets have ≥", MIN_N_PER_DATASET, 
+    subtitle = paste0("Both datasets have >=", MIN_N_PER_DATASET, 
                       " trees per species"),
     x = "DBH (cm)",
     y = "Cumulative Proportion",
@@ -176,7 +176,7 @@ p_ecdf <- ggplot(plot_df, aes(x = dbh_cm, color = dataset)) +
 
 out_file <- file.path(fig_dir, "species_dbh_ecdf_top.png")
 ggsave(out_file, p_ecdf, width = 13, height = 8, dpi = 200)
-message("✓ Saved: ", out_file)
+message("ok Saved: ", out_file)
 
 # =============================================================================
 # TAIL ZOOM ECDF PLOT
@@ -195,7 +195,7 @@ p_ecdf_tail <- ggplot(plot_df %>% filter(dbh_cm >= TAIL_MIN_DBH),
     panel.grid.minor = element_blank()
   ) +
   labs(
-    title = paste0("DBH Tail ECDF by Species (DBH ≥ ", TAIL_MIN_DBH, " cm)"),
+    title = paste0("DBH Tail ECDF by Species (DBH >= ", TAIL_MIN_DBH, " cm)"),
     subtitle = "Zoomed view showing large tree differences",
     x = "DBH (cm)",
     y = "Cumulative Proportion",
@@ -204,7 +204,7 @@ p_ecdf_tail <- ggplot(plot_df %>% filter(dbh_cm >= TAIL_MIN_DBH),
 
 out_file_tail <- file.path(fig_dir, "species_dbh_ecdf_tail_top.png")
 ggsave(out_file_tail, p_ecdf_tail, width = 13, height = 8, dpi = 200)
-message("✓ Saved: ", out_file_tail)
+message("ok Saved: ", out_file_tail)
 
 # =============================================================================
 # TAIL ENRICHMENT TABLE
@@ -250,7 +250,7 @@ species_tail <- plot_df %>%
 
 out_table <- file.path(tab_dir, "species_tail_enrichment_ecdf.csv")
 write_csv(species_tail, out_table)
-message("✓ Saved: ", out_table)
+message("ok Saved: ", out_table)
 
 # =============================================================================
 # SUMMARY OUTPUT
@@ -266,9 +266,9 @@ print(species_tail %>%
         head(10),
       n = 10)
 
-message("\n✓ DONE! Outputs in: ", out_dir)
+message("\nok DONE! Outputs in: ", out_dir)
 message("\nInterpretation:")
 message("- ECDF curves show cumulative distribution")
 message("- NEFIN curve to the right = more large trees")
-message("- Tail zoom highlights differences in large trees (≥", TAIL_MIN_DBH, "cm)")
+message("- Tail zoom highlights differences in large trees (>=", TAIL_MIN_DBH, "cm)")
 message("- Enrichment ratio >1 means NEFIN has proportionally more large trees")

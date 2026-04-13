@@ -6,21 +6,21 @@ biomass dataset.
 ## Scripts
 
 1. `01_extract_from_sqlite.R`
-   Reads state SQLite databases.
-   Filters to study years (2020-2024).
-   Extracts PLOT, TREE, and COND tables.
-   Combines across states.
+ Reads state SQLite databases.
+ Filters to study years (2020-2024).
+ Extracts PLOT, TREE, and COND tables.
+ Combines across states.
 
 2. `02_compute_biomass.R`
-   Filters to live trees.
-   Applies TPA expansion factors.
-   Aggregates tree to plot level.
-   Converts pounds/acre to Mg/ha.
+ Filters to live trees.
+ Applies TPA expansion factors.
+ Aggregates tree to plot level.
+ Converts pounds/acre to Mg/ha.
 
 3. `03_create_fia_dataset.R`
-   Standardizes column names.
-   Adds comparison metadata.
-   Validates coordinates and biomass.
+ Standardizes column names.
+ Adds comparison metadata.
+ Validates coordinates and biomass.
 
 ## Output
 

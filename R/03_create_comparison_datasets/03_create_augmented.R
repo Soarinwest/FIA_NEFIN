@@ -31,9 +31,9 @@ source("R/utils/file_utils.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE C - STEP 3: CREATE AUGMENTED DATASET\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD DATASETS
@@ -59,7 +59,7 @@ nefin <- nefin %>% mutate(CN = as.character(CN))
 
 # Convert coord_source to character
 # FIA: already "fuzzed" (character)
-# NEFIN: TRUE (logical) → "true" (character)
+# NEFIN: TRUE (logical) -> "true" (character)
 fia <- fia %>% mutate(coord_source = as.character(coord_source))
 nefin <- nefin %>% mutate(coord_source = as.character(coord_source))
 
@@ -67,7 +67,7 @@ nefin <- nefin %>% mutate(coord_source = as.character(coord_source))
 fia <- fia %>% mutate(dataset = as.character(dataset))
 nefin <- nefin %>% mutate(dataset = as.character(dataset))
 
-cat("  ✓ All columns standardized to compatible types\n\n")
+cat("  ok All columns standardized to compatible types\n\n")
 
 # =============================================================================
 # CHECK FOR OVERLAPS
@@ -99,7 +99,7 @@ cat("Combining datasets...\n")
 
 augmented <- bind_rows(fia_unique, nefin)
 
-cat("  ✓ Combined:", nrow(augmented), "plots\n")
+cat("  ok Combined:", nrow(augmented), "plots\n")
 cat("  Expected:", nrow(fia_unique) + nrow(nefin), "\n\n")
 
 # =============================================================================
@@ -118,9 +118,9 @@ print(table(augmented$coord_source))
 # Check for duplicates
 n_dup <- sum(duplicated(augmented$CN))
 if (n_dup > 0) {
-  cat("\n  ⚠ WARNING:", n_dup, "duplicate CNs found\n")
+  cat("\n  WARNING WARNING:", n_dup, "duplicate CNs found\n")
 } else {
-  cat("\n  ✓ No duplicate CNs\n")
+  cat("\n  ok No duplicate CNs\n")
 }
 
 # Summary stats
@@ -139,7 +139,7 @@ cat("\n")
 output_path <- file.path(CONFIG$paths$processed, "augmented.csv")
 write_csv(augmented, output_path)
 
-cat("✓ Saved:", output_path, "\n")
+cat("ok Saved:", output_path, "\n")
 cat("  Rows:", nrow(augmented), "\n")
 cat("  Size:", sprintf("%.2f MB\n", file.size(output_path) / 1024^2))
 
@@ -151,9 +151,9 @@ summary_path <- file.path(CONFIG$paths$processed, "augmentation_summary.txt")
 
 sink(summary_path)
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  AUGMENTED DATASET SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Created:", as.character(Sys.time()), "\n\n")
 
@@ -198,15 +198,15 @@ cat("\n")
 cat("OUTPUT FILE:\n")
 cat("  ", output_path, "\n")
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 
 sink()
 
-cat("\n✓ Summary written:", summary_path, "\n")
+cat("\nok Summary written:", summary_path, "\n")
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE C COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Comparison datasets created:\n")
 cat("  baseline.csv:   ", nrow(fia), "plots (100% fuzzed)\n")
@@ -214,9 +214,9 @@ cat("  augmented.csv:  ", nrow(augmented), "plots (mixed precision)\n")
 cat("    - FIA:  ", sum(augmented$dataset == "FIA"), "(fuzzed)\n")
 cat("    - NEFIN:", sum(augmented$dataset == "NEFIN"), "(true)\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  READY FOR ANALYSIS!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Research Question:\n")
 cat("  Does augmenting FIA with NEFIN's precise coordinates\n")

@@ -17,9 +17,9 @@ suppressPackageStartupMessages({
 
 set.seed(42)  # matches CONFIG$monte_carlo$seed
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  NEFIN GROWTH RATE ANOMALY CHECK\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -46,9 +46,9 @@ cat("  Total records:", format(nrow(nefin_raw), big.mark = ","), "\n\n")
 # ANALYZE GROWTH RATES
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("GROWTH RATE ANALYSIS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Track trees measured multiple times
 cat("Finding trees with multiple measurements...\n")
@@ -70,7 +70,7 @@ tree_histories <- nefin_raw %>%
   filter(!is.na(annual_growth), years_since_last >= MIN_INTERVAL_YEARS)
 
 if (nrow(tree_histories) == 0) {
-  cat("\n⚠ No trees found with multiple measurements!\n")
+  cat("\nWARNING No trees found with multiple measurements!\n")
   cat("  This suggests _nefin_treeID may not reliably track individuals\n")
   cat("  Or trees are only measured once in your dataset\n\n")
   stop("Cannot proceed without remeasurement data")
@@ -137,9 +137,9 @@ cat("  Total anomalies:",
 # =============================================================================
 
 if (nrow(too_fast) > 0) {
-  cat("═══════════════════════════════════════════════════════════════════\n")
+  cat("===================================================================\n")
   cat("TREES WITH IMPOSSIBLE GROWTH RATES\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   cat("Top 30 cases of impossible growth:\n\n")
   
@@ -161,9 +161,9 @@ if (nrow(too_fast) > 0) {
 }
 
 if (nrow(too_much_shrink) > 0) {
-  cat("\n\n═══════════════════════════════════════════════════════════════════\n")
+  cat("\n\n===================================================================\n")
   cat("TREES WITH EXCESSIVE SHRINKAGE\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   cat("Top 20 cases of excessive shrinkage:\n\n")
   
@@ -180,9 +180,9 @@ if (nrow(too_much_shrink) > 0) {
 # CREATE FLAGGED DATASET
 # =============================================================================
 
-cat("\n\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n\n===================================================================\n")
 cat("CREATING CLEANED DATASET\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Get list of problematic tree IDs
 anomalous_tree_ids <- unique(c(
@@ -226,17 +226,17 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Save flagged dataset
 write_csv(nefin_flagged, file.path(output_dir, "nefin_trees_flagged.csv"))
-cat("✓ Saved flagged dataset:", 
+cat("ok Saved flagged dataset:", 
     file.path(output_dir, "nefin_trees_flagged.csv"), "\n")
 
 # Save clean dataset
 write_csv(nefin_clean, file.path(output_dir, "nefin_trees_clean.csv"))
-cat("✓ Saved clean dataset:", 
+cat("ok Saved clean dataset:", 
     file.path(output_dir, "nefin_trees_clean.csv"), "\n")
 
 # Save growth history analysis
 write_csv(tree_histories, file.path(output_dir, "tree_growth_histories.csv"))
-cat("✓ Saved growth histories:", 
+cat("ok Saved growth histories:", 
     file.path(output_dir, "tree_growth_histories.csv"), "\n")
 
 # Save anomalous cases
@@ -247,7 +247,7 @@ if (nrow(too_fast) > 0 || nrow(too_much_shrink) > 0) {
   )
   
   write_csv(anomalies, file.path(output_dir, "growth_anomalies_detailed.csv"))
-  cat("✓ Saved anomaly details:", 
+  cat("ok Saved anomaly details:", 
       file.path(output_dir, "growth_anomalies_detailed.csv"), "\n")
 }
 
@@ -315,15 +315,15 @@ p_growth_time <- tree_histories %>%
 ggsave(file.path(output_dir, "growth_over_time.png"),
        p_growth_time, width = 10, height = 6, dpi = 300)
 
-cat("✓ Plots saved\n")
+cat("ok Plots saved\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Growth rate analysis:\n")
 cat(sprintf("  Trees tracked over time: %s\n", 
@@ -354,18 +354,18 @@ cat(sprintf("  Clean records: %s\n",
 
 cat("\n\nRecommendation:\n")
 if (flag_counts$pct_flagged > 5) {
-  cat("  ⚠ HIGH percentage of flagged records!\n")
-  cat("  → Carefully review growth_anomalies_detailed.csv\n")
-  cat("  → Consider adjusting thresholds if needed\n")
-  cat("  → Use nefin_trees_clean.csv for tail analysis\n")
+  cat("  WARNING HIGH percentage of flagged records!\n")
+  cat("  -> Carefully review growth_anomalies_detailed.csv\n")
+  cat("  -> Consider adjusting thresholds if needed\n")
+  cat("  -> Use nefin_trees_clean.csv for tail analysis\n")
 } else if (flag_counts$pct_flagged > 1) {
-  cat("  ⚠ Moderate percentage of flagged records\n")
-  cat("  → Review anomalies in growth_anomalies_detailed.csv\n")
-  cat("  → Use clean dataset for analysis\n")
+  cat("  WARNING Moderate percentage of flagged records\n")
+  cat("  -> Review anomalies in growth_anomalies_detailed.csv\n")
+  cat("  -> Use clean dataset for analysis\n")
 } else {
-  cat("  ✓ Low percentage of flagged records\n")
-  cat("  → Growth data quality appears good\n")
-  cat("  → Safe to use clean dataset\n")
+  cat("  ok Low percentage of flagged records\n")
+  cat("  -> Growth data quality appears good\n")
+  cat("  -> Safe to use clean dataset\n")
 }
 
 cat("\n\nNext steps:\n")
@@ -374,4 +374,4 @@ cat("  2. Check if anomalies are species-specific\n")
 cat("  3. Update gap analysis scripts to use nefin_trees_clean.csv\n")
 cat("  4. Re-run extreme tail analysis\n")
 
-cat("\n═══════════════════════════════════════════════════════════════════\n\n")
+cat("\n===================================================================\n\n")

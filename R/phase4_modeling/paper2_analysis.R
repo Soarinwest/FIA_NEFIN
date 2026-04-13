@@ -17,9 +17,9 @@ library(scales)
 out_dir <- "outputs/paper2"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-cat("\n══════════════════════════════════════════════════════════════\n")
+cat("\n==============================================================\n")
 cat("  PAPER 2 ANALYSIS: FIA Fuzzing vs NEFIN True Locations\n")
-cat("══════════════════════════════════════════════════════════════\n\n")
+cat("==============================================================\n\n")
 
 # =============================================================================
 # LOAD DATA
@@ -41,11 +41,11 @@ fold_res <- read_csv("data/processed/phase4_cv_results/fold_results.csv",
 cat("Data loaded.\n\n")
 
 # =============================================================================
-# TABLE 1: CROSS-VALIDATION PERFORMANCE BY SCENARIO × SCALE
+# TABLE 1: CROSS-VALIDATION PERFORMANCE BY SCENARIO x SCALE
 # Headline table for Paper 2 results section
 # =============================================================================
 
-cat("── Table 1: CV Performance ─────────────────────────────────\n")
+cat("-- Table 1: CV Performance ---------------------------------\n")
 
 # RF models only (cleaner than XGBoost across folds)
 table1 <- cv %>%
@@ -65,7 +65,7 @@ cat("   Saved table1_cv_performance.csv\n\n")
 # The core "does NEFIN help" result
 # =============================================================================
 
-cat("── Table 2: RMSE Improvement & Significance ────────────────\n")
+cat("-- Table 2: RMSE Improvement & Significance ----------------\n")
 
 table2 <- fuzz_pct %>%
   left_join(
@@ -106,11 +106,11 @@ write_csv(t2_clean, file.path(out_dir, "table2_rmse_improvement.csv"))
 cat("   Saved table2_rmse_improvement.csv\n\n")
 
 # =============================================================================
-# TABLE 3: PERFORMANCE BY BIOMASS CLASS × SCENARIO × SCALE
+# TABLE 3: PERFORMANCE BY BIOMASS CLASS x SCENARIO x SCALE
 # The key structural-representativeness finding
 # =============================================================================
 
-cat("── Table 3: Performance by Biomass Class ───────────────────\n")
+cat("-- Table 3: Performance by Biomass Class -------------------\n")
 
 # Restrict to RF models (test set, not fold CV)
 rf_test <- test_all  # test_predictions_all_models only has RF
@@ -153,10 +153,10 @@ for (sc in c("10m", "250m")) {
                    nef_err$abs_error[nef_err$CN %in% high_cn],
                    paired = TRUE)
 
-  cat(sprintf("  Scale %s | Low biomass:  t=%.2f, p=%.4f  → FIA %s\n",
+  cat(sprintf("  Scale %s | Low biomass:  t=%.2f, p=%.4f  -> FIA %s\n",
               sc, t_low$statistic, t_low$p.value,
               ifelse(t_low$statistic < 0, "BETTER", "WORSE")))
-  cat(sprintf("          | High biomass: t=%.2f, p=%.4f  → FIA %s\n",
+  cat(sprintf("          | High biomass: t=%.2f, p=%.4f  -> FIA %s\n",
               t_high$statistic, t_high$p.value,
               ifelse(t_high$statistic < 0, "BETTER", "WORSE")))
 }
@@ -166,7 +166,7 @@ cat("\n")
 # TABLE 4: TERRAIN ANALYSIS
 # =============================================================================
 
-cat("── Table 4: Performance by Terrain ─────────────────────────\n")
+cat("-- Table 4: Performance by Terrain -------------------------\n")
 
 table4 <- rf_test %>%
   group_by(scale, scenario, terrain_class) %>%
@@ -183,10 +183,10 @@ write_csv(table4, file.path(out_dir, "table4_by_terrain.csv"))
 cat("   Saved table4_by_terrain.csv\n\n")
 
 # =============================================================================
-# FIGURE 1: MAE by Biomass Class × Scenario (main finding, both scales)
+# FIGURE 1: MAE by Biomass Class x Scenario (main finding, both scales)
 # =============================================================================
 
-cat("── Figure 1: MAE by Biomass Class ──────────────────────────\n")
+cat("-- Figure 1: MAE by Biomass Class --------------------------\n")
 
 fig1_data <- rf_test %>%
   group_by(scale, scenario, biomass_class) %>%
@@ -225,10 +225,10 @@ ggsave(file.path(out_dir, "fig1_mae_by_biomass_class.png"),
 cat(" Saved fig1_mae_by_biomass_class.png\n\n")
 
 # =============================================================================
-# FIGURE 2: Fold-level R² distributions (uncertainty in model performance)
+# FIGURE 2: Fold-level R^2 distributions (uncertainty in model performance)
 # =============================================================================
 
-cat("── Figure 2: CV Fold R² Distributions ──────────────────────\n")
+cat("-- Figure 2: CV Fold R^2 Distributions ----------------------\n")
 
 fold_rf <- fold_res %>%
   filter(model_type == "rf") %>%
@@ -247,8 +247,8 @@ fig2 <- ggplot(fold_rf, aes(x = scenario, y = r2, fill = scenario)) +
                "NEFIN Only" = "#64B5F6")
   ) +
   labs(
-    title = "Cross-validation R² across 10 spatial folds",
-    subtitle = "NEFIN-only shows higher mean R² but greater fold-to-fold variance",
+    title = "Cross-validation R^2 across 10 spatial folds",
+    subtitle = "NEFIN-only shows higher mean R^2 but greater fold-to-fold variance",
     x = NULL,
     y = expression(R^2)
   ) +
@@ -267,7 +267,7 @@ cat("   Saved fig2_fold_r2_distributions.png\n\n")
 # FIGURE 3: Observed vs Predicted (all scenarios, both scales)
 # =============================================================================
 
-cat("── Figure 3: Observed vs Predicted ─────────────────────────\n")
+cat("-- Figure 3: Observed vs Predicted -------------------------\n")
 
 fig3_data <- rf_test %>%
   mutate(
@@ -305,9 +305,9 @@ cat("   Saved fig3_obs_vs_pred.png\n\n")
 # KEY NARRATIVE NUMBERS (paste into methods/results)
 # =============================================================================
 
-cat("══════════════════════════════════════════════════════════════\n")
+cat("==============================================================\n")
 cat("  KEY NUMBERS FOR MANUSCRIPT\n")
-cat("══════════════════════════════════════════════════════════════\n\n")
+cat("==============================================================\n\n")
 
 fia_bias  <- mean(rf_test$residual[rf_test$scenario == "FIA Only"])
 nef_bias  <- mean(rf_test$residual[rf_test$scenario == "NEFIN Only"])
@@ -328,7 +328,7 @@ for (bc in c("Q1 (Low)", "Q2", "Q3", "Q4 (High)")) {
   fia_m <- rf_test %>% filter(scenario=="FIA Only", biomass_class==bc) %>% pull(abs_error) %>% mean()
   nef_m <- rf_test %>% filter(scenario=="NEFIN Only", biomass_class==bc) %>% pull(abs_error) %>% mean()
   obs_m <- rf_test %>% filter(scenario=="FIA Only", biomass_class==bc) %>% pull(observed)  %>% mean()
-  cat(sprintf("  %-12s (mean obs=%.0f): FIA MAE=%.1f, NEFIN MAE=%.1f  → %s\n",
+  cat(sprintf("  %-12s (mean obs=%.0f): FIA MAE=%.1f, NEFIN MAE=%.1f  -> %s\n",
               bc, obs_m, fia_m, nef_m,
               ifelse(fia_m < nef_m,
                      sprintf("FIA better (+%.0f%%)", 100*(nef_m-fia_m)/fia_m),

@@ -15,9 +15,9 @@ library(ggplot2)
 library(sf)
 library(patchwork)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  HEXAGON SCALE IMPACT ANALYSIS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD ALL RESULTS
@@ -36,7 +36,7 @@ mc_results <- read_csv("data/processed/monte_carlo/plot_uncertainty.csv",
 # Summary statistics
 summary_stats <- readRDS("data/processed/summary_statistics/all_metrics.rds")
 
-cat("  ✓ All results loaded\n\n")
+cat("  ok All results loaded\n\n")
 
 # =============================================================================
 # SCALE-DEPENDENT METRICS
@@ -68,7 +68,7 @@ scale_metrics <- comparison %>%
   ) %>%
   arrange(area_ha_num)
 
-cat("  ✓ Metrics computed\n\n")
+cat("  ok Metrics computed\n\n")
 
 # =============================================================================
 # RECOMMENDATION THRESHOLDS
@@ -104,7 +104,7 @@ recommendations <- tibble(
   )
 )
 
-cat("  ✓ Thresholds determined\n\n")
+cat("  ok Thresholds determined\n\n")
 
 # =============================================================================
 # VISUALIZATION 1: Scale Dependency
@@ -198,7 +198,7 @@ combined_plot <- (p1 / p2 / p3) +
 ggsave("data/processed/figures/scale_dependency_comprehensive.png",
        combined_plot, width = 12, height = 14, dpi = 300)
 
-cat("  ✓ Scale dependency plot saved\n\n")
+cat("  ok Scale dependency plot saved\n\n")
 
 # =============================================================================
 # VISUALIZATION 2: Decision Matrix
@@ -247,7 +247,7 @@ p4 <- decision_data %>%
 ggsave("data/processed/figures/decision_matrix.png",
        p4, width = 14, height = 4, dpi = 300)
 
-cat("  ✓ Decision matrix saved\n\n")
+cat("  ok Decision matrix saved\n\n")
 
 # =============================================================================
 # VISUALIZATION 3: Uncertainty Quantification
@@ -264,7 +264,7 @@ ndvi_uncertainty_dist <- mc_results %>%
   annotate("text",
            x = mean(mc_results$ndvi_s2_sd, na.rm = TRUE) * 1.2,
            y = Inf,
-           label = sprintf("Mean: ±%.4f NDVI", 
+           label = sprintf("Mean: +/-%.4f NDVI", 
                            mean(mc_results$ndvi_s2_sd, na.rm = TRUE)),
            vjust = 2, hjust = 0, size = 5, color = "red") +
   labs(
@@ -278,7 +278,7 @@ ndvi_uncertainty_dist <- mc_results %>%
 ggsave("data/processed/figures/ndvi_uncertainty_distribution.png",
        ndvi_uncertainty_dist, width = 10, height = 6, dpi = 300)
 
-cat("  ✓ Uncertainty plot saved\n\n")
+cat("  ok Uncertainty plot saved\n\n")
 
 # =============================================================================
 # SAVE RECOMMENDATION TABLE
@@ -290,22 +290,22 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 write_csv(recommendations, file.path(output_dir, "scale_recommendations.csv"))
 write_csv(scale_metrics, file.path(output_dir, "scale_metrics_complete.csv"))
 
-cat("✓ Saved recommendation tables\n\n")
+cat("ok Saved recommendation tables\n\n")
 
 # =============================================================================
 # CREATE SUMMARY REPORT
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  RECOMMENDATIONS SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("WHEN TO USE NEFIN:\n\n")
 print(recommendations)
 cat("\n")
 
 cat("KEY METRICS:\n\n")
-cat(sprintf("Coordinate fuzzing uncertainty: ±%.4f NDVI (±%.1f%%)\n",
+cat(sprintf("Coordinate fuzzing uncertainty: +/-%.4f NDVI (+/-%.1f%%)\n",
             mean(mc_results$ndvi_s2_sd, na.rm = TRUE),
             100 * mean(mc_results$ndvi_s2_cv, na.rm = TRUE)))
 cat(sprintf("NEFIN precision advantage: %.1fx reduction\n",
@@ -318,34 +318,34 @@ cat("\n")
 
 cat("PRACTICAL GUIDANCE:\n\n")
 cat("1. Fine-scale analyses (<1,000 ha):\n")
-cat("   → ESSENTIAL to use precise coordinates\n")
-cat("   → Fuzzing introduces substantial spatial error\n\n")
+cat("   -> ESSENTIAL to use precise coordinates\n")
+cat("   -> Fuzzing introduces substantial spatial error\n\n")
 
 cat("2. Landscape analyses (1,000-10,000 ha):\n")
-cat("   → RECOMMENDED to use precise coordinates\n")
-cat("   → Meaningful improvement in estimates\n\n")
+cat("   -> RECOMMENDED to use precise coordinates\n")
+cat("   -> Meaningful improvement in estimates\n\n")
 
 cat("3. Regional analyses (>50,000 ha):\n")
-cat("   → FIA adequate for most applications\n")
-cat("   → Spatial averaging reduces fuzzing impact\n\n")
+cat("   -> FIA adequate for most applications\n")
+cat("   -> Spatial averaging reduces fuzzing impact\n\n")
 
 cat("4. NDVI-based applications:\n")
-cat("   → Coordinate precision critical (10% uncertainty)\n")
-cat("   → Use NEFIN when available at any scale\n\n")
+cat("   -> Coordinate precision critical (10% uncertainty)\n")
+cat("   -> Use NEFIN when available at any scale\n\n")
 
 cat("5. Allometric equation development:\n")
-cat("   → Check large tree analysis results\n")
-cat("   → NEFIN may provide better representation\n\n")
+cat("   -> Check large tree analysis results\n")
+cat("   -> NEFIN may provide better representation\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  ANALYSIS COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Figures saved in: data/processed/figures/\n")
-cat("  • scale_dependency_comprehensive.png\n")
-cat("  • decision_matrix.png\n")
-cat("  • ndvi_uncertainty_distribution.png\n\n")
+cat("  - scale_dependency_comprehensive.png\n")
+cat("  - decision_matrix.png\n")
+cat("  - ndvi_uncertainty_distribution.png\n\n")
 
 cat("Recommendations saved in: data/processed/recommendations/\n")
-cat("  • scale_recommendations.csv\n")
-cat("  • scale_metrics_complete.csv\n\n")
+cat("  - scale_recommendations.csv\n")
+cat("  - scale_metrics_complete.csv\n\n")

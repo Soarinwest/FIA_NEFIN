@@ -20,9 +20,9 @@ library(dplyr)
 library(readr)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE C - STEP 2: CREATE BASELINE DATASET\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load FIA
 fia <- read_csv("data/processed/fia_complete.csv", show_col_types = FALSE)
@@ -65,7 +65,7 @@ output_path <- "data/processed/baseline.csv"
 
 write_csv(baseline, output_path)
 
-cat("\n✓ Saved:", output_path, "\n")
+cat("\nok Saved:", output_path, "\n")
 cat("  Size:", file.size(output_path) / 1024^2, "MB\n")
 
 cat("\nNext: R/03_create_comparison_datasets/03_create_augmented.R\n\n")

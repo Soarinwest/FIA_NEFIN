@@ -26,9 +26,9 @@ source("R/00_config/config.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  STEP 2: COMPUTE PLOT-LEVEL BIOMASS (STANDALONE)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Directories
 input_dir <- file.path(CONFIG$paths$interim_fia, "extracted")
@@ -87,18 +87,18 @@ plot_biomass <- tree_live %>%
     .groups = "drop"
   ) %>%
   mutate(
-    # Convert pounds/acre → Mg/ha
+    # Convert pounds/acre -> Mg/ha
     # 1 lb/acre = 0.001121 Mg/ha (from CONFIG)
     biomass = total_lbs_per_acre * CONFIG$fia$lb_per_acre_to_Mg_per_ha
   ) %>%
   select(PLT_CN, biomass, n_trees)
 
-cat("  ✓ Aggregated to", nrow(plot_biomass), "plots\n")
+cat("  ok Aggregated to", nrow(plot_biomass), "plots\n")
 cat("  Expected ~", nrow(plot_df), "plots\n\n")
 
 # Check if aggregation worked
 if (nrow(plot_biomass) > nrow(plot_df) * 1.5) {
-  cat("  ⚠ WARNING: Too many rows after aggregation!\n")
+  cat("  WARNING WARNING: Too many rows after aggregation!\n")
   cat("    This suggests group_by didn't work properly\n\n")
 }
 
@@ -118,7 +118,7 @@ n_matches <- sum(plot_df$CN %in% plot_biomass$PLT_CN)
 cat("  Matching plots:", n_matches, "out of", nrow(plot_df), "\n\n")
 
 if (n_matches == 0) {
-  cat("  ⚠ ERROR: NO MATCHES FOUND!\n")
+  cat("  WARNING ERROR: NO MATCHES FOUND!\n")
   cat("    plot_df$CN and plot_biomass$PLT_CN have no overlap\n")
   cat("    This will result in 0 rows after join\n\n")
   stop("Join will fail - no matching CNs!")
@@ -130,7 +130,7 @@ plot_complete <- plot_df %>%
   rename(lat = LAT, lon = LON) %>%
   select(CN, STATECD, COUNTYCD, PLOT, MEASYEAR, lat, lon, biomass, n_trees)
 
-cat("  ✓ Join complete:", nrow(plot_complete), "plots\n\n")
+cat("  ok Join complete:", nrow(plot_complete), "plots\n\n")
 
 # =============================================================================
 # SIMPLE VALIDATION
@@ -146,7 +146,7 @@ if (n_before > n_after) {
   cat("  Removed", n_before - n_after, "invalid plots\n")
 }
 
-cat("  ✓ Valid plots:", n_after, "\n\n")
+cat("  ok Valid plots:", n_after, "\n\n")
 
 # =============================================================================
 # SAVE
@@ -155,7 +155,7 @@ cat("  ✓ Valid plots:", n_after, "\n\n")
 output_path <- file.path(output_dir, "fia_plot_biomass.csv")
 write_csv(plot_complete, output_path)
 
-cat("✓ Saved:", output_path, "\n")
+cat("ok Saved:", output_path, "\n")
 cat("  Rows:", nrow(plot_complete), "\n\n")
 
 # Summary
@@ -169,5 +169,5 @@ if (nrow(plot_complete) > 0) {
   cat("  Mean trees/plot:", sprintf("%.1f\n", mean(plot_complete$n_trees)))
 }
 
-cat("\n✓ Step 2 complete!\n")
+cat("\nok Step 2 complete!\n")
 cat("Next: R/01_process_fia/03_create_fia_dataset.R\n\n")

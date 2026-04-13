@@ -14,9 +14,9 @@ suppressPackageStartupMessages({
 
 set.seed(42)  # matches CONFIG$monte_carlo$seed
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  LARGE TREE ANALYSIS: NEFIN vs FIA\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -195,7 +195,7 @@ cat("  FIA unique:", length(fia_species), "\n")
 cat("  Overlap:", length(overlap), "\n\n")
 
 if (length(overlap) < 5) {
-  cat("  ⚠ LIMITED OVERLAP!\n\n")
+  cat("  WARNING LIMITED OVERLAP!\n\n")
   
   cat("  Top 10 NEFIN species:\n")
   print(nefin_trees %>% count(species, sort = TRUE) %>% head(10))
@@ -262,7 +262,7 @@ eligible_species <- species_counts %>%
 cat("  Eligible species:", nrow(eligible_species), "\n\n")
 
 if (nrow(eligible_species) == 0) {
-  cat("  ⚠ No species meet threshold!\n\n")
+  cat("  WARNING No species meet threshold!\n\n")
   
   close <- species_counts %>%
     pivot_wider(names_from = dataset, values_from = n, values_fill = 0) %>%
@@ -365,15 +365,15 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 write_csv(species_final, file.path(output_dir, "species_summary.csv"))
 write_csv(eligible_species, file.path(output_dir, "eligible_species.csv"))
 
-cat("\n✓ Results saved to:", output_dir, "\n\n")
+cat("\nok Results saved to:", output_dir, "\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 significant <- species_final %>%
   filter(dbh_p99_lo95 > 0)
@@ -386,7 +386,7 @@ if (nrow(significant) > 0) {
           head(15))
   
   cat("\n")
-  cat(sprintf("✓ %d/%d species show NEFIN captures larger trees (95%% CI)\n",
+  cat(sprintf("ok %d/%d species show NEFIN captures larger trees (95%% CI)\n",
               nrow(significant), nrow(species_final)))
   cat(sprintf("  Average P99 advantage: %.1f cm (%.1f%%)\n",
               mean(significant$dbh_p99_delta),
@@ -399,10 +399,10 @@ if (nrow(significant) > 0) {
     print(major %>% 
             select(species, dbh_p99_delta, dbh_max__NEFIN, dbh_max__FIA) %>%
             arrange(desc(dbh_p99_delta)))
-    cat("\n✓ NEFIN highly valuable for allometric equation development\n")
+    cat("\nok NEFIN highly valuable for allometric equation development\n")
   }
 } else {
-  cat("→ No species show statistically significant NEFIN advantage\n")
+  cat("-> No species show statistically significant NEFIN advantage\n")
   cat("  FIA captures similar-sized trees\n")
 }
 

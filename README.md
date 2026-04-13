@@ -11,20 +11,20 @@ scenarios: FIA-only, NEFIN-only, and pooled.
 ## Repository contents
 
 ```text
-R/                    analysis scripts organized by pipeline phase
-data/                 processed data outputs (large files excluded from git)
-GEE/                  Google Earth Engine scripts for covariate generation
-FIA_NEFIN_explorer/   Shiny application (self-contained)
-manuscript_figures/   publication-ready figures
-outputs/              additional model outputs
-run_scripts/          pipeline entry points
+R/ analysis scripts organized by pipeline phase
+data/ processed data outputs (large files excluded from git)
+GEE/ Google Earth Engine scripts for covariate generation
+FIA_NEFIN_explorer/ Shiny application (self-contained)
+manuscript_figures/ publication-ready figures
+outputs/ additional model outputs
+run_scripts/ pipeline entry points
 ```
 
 ## Prerequisites
 
 - R >= 4.3
 - Required packages: dplyr, readr, sf, terra, ggplot2, patchwork, tidyr,
-  ranger, xgboost, blockCV, tidyterra, RSQLite, DBI, viridis
+ ranger, xgboost, blockCV, tidyterra, RSQLite, DBI, viridis
 - To pin package versions, run:
 
 ```r
@@ -81,13 +81,13 @@ Required directory structure:
 
 ```text
 {EXTERNAL_DATA_ROOT}/
-  aoi/
-    Region.shp
-  covariates/
-    fine_10m/
-    fine_10m_preprocessed/
-    coarse_250m/
-    coarse_250m_preprocessed/
+ aoi/
+ Region.shp
+ covariates/
+ fine_10m/
+ fine_10m_preprocessed/
+ coarse_250m/
+ coarse_250m_preprocessed/
 ```
 
 Fine-scale covariates (10 m):

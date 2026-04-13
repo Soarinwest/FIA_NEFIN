@@ -21,10 +21,10 @@ library(sf)
 # SETTINGS
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  COMPARE 10M PREDICTIONS: FIA vs NEFIN vs POOLED\n")
 cat("  Testing coordinate fuzzing effects at fine scale\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Models to compare (all at 10m resolution)
 MODELS <- c(
@@ -69,7 +69,7 @@ if (extent_type == "chittenden_county") {
 
 extent_vect <- vect(prediction_extent)
 
-cat("  ✓ Extent defined\n\n")
+cat("  ok Extent defined\n\n")
 
 # =============================================================================
 # LOAD FINE SCALE COVARIATES (ONCE)
@@ -118,7 +118,7 @@ for (cov_key in names(fine_covs)) {
   cat(" ok\n")
 }
 
-cat("  ✓ Loaded", length(covariate_rasters), "covariates\n\n")
+cat("  ok Loaded", length(covariate_rasters), "covariates\n\n")
 
 # =============================================================================
 # PREDICT WITH EACH MODEL
@@ -130,15 +130,15 @@ for (model_name in MODELS) {
   
   scenario <- gsub("rf_fine_scale_\\(10m\\)_", "", model_name)
   
-  cat("\n═══════════════════════════════════════════════════════════════\n")
+  cat("\n===============================================================\n")
   cat("  Scenario:", toupper(scenario), "\n")
-  cat("═══════════════════════════════════════════════════════════════\n\n")
+  cat("===============================================================\n\n")
   
   # Load model
   model_path <- file.path(MODEL_DIR, paste0(model_name, ".rds"))
   
   if (!file.exists(model_path)) {
-    cat("  ✗ Model not found:", model_path, "\n")
+    cat("  FAIL Model not found:", model_path, "\n")
     cat("  Skipping...\n")
     next
   }
@@ -173,7 +173,7 @@ for (model_name in MODELS) {
   biomass_pred <- ifel(biomass_pred < 0, 0, biomass_pred)
   names(biomass_pred) <- "biomass"
   
-  cat("  ✓ Prediction complete\n")
+  cat("  ok Prediction complete\n")
   cat("    Mean:", round(global(biomass_pred, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   cat("    Min:", round(global(biomass_pred, "min", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   cat("    Max:", round(global(biomass_pred, "max", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
@@ -183,14 +183,14 @@ for (model_name in MODELS) {
   writeRaster(biomass_pred, output_file, overwrite = TRUE,
               gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
   
-  cat("  ✓ Saved:", basename(output_file), "\n")
+  cat("  ok Saved:", basename(output_file), "\n")
   
   predictions[[scenario]] <- biomass_pred
 }
 
 # Mask non-forest pixels (biomass = 0) to NA for forest-only comparison
-# The saved TIFs retain 0s — this only affects the difference maps and stats
-cat("\n  Masking non-forest pixels (biomass = 0 → NA) for comparison...\n")
+# The saved TIFs retain 0s -- this only affects the difference maps and stats
+cat("\n  Masking non-forest pixels (biomass = 0 -> NA) for comparison...\n")
 for (name in names(predictions)) {
   n_zero <- global(predictions[[name]] == 0 & !is.na(predictions[[name]]), "sum", na.rm = TRUE)[[1]]
   predictions[[name]] <- ifel(predictions[[name]] <= 0, NA, predictions[[name]])
@@ -204,9 +204,9 @@ cat("\n")
 
 if (length(predictions) >= 2) {
   
-  cat("\n═══════════════════════════════════════════════════════════════════\n")
+  cat("\n===================================================================\n")
   cat("  CREATING DIFFERENCE MAPS\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   # FIA vs NEFIN
   if ("fia_only" %in% names(predictions) && "nefin_only" %in% names(predictions)) {
@@ -262,20 +262,20 @@ if (length(predictions) >= 2) {
     cat("    SD:", round(global(diff_pooled_nefin, "sd", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   }
   
-  cat("\n  ✓ Difference maps created\n")
+  cat("\n  ok Difference maps created\n")
 }
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  SCENARIO COMPARISON COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Predictions created for:\n")
 for (scenario in names(predictions)) {
-  cat("  •", scenario, "\n")
+  cat("  -", scenario, "\n")
 }
 
 cat("\nOutput directory:", OUTPUT_DIR, "\n")

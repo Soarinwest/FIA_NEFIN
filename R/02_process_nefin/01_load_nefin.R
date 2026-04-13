@@ -8,9 +8,9 @@ source("R/utils/file_utils.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE B - STEP 1: LOAD AND JOIN NEFIN DATA\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 output_dir <- file.path(CONFIG$paths$interim_nefin, "cleaned")
 ensure_dir(output_dir)
@@ -38,7 +38,7 @@ nefin_joined <- tree_plot_data %>%
 # Check for missing coordinates
 missing <- sum(is.na(nefin_joined$lat) | is.na(nefin_joined$long))
 if (missing > 0) {
-  cat("  ⚠ ", missing, "rows missing coordinates - removing\n")
+  cat("  WARNING ", missing, "rows missing coordinates - removing\n")
   nefin_joined <- nefin_joined %>% filter(!is.na(lat), !is.na(long))
 }
 
@@ -68,7 +68,7 @@ nefin_clean <- nefin_filtered %>%
 output_path <- file.path(output_dir, "nefin_joined.csv")
 write_csv(nefin_clean, output_path)
 
-cat("✓ Saved:", output_path, "\n")
+cat("ok Saved:", output_path, "\n")
 cat("  Rows:", nrow(nefin_clean), "\n")
 cat("  States:", paste(sort(unique(nefin_clean$state)), collapse=", "), "\n")
 cat("  Year range:", min(nefin_clean$year), "-", max(nefin_clean$year), "\n\n")

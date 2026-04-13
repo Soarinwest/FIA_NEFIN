@@ -15,9 +15,9 @@ library(tidyterra)
 library(patchwork)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: VISUALIZE PREDICTIONS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Create output directory for figures
 fig_dir <- file.path(PHASE4_CONFIG$output$dir_figures, "predictions")
@@ -84,7 +84,7 @@ for (file in pred_files) {
   )
 }
 
-cat("  ✓ Individual maps saved\n\n")
+cat("  ok Individual maps saved\n\n")
 
 # =============================================================================
 # CREATE COMPARISON MAPS (FIA vs NEFIN)
@@ -188,7 +188,7 @@ for (scale in c("fine", "coarse")) {
   }
 }
 
-cat("  ✓ Comparison maps saved\n\n")
+cat("  ok Comparison maps saved\n\n")
 
 # =============================================================================
 # CREATE SUMMARY STATISTICS
@@ -229,9 +229,9 @@ cat("\n")
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  VISUALIZATION COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Figures saved to:", fig_dir, "\n")
 cat("  - Individual maps:", length(pred_files), "files\n")

@@ -24,11 +24,11 @@ library(readr)
 library(caret)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4 - STEP 1: DATA PREPARATION (FIXED)\n")
 cat("  TEST: 30% NEFIN (same for all models)\n")
 cat("  TRAIN: Varies by scenario\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Create output directory
 dir.create("data/processed/phase4_modeling", showWarnings = FALSE, recursive = TRUE)
@@ -49,8 +49,8 @@ augmented <- read_csv(
   show_col_types = FALSE
 )
 
-cat("  ✓ Baseline (FIA):", nrow(baseline), "plots\n")
-cat("  ✓ Augmented (FIA + NEFIN):", nrow(augmented), "plots\n\n")
+cat("  ok Baseline (FIA):", nrow(baseline), "plots\n")
+cat("  ok Augmented (FIA + NEFIN):", nrow(augmented), "plots\n\n")
 
 # Fix data type mismatches
 cat("  Converting CN columns to character...\n")
@@ -60,7 +60,7 @@ baseline <- baseline %>%
 augmented <- augmented %>%
   mutate(CN = as.character(CN))
 
-cat("  ✓ Data types standardized\n\n")
+cat("  ok Data types standardized\n\n")
 
 # =============================================================================
 # STEP 2: IDENTIFY COVARIATES WITH SCALE-SPECIFIC NAMES
@@ -89,7 +89,7 @@ cat("  Available in data:", length(available_in_data), "\n")
 
 if (length(available_in_data) < length(covariates_to_use)) {
   missing <- setdiff(covariates_to_use, available_in_data)
-  cat("  ⚠ Missing covariates:", paste(head(missing, 5), collapse = ", "))
+  cat("  WARNING Missing covariates:", paste(head(missing, 5), collapse = ", "))
   if (length(missing) > 5) cat(", ...")
   cat("\n")
 }
@@ -118,8 +118,8 @@ fia <- baseline %>%
 nefin <- augmented %>%
   filter(dataset == "NEFIN")
 
-cat("  ✓ FIA plots:", nrow(fia), "\n")
-cat("  ✓ NEFIN plots:", nrow(nefin), "\n\n")
+cat("  ok FIA plots:", nrow(fia), "\n")
+cat("  ok NEFIN plots:", nrow(nefin), "\n\n")
 
 # =============================================================================
 # STEP 4: CREATE UNIVERSAL TEST SET (30% NEFIN)
@@ -140,7 +140,7 @@ test_indices <- createDataPartition(
 nefin_test <- nefin[test_indices, ]
 nefin_train <- nefin[-test_indices, ]
 
-cat("  ✓ Test set created:\n")
+cat("  ok Test set created:\n")
 cat("    Plots:", nrow(nefin_test), "\n")
 cat("    Source: NEFIN only (precise coordinates)\n")
 cat("    Biomass range:", round(min(nefin_test$biomass), 1), "to", 
@@ -156,13 +156,13 @@ cat("Step 5: Creating scenario-specific training sets...\n\n")
 cat("  FIA Only:\n")
 cat("    Train:", nrow(fia), "plots (ALL FIA - fuzzed coords)\n")
 cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
-cat("    → Evaluates: How well do fuzzed coordinates predict true locations?\n\n")
+cat("    -> Evaluates: How well do fuzzed coordinates predict true locations?\n\n")
 
 # Scenario 2: NEFIN Only (precise coordinates)
 cat("  NEFIN Only:\n")
 cat("    Train:", nrow(nefin_train), "plots (70% NEFIN - precise coords)\n")
 cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
-cat("    → Evaluates: Best-case scenario with precise coordinates\n\n")
+cat("    -> Evaluates: Best-case scenario with precise coordinates\n\n")
 
 # Scenario 3: Pooled (FIA + NEFIN)
 train_pooled <- bind_rows(fia, nefin_train)
@@ -172,7 +172,7 @@ cat("    Train:", nrow(train_pooled), "plots\n")
 cat("      - FIA:", nrow(fia), "(fuzzed coords)\n")
 cat("      - NEFIN:", nrow(nefin_train), "(precise coords, 70%)\n")
 cat("    Test:", nrow(nefin_test), "plots (30% NEFIN - precise coords)\n")
-cat("    → Evaluates: Combined dataset performance\n\n")
+cat("    -> Evaluates: Combined dataset performance\n\n")
 
 # =============================================================================
 # STEP 6: CALCULATE REFERENCE STATISTICS
@@ -209,33 +209,33 @@ write_csv(
   nefin_test,
   "data/processed/phase4_modeling/test_data.csv"
 )
-cat("  ✓ test_data.csv (30% NEFIN, n=", nrow(nefin_test), ")\n")
+cat("  ok test_data.csv (30% NEFIN, n=", nrow(nefin_test), ")\n")
 
 # Save training sets
 write_csv(
   fia,
   "data/processed/phase4_modeling/train_fia_only.csv"
 )
-cat("  ✓ train_fia_only.csv (n=", nrow(fia), ")\n")
+cat("  ok train_fia_only.csv (n=", nrow(fia), ")\n")
 
 write_csv(
   nefin_train,
   "data/processed/phase4_modeling/train_nefin_only.csv"
 )
-cat("  ✓ train_nefin_only.csv (n=", nrow(nefin_train), ")\n")
+cat("  ok train_nefin_only.csv (n=", nrow(nefin_train), ")\n")
 
 write_csv(
   train_pooled,
   "data/processed/phase4_modeling/train_pooled.csv"
 )
-cat("  ✓ train_pooled.csv (n=", nrow(train_pooled), ")\n\n")
+cat("  ok train_pooled.csv (n=", nrow(train_pooled), ")\n\n")
 
 # Save scaling parameters (for reference)
 write_csv(
   scaling_stats,
   "data/processed/phase4_modeling/scaling_parameters.csv"
 )
-cat("  ✓ scaling_parameters.csv (reference only)\n\n")
+cat("  ok scaling_parameters.csv (reference only)\n\n")
 
 # Save metadata
 metadata <- data.frame(
@@ -265,22 +265,22 @@ write_csv(
   metadata,
   "data/processed/phase4_modeling/metadata.csv"
 )
-cat("  ✓ metadata.csv\n\n")
+cat("  ok metadata.csv\n\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  DATA PREPARATION SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("RESEARCH DESIGN:\n")
 cat("  Test set: 30% NEFIN (", nrow(nefin_test), "plots) - SAME FOR ALL MODELS\n")
 cat("  Training sets:\n")
-cat("    • FIA-only:", nrow(fia), "plots (fuzzed coords)\n")
-cat("    • NEFIN-only:", nrow(nefin_train), "plots (precise coords, 70%)\n")
-cat("    • Pooled:", nrow(train_pooled), "plots (FIA + 70% NEFIN)\n\n")
+cat("    - FIA-only:", nrow(fia), "plots (fuzzed coords)\n")
+cat("    - NEFIN-only:", nrow(nefin_train), "plots (precise coords, 70%)\n")
+cat("    - Pooled:", nrow(train_pooled), "plots (FIA + 70% NEFIN)\n\n")
 
 cat("BIOMASS DISTRIBUTION:\n")
 cat("  Test set:\n")
@@ -294,14 +294,14 @@ cat("  Using", length(covariates_to_use), "covariates\n")
 cat("  Standardization: Within-fold (in CV script)\n\n")
 
 cat("OUTPUT FILES:\n")
-cat("  • test_data.csv - Universal test set (30% NEFIN)\n")
-cat("  • train_fia_only.csv - FIA training data\n")
-cat("  • train_nefin_only.csv - NEFIN training data (70%)\n")
-cat("  • train_pooled.csv - Combined training data\n")
-cat("  • scaling_parameters.csv - Reference statistics\n")
-cat("  • metadata.csv - Run metadata\n\n")
+cat("  - test_data.csv - Universal test set (30% NEFIN)\n")
+cat("  - train_fia_only.csv - FIA training data\n")
+cat("  - train_nefin_only.csv - NEFIN training data (70%)\n")
+cat("  - train_pooled.csv - Combined training data\n")
+cat("  - scaling_parameters.csv - Reference statistics\n")
+cat("  - metadata.csv - Run metadata\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  NEXT STEP: Spatial cross-validation\n")
 cat("  Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

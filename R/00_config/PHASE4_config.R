@@ -34,7 +34,7 @@ PHASE4_CONFIG$spatial_scales <- list(
       # Climate (downsampled)
       "tmean", "ppt"
     ),
-    test_hypothesis = "Fuzzing (±1.6km) should matter at 10m resolution"
+    test_hypothesis = "Fuzzing (+/-1.6km) should matter at 10m resolution"
   ),
   
   coarse = list(
@@ -66,7 +66,7 @@ PHASE4_CONFIG$spatial_scales <- list(
 PHASE4_CONFIG$scenarios <- list(
   fia_only = list(
     name = "FIA Only",
-    description = "Baseline - fuzzed coordinates (±1.6 km)",
+    description = "Baseline - fuzzed coordinates (+/-1.6 km)",
     filter = "dataset == 'FIA'",
     color = "#d62728",
     hypothesis = "Represents accuracy WITH coordinate fuzzing"
@@ -87,7 +87,7 @@ PHASE4_CONFIG$scenarios <- list(
   )
 )
 
-# Total models: 2 scales × 3 scenarios = 6 models
+# Total models: 2 scales x 3 scenarios = 6 models
 
 # =============================================================================
 # CROSS-VALIDATION SETTINGS
@@ -105,9 +105,9 @@ PHASE4_CONFIG$cv <- list(
   selection = "random",          # Random assignment of blocks to folds
   
   # Block size
-  block_size_km = 25,            # 25 km × 25 km blocks = 625 km²
+  block_size_km = 25,            # 25 km x 25 km blocks = 625 km^2
   
-  # Alternative: Use k-means clustering of coordinates
+  # Alternative: Use spatial block clustering of coordinates
   use_kmeans = FALSE,            # Set TRUE for irregular spatial blocks
   
   seed = 42,                     # Reproducibility
@@ -195,8 +195,8 @@ PHASE4_CONFIG$models <- list(
     enabled = TRUE,
     params = list(
       ntree = 500,               # Number of trees
-      mtry = NULL,               # mtry: floor(p/3) — ranger regression default for regression trees
-                                 # NOTE: sqrt(p) is the classification default — do not confuse
+      mtry = NULL,               # mtry: floor(p/3) -- ranger regression default
+                                 # NOTE: sqrt(p) is the classification default -- do not confuse
       nodesize = 5,              # Min terminal node size
       importance = TRUE,         # Variable importance
       classwt = NULL             # Class weights (for imbalanced data)
@@ -206,7 +206,7 @@ PHASE4_CONFIG$models <- list(
   # XGBoost (gradient boosting)
   xgb = list(
     name = "XGBoost",
-    enabled = TRUE,              # ← Enabled for comparison!
+    enabled = TRUE,              # <- Enabled for comparison!
     params = list(
       nrounds = 100,             # Number of boosting rounds
       max_depth = 6,             # Maximum tree depth
@@ -227,7 +227,7 @@ PHASE4_CONFIG$models <- list(
 # Large rasters and AOI are stored outside the project on an external drive.
 # Set EXTERNAL_DATA_ROOT to match your local setup before running the pipeline.
 # See README.md -> Data Sources for required files and how to obtain them.
-# Default assumes Windows drive letter D: — adjust for your OS/mount point.
+# Default assumes Windows drive letter D: -- adjust for your OS/mount point.
 
 EXTERNAL_DATA_ROOT <- "D:/FIA_NEFIN/data"
 
@@ -310,14 +310,14 @@ create_classification_labels <- function(biomass_values, threshold = NULL) {
 # Print configuration summary
 print_phase4_config <- function() {
   cat("\n")
-  cat("═══════════════════════════════════════════════════════════════\n")
+  cat("===============================================================\n")
   cat("  PHASE 4 CONFIGURATION - SPATIAL SCALE COMPARISON\n")
-  cat("═══════════════════════════════════════════════════════════════\n\n")
+  cat("===============================================================\n\n")
   
   cat("SPATIAL SCALES:\n")
   for (scale_name in names(PHASE4_CONFIG$spatial_scales)) {
     scale <- PHASE4_CONFIG$spatial_scales[[scale_name]]
-    cat("  •", scale$name, "(", scale$resolution, ")\n")
+    cat("  -", scale$name, "(", scale$resolution, ")\n")
     cat("    Covariates:", length(scale$covariates), "\n")
     cat("    Hypothesis:", scale$test_hypothesis, "\n")
   }
@@ -326,7 +326,7 @@ print_phase4_config <- function() {
   cat("SCENARIOS (per scale):\n")
   for (scenario_name in names(PHASE4_CONFIG$scenarios)) {
     scenario <- PHASE4_CONFIG$scenarios[[scenario_name]]
-    cat("  •", scenario$name, "\n")
+    cat("  -", scenario$name, "\n")
     cat("    ", scenario$hypothesis, "\n")
   }
   cat("\n")
@@ -334,7 +334,7 @@ print_phase4_config <- function() {
   cat("TOTAL MODELS:", 
       length(PHASE4_CONFIG$spatial_scales) * length(PHASE4_CONFIG$scenarios), 
       "\n")
-  cat("  ", length(PHASE4_CONFIG$spatial_scales), "scales ×", 
+  cat("  ", length(PHASE4_CONFIG$spatial_scales), "scales x", 
       length(PHASE4_CONFIG$scenarios), "scenarios\n\n")
   
   cat("CROSS-VALIDATION:\n")
@@ -356,10 +356,10 @@ print_phase4_config <- function() {
   cat("  CV Results:", PHASE4_CONFIG$output$dir_cv, "\n")
   cat("  Figures:", PHASE4_CONFIG$output$dir_figures, "\n\n")
   
-  cat("═══════════════════════════════════════════════════════════════\n\n")
+  cat("===============================================================\n\n")
 }
 
-cat("✓ Phase 4 configuration loaded (SPATIAL SCALE VERSION - FIXED)\n")
+cat("ok Phase 4 configuration loaded (SPATIAL SCALE VERSION - FIXED)\n")
 cat("  Run print_phase4_config() to see summary\n\n")
 
 PHASE4_CONFIG$prediction <- list(
@@ -421,8 +421,8 @@ PHASE4_CONFIG$prediction <- list(
     
     # Raster resolution (meters)
     resolution = list(
-      fine = 30,                 # 30m for fine scale (Sentinel-2 based)
-      coarse = 250               # 250m for coarse scale (MODIS based)
+      fine = 10,                 # 10m for fine scale
+      coarse = 250               # 250m for coarse scale
     ),
     
     # Output format
@@ -480,7 +480,7 @@ get_best_model <- function(cv_summary_path = "data/processed/phase4_cv_results/c
   
   cat("Best model:", best_model, "\n")
   cat("  RMSE:", round(cv_summary$rmse_mean[best_idx], 2), "Mg/ha\n")
-  cat("  R²:", round(cv_summary$r2_mean[best_idx], 3), "\n")
+  cat("  R^2:", round(cv_summary$r2_mean[best_idx], 3), "\n")
   
   return(list(
     model_name = best_model,
@@ -492,6 +492,6 @@ get_best_model <- function(cv_summary_path = "data/processed/phase4_cv_results/c
   ))
 }
 
-cat("✓ Prediction configuration added\n")
+cat("ok Prediction configuration added\n")
 cat("  Default extent:", PHASE4_CONFIG$prediction$extent$type, "\n")
 cat("  Output directory:", PHASE4_CONFIG$prediction$output$dir, "\n\n")

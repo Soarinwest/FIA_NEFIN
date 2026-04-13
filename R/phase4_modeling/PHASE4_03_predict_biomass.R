@@ -11,7 +11,7 @@ source("R/00_config/PHASE4_config_covariates_PREPROCESSED.R")
 # Fix PostgreSQL PROJ interference
 Sys.setenv(PROJ_DATA = "")
 Sys.setenv(PROJ_LIB = "")
-cat("✓ Cleared PostgreSQL PROJ paths\n\n")
+cat("ok Cleared PostgreSQL PROJ paths\n\n")
 
 library(terra)
 library(dplyr)
@@ -30,10 +30,10 @@ COARSE_MODEL <- "rf_coarse_scale_(250m)_pooled"
 MODEL_DIR <- "data/processed/phase4_models"
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: DUAL-SCALE BIOMASS PREDICTION\n")
 cat("  Comparing Fine (10m) vs Coarse (250m) Resolution\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Model Selection:\n")
 cat("  Fine model:", FINE_MODEL, "\n")
@@ -44,23 +44,23 @@ fine_model_path <- file.path(MODEL_DIR, paste0(FINE_MODEL, ".rds"))
 coarse_model_path <- file.path(MODEL_DIR, paste0(COARSE_MODEL, ".rds"))
 
 if (!file.exists(fine_model_path)) {
-  cat("✗ Fine model not found:", fine_model_path, "\n\n")
+  cat("FAIL Fine model not found:", fine_model_path, "\n\n")
   cat("Available models:\n")
   models <- list.files(MODEL_DIR, pattern = "\\.rds$", full.names = FALSE)
   if (length(models) == 0) {
     cat("  (none)\n\n")
   } else {
-    for (m in models) cat("  •", m, "\n")
+    for (m in models) cat("  -", m, "\n")
   }
   stop("Required models not found")
 }
 
 if (!file.exists(coarse_model_path)) {
-  cat("✗ Coarse model not found:", coarse_model_path, "\n\n")
+  cat("FAIL Coarse model not found:", coarse_model_path, "\n\n")
   stop("Required models not found")
 }
 
-cat("✓ Both models found\n\n")
+cat("ok Both models found\n\n")
 
 # Create output directory
 dir.create(PHASE4_CONFIG$prediction$output$dir, 
@@ -129,7 +129,7 @@ if (extent_type == "chittenden_county") {
   prediction_extent <- st_as_sfc(st_bbox(bbox, crs = custom$crs))
 }
 
-cat("  ✓ Extent defined\n\n")
+cat("  ok Extent defined\n\n")
 
 # =============================================================================
 # HELPER FUNCTION: Load covariates for a specific scale
@@ -168,7 +168,7 @@ load_scale_covariates <- function(scale, extent_vect) {
     }
     
     if (!file.exists(cov_info$path)) {
-      cat("    ⚠ File not found:", cov_info$display_name, "\n")
+      cat("    WARNING File not found:", cov_info$display_name, "\n")
       next
     }
     
@@ -208,14 +208,14 @@ load_scale_covariates <- function(scale, extent_vect) {
       covariate_name_with_suffix <- paste0(cov_info$name, resolution_suffix)
       covariate_rasters[[covariate_name_with_suffix]] <- r_cropped
       
-      cat(" ✓\n")
+      cat(" ok\n")
       
     }, error = function(e) {
-      cat(" ✗ Error:", e$message, "\n")
+      cat(" FAIL Error:", e$message, "\n")
     })
   }
   
-  cat("  ✓ Loaded", length(covariate_rasters), scale, "scale covariates\n\n")
+  cat("  ok Loaded", length(covariate_rasters), scale, "scale covariates\n\n")
   
   return(covariate_rasters)
 }
@@ -233,7 +233,7 @@ cat("  Extent bounding box (WGS84):\n")
 cat("    xmin:", round(ext(extent_vect)[1], 2), "xmax:", round(ext(extent_vect)[2], 2), "\n")
 cat("    ymin:", round(ext(extent_vect)[3], 2), "ymax:", round(ext(extent_vect)[4], 2), "\n")
 
-cat("  ✓ Extent ready\n")
+cat("  ok Extent ready\n")
 
 # =============================================================================
 # STEP 3: LOAD MODELS AND PREDICT
@@ -261,15 +261,15 @@ for (scale_name in c("fine", "coarse")) {
   
   model_info <- models_to_run[[scale_name]]
   
-  cat("\n═══════════════════════════════════════════════════════════════\n")
+  cat("\n===============================================================\n")
   cat(" ", model_info$name, "\n")
-  cat("═══════════════════════════════════════════════════════════════\n")
+  cat("===============================================================\n")
   
   # Load covariates for this scale
   scale_covariates <- load_scale_covariates(model_info$scale, extent_vect)
   
   if (length(scale_covariates) == 0) {
-    cat("  ✗ No covariates loaded - skipping\n\n")
+    cat("  FAIL No covariates loaded - skipping\n\n")
     next
   }
   
@@ -284,7 +284,7 @@ for (scale_name in c("fine", "coarse")) {
   scaling_sds <- model_obj$scaling_sds
   model_covs <- model_obj$covariates
   
-  cat("  ✓ Model loaded\n")
+  cat("  ok Model loaded\n")
   cat("    Model requires:", length(model_covs), "covariates\n")
   
   # Check available covariates
@@ -295,7 +295,7 @@ for (scale_name in c("fine", "coarse")) {
   
   if (length(available_covs) < length(model_covs)) {
     missing <- setdiff(model_covs, names(scale_covariates))
-    cat("  ⚠ Missing", length(missing), "covariates:", 
+    cat("  WARNING Missing", length(missing), "covariates:", 
         paste(head(missing, 3), collapse = ", "), 
         if(length(missing) > 3) "..." else "", "\n")
   }
@@ -303,7 +303,7 @@ for (scale_name in c("fine", "coarse")) {
   cat("  Using", length(available_covs), "covariates\n\n")
   
   if (length(available_covs) == 0) {
-    cat("  ✗ No matching covariates - cannot predict\n\n")
+    cat("  FAIL No matching covariates - cannot predict\n\n")
     next
   }
   
@@ -325,7 +325,7 @@ for (scale_name in c("fine", "coarse")) {
   cov_stack <- rast(scale_covariates[available_covs])
   names(cov_stack) <- available_covs
   
-  cat("  ✓ Stacked successfully\n")
+  cat("  ok Stacked successfully\n")
   cat("    Resolution:", round(res(cov_stack)[1]), "m\n")
   cat("    Dimensions:", paste(dim(cov_stack)[1:2], collapse = " x "), "pixels\n\n")
   
@@ -336,7 +336,7 @@ for (scale_name in c("fine", "coarse")) {
       cov_stack[[cov]] <- (cov_stack[[cov]] - scaling_means[cov]) / scaling_sds[cov]
     }
   }
-  cat("  ✓ Standardized\n\n")
+  cat("  ok Standardized\n\n")
   
   # Predict
   cat("  Predicting biomass...\n")
@@ -363,13 +363,13 @@ for (scale_name in c("fine", "coarse")) {
     n_masked <- global(ndvi_raw < 0.15 & !is.na(ndvi_raw), "sum", na.rm = TRUE)[[1]]
     n_total <- global(!is.na(biomass_pred), "sum", na.rm = TRUE)[[1]]
     biomass_pred <- ifel(ndvi_raw < 0.15, 0, biomass_pred)
-    cat("  ✓ Masked", n_masked, "of", n_total, "pixels",
+    cat("  ok Masked", n_masked, "of", n_total, "pixels",
         "(", round(n_masked / n_total * 100, 1), "%) to 0 Mg/ha\n")
   }
   
   names(biomass_pred) <- "biomass"
   
-  cat("  ✓ Prediction complete\n")
+  cat("  ok Prediction complete\n")
   cat("    Mean biomass:", round(global(biomass_pred, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   cat("    Min:", round(global(biomass_pred, "min", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   cat("    Max:", round(global(biomass_pred, "max", na.rm = TRUE)[[1]], 2), "Mg/ha\n\n")
@@ -384,7 +384,7 @@ for (scale_name in c("fine", "coarse")) {
   writeRaster(biomass_pred, output_file, overwrite = TRUE,
               gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
   
-  cat("  ✓ Saved\n\n")
+  cat("  ok Saved\n\n")
   
   predictions[[scale_name]] <- biomass_pred
 }
@@ -395,9 +395,9 @@ for (scale_name in c("fine", "coarse")) {
 
 if (length(predictions) == 2) {
   
-  cat("\n═══════════════════════════════════════════════════════════════════\n")
+  cat("\n===================================================================\n")
   cat("  CREATING COMPARISON MAPS\n")
-  cat("═══════════════════════════════════════════════════════════════════\n\n")
+  cat("===================================================================\n\n")
   
   cat("  Resampling coarse to fine resolution...\n")
   coarse_resampled <- resample(predictions$coarse, predictions$fine, method = "bilinear")
@@ -434,16 +434,16 @@ if (length(predictions) == 2) {
   cat("    Max:", round(global(difference, "max", na.rm = TRUE)[[1]], 2), "Mg/ha\n")
   cat("    Mean absolute difference:", round(global(abs_diff, "mean", na.rm = TRUE)[[1]], 2), "Mg/ha\n\n")
   
-  cat("  ✓ Comparison maps created\n\n")
+  cat("  ok Comparison maps created\n\n")
 }
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PREDICTION COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Models used:\n")
 cat("  Fine:", FINE_MODEL, "\n")

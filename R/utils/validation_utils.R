@@ -25,7 +25,7 @@ validate_columns <- function(df, required_cols, dataset_name = "dataset") {
          paste(missing_cols, collapse = ", "))
   }
   
-  message("✓ ", dataset_name, " has all required columns")
+  message("ok ", dataset_name, " has all required columns")
   invisible(TRUE)
 }
 
@@ -56,7 +56,7 @@ check_missing_data <- function(df, cols = NULL, max_missing_pct = 10) {
     warning("Columns with >", max_missing_pct, "% missing data:")
     print(high_missing)
   } else {
-    message("✓ No columns with excessive missing data")
+    message("ok No columns with excessive missing data")
   }
   
   invisible(missing_summary)
@@ -117,7 +117,7 @@ validate_coordinates <- function(df,
     message("Coordinate issues:")
     print(issues)
   } else {
-    message("✓ All coordinates valid")
+    message("ok All coordinates valid")
   }
   
   df
@@ -155,7 +155,7 @@ check_duplicates <- function(df, id_cols) {
     message("Example duplicates:")
     print(examples)
   } else {
-    message("✓ No duplicate records found")
+    message("ok No duplicate records found")
   }
   
   df
@@ -208,7 +208,7 @@ validate_ranges <- function(df, range_specs) {
     message("Range validation issues:")
     print(issues)
   } else {
-    message("✓ All values within expected ranges")
+    message("ok All values within expected ranges")
   }
   
   invisible(results_df)
@@ -232,9 +232,9 @@ compare_datasets <- function(df1, df2, name1 = "dataset1", name2 = "dataset2") {
   )
   
   cat("\n")
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   cat("  DATASET COMPARISON\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   cat(name1, ":\n")
   cat("  Rows:", comparison$n_rows[1], "\n")
@@ -256,7 +256,7 @@ compare_datasets <- function(df1, df2, name1 = "dataset1", name2 = "dataset2") {
     cat(" ", paste(comparison$unique_cols_2, collapse = ", "), "\n")
   }
   
-  cat("\n═══════════════════════════════════════\n\n")
+  cat("\n=======================================\n\n")
   
   invisible(comparison)
 }
@@ -275,7 +275,7 @@ validate_file_exists <- function(file_path, file_type = "file") {
   # Check if readable
   tryCatch({
     test <- readLines(file_path, n = 1, warn = FALSE)
-    message("✓ ", file_type, " found: ", basename(file_path))
+    message("ok ", file_type, " found: ", basename(file_path))
   }, error = function(e) {
     stop(file_type, " exists but is not readable: ", file_path)
   })
@@ -314,7 +314,7 @@ validate_schema <- function(df, expected_schema, dataset_name = "dataset") {
   }
   
   if (all_valid) {
-    message("✓ ", dataset_name, " schema validated")
+    message("ok ", dataset_name, " schema validated")
   }
   
   invisible(all_valid)
@@ -333,9 +333,9 @@ run_validation_suite <- function(df,
                                 id_cols = NULL) {
   
   cat("\n")
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   cat("  VALIDATION SUITE:", dataset_name, "\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   report <- list()
   
@@ -351,7 +351,7 @@ run_validation_suite <- function(df,
       validate_columns(df, required_cols, dataset_name)
       TRUE
     }, error = function(e) {
-      message("✗ ", e$message)
+      message("FAIL ", e$message)
       FALSE
     })
   }
@@ -382,9 +382,9 @@ run_validation_suite <- function(df,
     report$biomass_valid_pct <- 100 * mean(df$biomass_valid)
   }
   
-  cat("\n═══════════════════════════════════════\n")
+  cat("\n=======================================\n")
   cat("  VALIDATION COMPLETE\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   
   invisible(report)
 }
@@ -397,9 +397,9 @@ write_validation_report <- function(validation_report, output_path) {
   
   sink(output_path)
   
-  cat("═══════════════════════════════════════\n")
+  cat("=======================================\n")
   cat("  DATA VALIDATION REPORT\n")
-  cat("═══════════════════════════════════════\n\n")
+  cat("=======================================\n\n")
   cat("Generated:", as.character(Sys.time()), "\n\n")
   
   for (item_name in names(validation_report)) {

@@ -7,9 +7,9 @@ source("R/00_config/config.R")
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  MONTE CARLO: ANALYZE UNCERTAINTY DISTRIBUTIONS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD EXTRACTED DATA
@@ -122,15 +122,15 @@ cat("  Calculated uncertainty for", nrow(uncertainty), "plots\n\n")
 output_path <- "data/processed/monte_carlo/plot_uncertainty.csv"
 write_csv(uncertainty, output_path)
 
-cat("✓ Saved:", output_path, "\n\n")
+cat("ok Saved:", output_path, "\n\n")
 
 # =============================================================================
 # SUMMARY STATISTICS
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  UNCERTAINTY SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("NDVI (Sentinel-2) Uncertainty:\n")
 cat(sprintf("  Mean SD across plots:   %.4f NDVI units\n",
@@ -145,13 +145,13 @@ cat(sprintf("  Mean error from true:   %.4f NDVI units\n\n",
             mean(uncertainty$ndvi_s2_error, na.rm = TRUE)))
 
 cat("Temperature Uncertainty:\n")
-cat(sprintf("  Mean SD across plots:   %.2f °C\n",
+cat(sprintf("  Mean SD across plots:   %.2f  deg C\n",
             mean(uncertainty$tmean_sd, na.rm = TRUE)))
-cat(sprintf("  Median SD:              %.2f °C\n",
+cat(sprintf("  Median SD:              %.2f  deg C\n",
             median(uncertainty$tmean_sd, na.rm = TRUE)))
-cat(sprintf("  Mean range:             %.2f °C\n",
+cat(sprintf("  Mean range:             %.2f  deg C\n",
             mean(uncertainty$tmean_range, na.rm = TRUE)))
-cat(sprintf("  Mean error from true:   %.2f °C\n\n",
+cat(sprintf("  Mean error from true:   %.2f  deg C\n\n",
             mean(uncertainty$tmean_error, na.rm = TRUE)))
 
 cat("Precipitation Uncertainty:\n")
@@ -168,9 +168,9 @@ cat(sprintf("  Mean error from true:   %.1f mm\n\n",
 # COMPARE TO NEFIN OBSERVED VARIANCE
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  COMPARISON TO NEFIN\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load augmented to get NEFIN variance
 augmented <- read_csv("data/processed/augmented_with_covariates.csv",
@@ -221,41 +221,41 @@ cat(sprintf("  NEFIN variance is %.1f%% of fuzzing uncertainty\n\n",
 # KEY FINDING
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  KEY FINDING\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 fuzzing_contribution <- 100 * (mc_ndvi_sd / fia_ndvi_sd)
 
-cat(sprintf("FIA's ±%.0fm coordinate fuzzing introduces:\n", 
+cat(sprintf("FIA's +/-%.0fm coordinate fuzzing introduces:\n", 
             CONFIG$monte_carlo$jitter_radius_m))
-cat(sprintf("  • ±%.4f NDVI uncertainty (1 SD)\n", mc_ndvi_sd))
-cat(sprintf("  • ±%.2f °C temperature uncertainty\n", mc_temp_sd))
-cat(sprintf("  • ±%.1f mm precipitation uncertainty\n\n", mc_ppt_sd))
+cat(sprintf("  - +/-%.4f NDVI uncertainty (1 SD)\n", mc_ndvi_sd))
+cat(sprintf("  - +/-%.2f  deg C temperature uncertainty\n", mc_temp_sd))
+cat(sprintf("  - +/-%.1f mm precipitation uncertainty\n\n", mc_ppt_sd))
 
 cat(sprintf("This explains %.1f%% of FIA's observed NDVI variance (%.4f)\n",
             fuzzing_contribution, fia_ndvi_sd))
 
 if (fuzzing_contribution > 50) {
-  cat("\n→ Coordinate fuzzing is a MAJOR source of NDVI variance! ✓\n")
-  cat("→ Precise coordinates (like NEFIN) substantially reduce uncertainty\n")
+  cat("\n-> Coordinate fuzzing is a MAJOR source of NDVI variance! ok\n")
+  cat("-> Precise coordinates (like NEFIN) substantially reduce uncertainty\n")
 } else if (fuzzing_contribution > 25) {
-  cat("\n→ Coordinate fuzzing is a MODERATE source of NDVI variance\n")
-  cat("→ Precise coordinates provide meaningful improvement\n")
+  cat("\n-> Coordinate fuzzing is a MODERATE source of NDVI variance\n")
+  cat("-> Precise coordinates provide meaningful improvement\n")
 } else {
-  cat("\n→ Coordinate fuzzing is a MINOR source of NDVI variance\n")
-  cat("→ Other factors (site heterogeneity) dominate\n")
+  cat("\n-> Coordinate fuzzing is a MINOR source of NDVI variance\n")
+  cat("-> Other factors (site heterogeneity) dominate\n")
 }
 
 cat("\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  MONTE CARLO ANALYSIS COMPLETE!\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Output files:\n")
-cat("  •", output_path, "\n")
-cat("  •", extracted_dir, "(individual replicates)\n\n")
+cat("  -", output_path, "\n")
+cat("  -", extracted_dir, "(individual replicates)\n\n")
 
 cat("Next: Combine with Phase 1 results for complete story\n")
 cat("  Rscript R/06_analysis/06_combined_analysis.R\n\n")

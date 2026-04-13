@@ -1,5 +1,5 @@
 # =============================================================================
-# paper1_analysis_fixed.R
+# paper1_analysis.R
 # =============================================================================
 # Fixed version addressing three issues:
 #   1. Table A3: adds median, P95, max biomass computed from raw data
@@ -32,10 +32,10 @@ fia        <- read_csv("data/processed/fia_complete.csv",   show_col_types = FAL
 cat("Data loaded.\n\n")
 
 # =============================================================================
-# FIX 1 — TABLE A3: Dataset comparison with median, P95, max from raw data
+# FIX 1 -- TABLE A3: Dataset comparison with median, P95, max from raw data
 # =============================================================================
 
-cat("── Fix 1: Table A3 with complete biomass stats ─────────────────\n")
+cat("-- Fix 1: Table A3 with complete biomass stats -----------------\n")
 
 nefin_bio_stats <- nefin %>%
   summarise(
@@ -62,7 +62,7 @@ fia_bio_stats <- fia %>%
   ) %>%
   mutate(
     dataset = "FIA",
-    # NDVI/climate: no per-plot columns in fia_complete.csv — use pre-computed means
+    # NDVI/climate: no per-plot columns in fia_complete.csv -- use pre-computed means
     mean_ndvi = round(sum_stats$ndvi_s2_mean[sum_stats$dataset == "FIA"], 3),
     mean_tmean = round(sum_stats$tmean_mean[sum_stats$dataset == "FIA"],   1),
     mean_ppt= round(sum_stats$ppt_mean[sum_stats$dataset == "FIA"],     1)
@@ -73,18 +73,18 @@ fia_bio_stats <- fia %>%
 table_A3 <- data.frame(
   Metric = c(
     "N plots",
-    "Mean biomass (Mg ha⁻¹)",
-    "Median biomass (Mg ha⁻¹)",
-    "SD biomass (Mg ha⁻¹)",
-    "P95 biomass (Mg ha⁻¹)",
-    "Max biomass (Mg ha⁻¹)",
+    "Mean biomass (Mg/ha)",
+    "Median biomass (Mg/ha)",
+    "SD biomass (Mg/ha)",
+    "P95 biomass (Mg/ha)",
+    "Max biomass (Mg/ha)",
     "Mean NDVI (Sentinel-2)",
-    "Mean temperature (°C)",
-    "Mean precipitation (cm yr⁻¹)"
+    "Mean temperature (C)",
+    "Mean precipitation (cm/yr)"
   ),
   FIA = c(
     format(fia_bio_stats$n, big.mark = ","),
-    paste0(fia_bio_stats$mean_biomass,   " ± ", fia_bio_stats$sd_biomass),
+    paste0(fia_bio_stats$mean_biomass,   " +/- ", fia_bio_stats$sd_biomass),
     as.character(fia_bio_stats$median_biomass),
     as.character(fia_bio_stats$sd_biomass),
     as.character(fia_bio_stats$p95_biomass),
@@ -95,7 +95,7 @@ table_A3 <- data.frame(
   ),
   NEFIN = c(
     format(nefin_bio_stats$n, big.mark = ","),
-    paste0(nefin_bio_stats$mean_biomass, " ± ", nefin_bio_stats$sd_biomass),
+    paste0(nefin_bio_stats$mean_biomass, " +/- ", nefin_bio_stats$sd_biomass),
     as.character(nefin_bio_stats$median_biomass),
     as.character(nefin_bio_stats$sd_biomass),
     as.character(nefin_bio_stats$p95_biomass),
@@ -109,13 +109,13 @@ table_A3 <- data.frame(
 cat("Table A3:\n")
 print(table_A3)
 write_csv(table_A3, file.path(out_dir, "tableA3_dataset_comparison_fixed.csv"))
-cat("  ✓ Saved tableA3_dataset_comparison_fixed.csv\n\n")
+cat("  ok Saved tableA3_dataset_comparison_fixed.csv\n\n")
 
 # =============================================================================
-# FIX 2 — TABLE C3: Plot metrics side-by-side (correct pivot)
+# FIX 2 -- TABLE C3: Plot metrics side-by-side (correct pivot)
 # =============================================================================
 
-cat("── Fix 2: Table C3 corrected pivot ─────────────────────────────\n")
+cat("-- Fix 2: Table C3 corrected pivot -----------------------------\n")
 
 # The problem: pivot_wider fails cleanly when n differs between datasets.
 # Fix: drop n before pivoting, then re-join it separately, or just reshape manually.
@@ -129,7 +129,7 @@ table_C3 <- plot_quant %>%
                          "pct_large_trees" = "% stems that are large trees",
                          "qmd_cm" = "Quadratic mean diameter (cm)"
   )) %>%
-  select(-n) %>% # drop n — it differs by dataset, breaks wide join
+  select(-n) %>% # drop n -- it differs by dataset, breaks wide join
   pivot_wider(
     names_from  = dataset,
     values_from = c(q50, q90, q95, q99),
@@ -150,23 +150,23 @@ table_C3 <- plot_quant %>%
     P99_diff     = round(NEFIN_q99 - FIA_q99, 1)
   )
 
-cat("Table C3 (fixed — side-by-side):\n")
+cat("Table C3 (fixed -- side-by-side):\n")
 print(table_C3)
 write_csv(table_C3, file.path(out_dir, "tableC3_plot_metrics_fixed.csv"))
-cat("  ✓ Saved tableC3_plot_metrics_fixed.csv\n\n")
+cat("  ok Saved tableC3_plot_metrics_fixed.csv\n\n")
 
 # =============================================================================
-# FIX 3 — FIG D1: Add common names to species forest plot
+# FIX 3 -- FIG D1: Add common names to species forest plot
 # =============================================================================
 
-cat("── Fix 3: Fig D1 with common names ─────────────────────────────\n")
+cat("-- Fix 3: Fig D1 with common names -----------------------------\n")
 
 # Build latin -> common name lookup
 # Sources: species_tail_enrichment_ecdf has common names for 12 key species
 # Remaining species mapped manually from standard USDA PLANTS / FIA species codes
 common_name_lookup <- tribble(
   ~species,                    ~common_name,
-  # ── NEFIN advantage species ──────────────────────────────────────────────
+  # -- NEFIN advantage species ----------------------------------------------
   "carya cordiformis", "Bitternut hickory",
   "acer platanoides", "Norway maple",
   "liriodendron tulipifera", "Tulip poplar",
@@ -187,7 +187,7 @@ common_name_lookup <- tribble(
   "fraxinus americana","White ash",
   "fagus grandifolia", "American beech",
   "acer saccharum","Sugar maple",
-  # ── FIA advantage species ────────────────────────────────────────────────
+  # -- FIA advantage species ------------------------------------------------
   "castanea dentata","American chestnut",
   "populus deltoides","Eastern cottonwood",
   "quercus bicolor","Swamp white oak",
@@ -203,7 +203,7 @@ common_name_lookup <- tribble(
   "quercus rubra", "Northern red oak",
   "juniperus virginiana", "Eastern red cedar",
   "pinus strobus", "Eastern white pine",
-  # ── Additional species ───────────────────────────────────────────────────
+  # -- Additional species ---------------------------------------------------
   "larix laricina","Tamarack",
   "populus grandidentata","Bigtooth aspen",
   "nyssa sylvatica","Black tupelo",
@@ -249,13 +249,13 @@ if (nrow(missing) > 0) {
   cat("  all 20 species have common names\n")
 }
 
-# ── Figure D1 (fixed) ────────────────────────────────────────────────────────
+# -- Figure D1 (fixed) --------------------------------------------------------
 # Latin name labels placed at fixed x positions on each side so they
 # never get clipped regardless of how large the point value is.
 
 # Fixed label x positions: just inside the plot limits
-NEFIN_label_x <-  46   # right side — all NEFIN-advantage latin names go here
-FIA_label_x   <- 46   # left side  — all FIA-advantage latin names go here
+NEFIN_label_x <-  46   # right side -- all NEFIN-advantage latin names go here
+FIA_label_x   <- 46   # left side  -- all FIA-advantage latin names go here
 
 sp_nefin <- sp_plot_data %>% filter(direction == "NEFIN advantage")
 sp_fia   <- sp_plot_data %>% filter(direction == "FIA advantage")
@@ -309,10 +309,10 @@ fig_D1_fixed <- ggplot(
   scale_y_continuous(limits = c(-55, 55), breaks = seq(-40, 40, 20)) +
   coord_flip() +
   labs(
-    title = "Species P99 DBH difference: NEFIN − FIA (cm)",
+    title = "Species P99 DBH difference: NEFIN - FIA (cm)",
     subtitle = "Error bars = 95% bootstrap CI. Italic = Latin name.",
     x = NULL,
-    y  = "P99 DBH difference (cm)  [NEFIN − FIA]"
+    y  = "P99 DBH difference (cm)  [NEFIN - FIA]"
   ) +
   theme_minimal(base_size = 12) +
   theme(
@@ -358,13 +358,13 @@ library(dplyr)
 library(ggplot2)
 library(patchwork)
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+# -- Paths ---------------------------------------------------------------------
 fia_path   <- "data/processed/fia_complete.csv"
 nefin_path <- "data/processed/nefin_complete.csv"
 out_path   <- "manuscript_figures/main/fig1_three_bias_panels.png"
 dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 
-# ── Load data ─────────────────────────────────────────────────────────────────
+# -- Load data -----------------------------------------------------------------
 fia   <- read.csv(fia_path,   stringsAsFactors = FALSE)
 nefin <- read.csv(nefin_path, stringsAsFactors = FALSE)
 
@@ -377,12 +377,12 @@ nefin$state <- state_map[as.character(nefin$STATECD)]
 # State order: CT MA ME NH NY RI VT
 state_levels <- c("CT", "MA", "ME", "NH", "NY", "RI", "VT")
 
-# ── Shared colour palette ─────────────────────────────────────────────────────
+# -- Shared colour palette -----------------------------------------------------
 col_fia   <- "#d62728"   # red
 col_nefin <- "#1f77b4"   # blue
 alpha_fill <- 0.35
 
-# ── Shared theme ─────────────────────────────────────────────────────────────
+# -- Shared theme -------------------------------------------------------------
 theme_pub <- function() {
   theme_classic(base_size = 11) +
     theme(
@@ -398,7 +398,7 @@ theme_pub <- function() {
 }
 
 # =============================================================================
-# PANEL A — Geographic bias
+# PANEL A -- Geographic bias
 # =============================================================================
 geo_fia <- fia %>%
   count(state) %>%
@@ -436,7 +436,7 @@ pA <- ggplot(geo_data, aes(x = state, y = pct, fill = dataset)) +
   theme(legend.position = c(0.15, 0.88))
 
 # =============================================================================
-# PANEL B — Structural bias (biomass density)
+# PANEL B -- Structural bias (biomass density)
 # =============================================================================
 fia_med   <- median(fia$biomass,   na.rm = TRUE)
 nefin_med <- median(nefin$biomass, na.rm = TRUE)
@@ -482,7 +482,7 @@ pB <- ggplot(bio_data, aes(x = biomass, fill = dataset, colour = dataset)) +
   theme(legend.position = c(0.80, 0.90))
 
 # =============================================================================
-# PANEL C — Environmental / spatial bias (latitude density)
+# PANEL C -- Environmental / spatial bias (latitude density)
 # =============================================================================
 
 # State label x-positions (approximate centroid latitudes)
@@ -510,7 +510,7 @@ pC <- ggplot(lat_data, aes(x = lat, fill = dataset, colour = dataset)) +
            y     = rep(-0.025, 6),
            label = c("CT", "MA", "ME", "NH", "NY", "VT"),
            size  = 2.5, colour = "grey45", face = "bold") +
-  # NEFIN concentration annotation — VT + NH together = 69% of plots
+  # NEFIN concentration annotation -- VT + NH together = 69% of plots
   annotate("text",
            x = 45.1, y = 0.52,
            label = "VT + NH dominate\n(69% of NEFIN plots)",

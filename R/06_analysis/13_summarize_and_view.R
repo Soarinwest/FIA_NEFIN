@@ -22,7 +22,7 @@ aug_hex_path <- "data/processed/augmented_hex_assignments.csv"
 
 check_file <- function(path) {
   if (!file.exists(path)) {
-    cat("  ⚠ Missing:", path, "\n")
+    cat("  WARNING Missing:", path, "\n")
     return(FALSE)
   }
   return(TRUE)
@@ -99,7 +99,7 @@ if (length(points) > 0) {
     ggsave(map_file, p_map, width = 8, height = 6, dpi = 150)
     cat("Saved map:", map_file, "\n")
   }, error = function(e) {
-    cat("  ⚠ ggplot2 plotting failed:", conditionMessage(e), "\n")
+    cat("  WARNING ggplot2 plotting failed:", conditionMessage(e), "\n")
     cat("  Falling back to base R plotting. Consider updating ggplot2/rlang/vctrs packages.\n")
     png(map_file, width = 8, height = 6, units = "in", res = 150)
     cols <- as.integer(as.factor(pts_combined$dataset))
@@ -122,7 +122,7 @@ if (length(points) > 0) {
       ggsave(state_map_file, p_state, width = 8, height = 6, dpi = 150)
       cat("Saved state-colored map:", state_map_file, "\n")
     }, error = function(e) {
-      cat("  ⚠ ggplot2 state map failed:", conditionMessage(e), "\n")
+      cat("  WARNING ggplot2 state map failed:", conditionMessage(e), "\n")
       cat("  Falling back to base R state-colored map.\n")
       png(state_map_file, width = 8, height = 6, units = "in", res = 150)
       cols <- as.integer(as.factor(pts_combined$state))
@@ -151,7 +151,7 @@ if (have_baseline || have_aug_cov) {
     ggsave(hist_file, p_hist, width = 8, height = 5, dpi = 150)
     cat("Saved histogram:", hist_file, "\n")
   }, error = function(e) {
-    cat("  ⚠ ggplot2 histogram failed:", conditionMessage(e), "\n")
+    cat("  WARNING ggplot2 histogram failed:", conditionMessage(e), "\n")
     cat("  Falling back to base R histogram.\n")
     png(hist_file, width = 8, height = 5, units = "in", res = 150)
     hist(df_plot$biomass, breaks = 50, col = "grey", main = "Biomass distribution", xlab = "Biomass (Mg/ha)")
@@ -177,7 +177,7 @@ if ((have_baseline && "ndvi_modis" %in% names(baseline)) || (have_aug_cov && "nd
     ggsave(sc_file, p_sc, width = 7, height = 5, dpi = 150)
     cat("Saved scatter:", sc_file, "\n")
   }, error = function(e) {
-    cat("  ⚠ ggplot2 scatter failed:", conditionMessage(e), "\n")
+    cat("  WARNING ggplot2 scatter failed:", conditionMessage(e), "\n")
     cat("  Falling back to base R scatter plot.\n")
     png(sc_file, width = 7, height = 5, units = "in", res = 150)
     cols <- as.integer(as.factor(df_sc$dataset))

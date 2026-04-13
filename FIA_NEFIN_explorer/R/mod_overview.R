@@ -48,26 +48,19 @@ overview_ui <- function(id) {
             " - not as interchangeable data sources, but as",
             " distinct sampling distributions over the same landscape."
           ),
-          layout_columns(
-            col_widths = c(6, 6),
-            div(
-              h6("FIA (Forest Inventory and Analysis)", style = "color:#3b82f6;"),
-              p(class = "small",
-                "A probability-sampled, spatially representative dataset optimized",
-                " for unbiased population inference. 7,345 plots across 7 NE states.",
-                " Coordinates are administratively fuzzed up to 1 mile."
-              )
+          tags$dl(
+            tags$dt(style = "color:#3b82f6;", "FIA (Forest Inventory and Analysis)"),
+            tags$dd(class = "small mb-2",
+              "Probability-sampled, spatially representative. 7,345 plots across 7 NE states.",
+              " Coordinates administratively fuzzed up to 1 mile."
             ),
-            div(
-              h6("NEFIN (Northeast Forest Inventory Network)", style = "color:#f59e0b;"),
-              p(class = "small",
-                "A targeted dataset with high structural fidelity in rare,",
-                " high-biomass forest conditions. 457 plots, 93.7% measured in 2024.",
-                " True GPS coordinates, no fuzzing."
-              )
+            tags$dt(style = "color:#f59e0b;", "NEFIN (Northeast Forest Inventory Network)"),
+            tags$dd(class = "small mb-2",
+              "Targeted dataset with high structural fidelity in rare, high-biomass forests.",
+              " 457 plots, 93.7% measured in 2024. True GPS coordinates, no fuzzing."
             )
           ),
-          h6("Core Question", class = "mt-3"),
+          h6("Core Question"),
           p(
             "How does the distribution of training data affect",
             " model bias, error structure, and ability to generalize across feature space",
@@ -135,23 +128,15 @@ overview_ui <- function(id) {
         card_body(
           tags$ul(
             class = "small",
-            tags$li(strong("Multi-scale aggregation: "),
-              "100 ha to 100,000 ha hexagon grids (DGGRID H3)"),
-            tags$li(strong("Controlled experiments: "),
-              "FIA-only, NEFIN-only, and Pooled training scenarios"),
-            tags$li(strong("Spatial cross-validation: "),
-              "25 km block CV, 10 km buffer, 10 folds, seed 42"),
-            tags$li(strong("Distributional analysis: "),
-              "Quantile comparisons, tail enrichment, ECDFs"),
-            tags$li(strong("Monte Carlo uncertainty: "),
-              "100 jittered coordinate draws per FIA plot"),
-            tags$li(strong("Models: "),
-              "Random Forest and XGBoost at fine (10m) and coarse (250m) scales"),
-            tags$li(strong("Top predictor: "),
-              "ETH Global Canopy Height 2020 (100% importance in all models)")
+            tags$li("Multi-scale aggregation from 100 ha to 100,000 ha hexagon grids (DGGRID H3)"),
+            tags$li("Controlled experiments with FIA-only, NEFIN-only, and Pooled training scenarios"),
+            tags$li("Spatial cross-validation with 25 km blocks, 10 km buffer, 10 folds, seed 42"),
+            tags$li("Distributional analysis including quantile comparisons, tail enrichment, and ECDFs"),
+            tags$li("Monte Carlo uncertainty simulation with 100 jittered coordinate draws per FIA plot"),
+            tags$li("Random Forest and XGBoost models at fine (10m) and coarse (250m) scales"),
+            tags$li("ETH Global Canopy Height 2020 is the top predictor at 100% importance in all models")
           ),
-          hr(),
-          h6("Takeaway"),
+          h6("Takeaway", class = "mt-3"),
           tags$blockquote(
             style = "border-left:3px solid #14b8a6; padding-left:12px; color:#94a3b8; font-style:italic;",
             "In spatial modeling, what your data represent matters more",

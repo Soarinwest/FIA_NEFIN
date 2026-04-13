@@ -263,7 +263,7 @@ fia_plot_metrics <- fia_plot_metrics %>%
 plot_edge_metrics <- bind_rows(fia_plot_metrics, nefin_plot_metrics)
 
 write_csv(plot_edge_metrics, file.path(out_dir, "plot_edge_metrics.csv"))
-message("✓ Wrote: ", file.path(out_dir, "plot_edge_metrics.csv"))
+message("ok Wrote: ", file.path(out_dir, "plot_edge_metrics.csv"))
 
 # -----------------------------------------------------------------------------
 # 4) Distribution comparison: quantile table + ECDF figures
@@ -286,7 +286,7 @@ quantiles_by_dataset <- plot_edge_metrics %>%
   )
 
 write_csv(quantiles_by_dataset, file.path(out_dir, "quantiles_by_dataset.csv"))
-message("✓ Wrote: ", file.path(out_dir, "quantiles_by_dataset.csv"))
+message("ok Wrote: ", file.path(out_dir, "quantiles_by_dataset.csv"))
 
 # ECDF plots for a few headline metrics
 ecdf_metrics <- c("p95_dbh","pct_ba_large","mortality_ratio","cv_dbh")
@@ -301,7 +301,7 @@ for (m in ecdf_metrics) {
   ggsave(filename = file.path(fig_dir, paste0("ecdf_", m, ".png")), plot = p, width = 7, height = 4, dpi = 200)
 }
 
-message("✓ Wrote ECDF figures to: ", fig_dir)
+message("ok Wrote ECDF figures to: ", fig_dir)
 
 # -----------------------------------------------------------------------------
 # 5) Tail analysis: % NEFIN plots exceeding FIA 95th percentiles
@@ -321,7 +321,7 @@ tail_exceedance <- plot_edge_metrics %>%
   mutate(metric = str_replace(metric, "^exceed_", ""))
 
 write_csv(tail_exceedance, file.path(out_dir, "tail_exceedance.csv"))
-message("✓ Wrote: ", file.path(out_dir, "tail_exceedance.csv"))
+message("ok Wrote: ", file.path(out_dir, "tail_exceedance.csv"))
 
 # -----------------------------------------------------------------------------
 # 6) Forest typology (thresholds learned from FIA distribution)
@@ -357,7 +357,7 @@ forest_state_frequencies <- plot_typology %>%
   ungroup()
 
 write_csv(forest_state_frequencies, file.path(out_dir, "forest_state_frequencies.csv"))
-message("✓ Wrote: ", file.path(out_dir, "forest_state_frequencies.csv"))
+message("ok Wrote: ", file.path(out_dir, "forest_state_frequencies.csv"))
 
 p_state <- ggplot(forest_state_frequencies, aes(x = forest_state, y = pct, fill = dataset)) +
   geom_col(position = "dodge") +
@@ -429,7 +429,7 @@ if (length(existing_preds) == 0) {
     )
   
   write_csv(error_by_strata, file.path(out_dir, "error_by_strata.csv"))
-  message("✓ Wrote: ", file.path(out_dir, "error_by_strata.csv"))
+  message("ok Wrote: ", file.path(out_dir, "error_by_strata.csv"))
   
   # Edge score (standardized composite)
   eval_df2 <- eval_df %>%
@@ -448,7 +448,7 @@ if (length(existing_preds) == 0) {
   sink(file.path(out_dir, "edge_interaction_model_summary.txt"))
   print(summary(fit))
   sink()
-  message("✓ Wrote: ", file.path(out_dir, "edge_interaction_model_summary.txt"))
+  message("ok Wrote: ", file.path(out_dir, "edge_interaction_model_summary.txt"))
   
   # Quick viz: abs error vs edge score
   p_err <- ggplot(eval_df2, aes(x = edge_score, y = abs_err, color = dataset)) +
@@ -459,7 +459,7 @@ if (length(existing_preds) == 0) {
     labs(title = "Prediction Absolute Error vs Edge Score", x = "Edge score (z)", y = "|error|")
   
   ggsave(file.path(fig_dir, "abs_error_vs_edge_score.png"), p_err, width = 8, height = 4.5, dpi = 200)
-  message("✓ Wrote: ", file.path(fig_dir, "abs_error_vs_edge_score.png"))
+  message("ok Wrote: ", file.path(fig_dir, "abs_error_vs_edge_score.png"))
 }
 
 message("\nDONE.\nOutputs in: ", out_dir)

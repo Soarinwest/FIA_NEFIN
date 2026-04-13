@@ -22,9 +22,9 @@ pred_dir <- "data/predictions/phase4/scenario_comparison"
 fig_dir <- file.path(pred_dir, "figures")
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  VISUALIZING 10M SCENARIO COMPARISON (CRS FIXED)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD PREDICTIONS AND FIX CRS
@@ -44,33 +44,33 @@ fix_crs <- function(r) {
 if (file.exists(file.path(pred_dir, "biomass_10m_fia_only.tif"))) {
   predictions$fia <- rast(file.path(pred_dir, "biomass_10m_fia_only.tif"))
   predictions$fia <- fix_crs(predictions$fia)
-  cat("  ✓ FIA only (CRS fixed)\n")
+  cat("  ok FIA only (CRS fixed)\n")
 }
 
 if (file.exists(file.path(pred_dir, "biomass_10m_nefin_only.tif"))) {
   predictions$nefin <- rast(file.path(pred_dir, "biomass_10m_nefin_only.tif"))
   predictions$nefin <- fix_crs(predictions$nefin)
-  cat("  ✓ NEFIN only (CRS fixed)\n")
+  cat("  ok NEFIN only (CRS fixed)\n")
 }
 
 if (file.exists(file.path(pred_dir, "biomass_10m_pooled.tif"))) {
   predictions$pooled <- rast(file.path(pred_dir, "biomass_10m_pooled.tif"))
   predictions$pooled <- fix_crs(predictions$pooled)
-  cat("  ✓ Pooled (CRS fixed)\n")
+  cat("  ok Pooled (CRS fixed)\n")
 }
 
 if (length(predictions) == 0) {
   stop("No predictions found! Run compare_10m_scenarios.R first.")
 }
 
-cat("\n✓ Loaded", length(predictions), "predictions\n")
+cat("\nok Loaded", length(predictions), "predictions\n")
 
 # Mask non-forest pixels (biomass = 0) to NA for forest-only comparison
-cat("  Masking non-forest pixels (biomass = 0 → NA) for comparison...\n")
+cat("  Masking non-forest pixels (biomass = 0 -> NA) for comparison...\n")
 for (name in names(predictions)) {
   predictions[[name]] <- ifel(predictions[[name]] <= 0, NA, predictions[[name]])
 }
-cat("  ✓ Done\n\n")
+cat("  ok Done\n\n")
 
 # =============================================================================
 # COMMON THEME
@@ -169,7 +169,7 @@ if (length(plots) == 3) {
     bg = "white"
   )
   
-  cat("    ✓ Saved\n")
+  cat("    ok Saved\n")
 }
 
 # =============================================================================
@@ -225,7 +225,7 @@ ggsave(
   bg = "white"
 )
 
-cat("    ✓ Saved\n")
+cat("    ok Saved\n")
 
 # =============================================================================
 # PLOT 3: DIFFERENCE MAP (FIA vs NEFIN)
@@ -268,7 +268,7 @@ if ("fia" %in% names(predictions) && "nefin" %in% names(predictions)) {
     bg = "white"
   )
   
-  cat("    ✓ Saved\n")
+  cat("    ok Saved\n")
 }
 
 # =============================================================================
@@ -313,7 +313,7 @@ p_stats <- ggplot(stats_df, aes(x = Dataset, y = Mean, fill = Dataset)) +
   ) +
   labs(
     title = "Mean Biomass by Training Dataset",
-    subtitle = "Error bars show ± 1 standard deviation",
+    subtitle = "Error bars show +/- 1 standard deviation",
     x = NULL,
     y = "Biomass (Mg/ha)"
   ) +
@@ -324,7 +324,7 @@ p_stats <- ggplot(stats_df, aes(x = Dataset, y = Mean, fill = Dataset)) +
     legend.position = "none"
   ) +
   geom_text(
-    aes(label = paste0(round(Mean, 1), " ± ", round(SD, 1))),
+    aes(label = paste0(round(Mean, 1), " +/- ", round(SD, 1))),
     vjust = -0.5,
     size = 4
   ) +
@@ -339,15 +339,15 @@ ggsave(
   bg = "white"
 )
 
-cat("    ✓ Saved\n")
+cat("    ok Saved\n")
 
 # =============================================================================
 # SUMMARY TABLE
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  SUMMARY STATISTICS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 print(stats_df)
 
@@ -364,14 +364,14 @@ if ("fia" %in% names(predictions) && "nefin" %in% names(predictions)) {
 # SUMMARY
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  VISUALIZATION COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("Created figures:\n")
-cat("  • scenario_comparison_3panel.png\n")
-cat("  • scenario_distribution_comparison.png\n")
-cat("  • difference_fia_vs_nefin.png\n")
-cat("  • scenario_summary_stats.png\n\n")
+cat("  - scenario_comparison_3panel.png\n")
+cat("  - scenario_distribution_comparison.png\n")
+cat("  - difference_fia_vs_nefin.png\n")
+cat("  - scenario_summary_stats.png\n\n")
 
 cat("Output directory:", fig_dir, "\n\n")

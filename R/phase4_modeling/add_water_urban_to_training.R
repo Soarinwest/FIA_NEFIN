@@ -24,7 +24,7 @@ source("R/00_config/PHASE4_config_covariates.R")
 preprocessed_config <- "R/00_config/PHASE4_config_covariates_PREPROCESSED.R"
 if (file.exists(preprocessed_config)) {
   source(preprocessed_config)
-  cat("✓ Loaded PREPROCESSED covariate config\n")
+  cat("ok Loaded PREPROCESSED covariate config\n")
 }
 
 library(terra)
@@ -32,9 +32,9 @@ library(sf)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  ADD WATER & URBAN TRAINING POINTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -49,7 +49,7 @@ RANDOM_SEED <- PHASE4_CONFIG$cv$seed
 
 water_file <- "data/hex/Waterbodies_FeaturesToJSON.geojson"
 
-# AOI shapefile — same boundary all rasters were clipped to
+# AOI shapefile -- same boundary all rasters were clipped to
 AOI_SHAPEFILE <- PHASE4_CONFIG$paths$aoi
 
 # =============================================================================
@@ -66,14 +66,14 @@ if (!file.exists(AOI_SHAPEFILE)) {
 
 aoi <- st_read(AOI_SHAPEFILE, quiet = TRUE)
 aoi <- st_transform(aoi, 5070)
-cat("  ✓ AOI loaded:", nrow(aoi), "features\n")
+cat("  ok AOI loaded:", nrow(aoi), "features\n")
 
 # Get active covariates from config
 active_covs <- Filter(function(x) !is.null(x$active) && x$active, COVARIATES)
 fine_covs <- Filter(function(x) x$scale == "fine", active_covs)
 coarse_covs <- Filter(function(x) x$scale == "coarse", active_covs)
 
-cat("  ✓ Covariates:", length(active_covs),
+cat("  ok Covariates:", length(active_covs),
     "(", length(fine_covs), "fine +", length(coarse_covs), "coarse)\n\n")
 
 # =============================================================================
@@ -96,7 +96,7 @@ all_cov_cols <- c(covariates_10m, covariates_250m)
 ref_sf <- st_as_sf(ref_data, coords = c("lon", "lat"), crs = 4326)
 training_extent <- st_bbox(st_transform(ref_sf, 5070))
 
-cat("  ✓", nrow(ref_data), "reference points,", length(all_cov_cols), "covariates\n\n")
+cat("  ok", nrow(ref_data), "reference points,", length(all_cov_cols), "covariates\n\n")
 
 # =============================================================================
 # STEP 2: SAMPLE WATER POINTS (CLIPPED TO AOI)
@@ -107,23 +107,23 @@ cat("Step 2: Sampling water points (clipped to AOI)...\n")
 water_locations <- NULL
 
 if (!file.exists(water_file)) {
-  cat("  ⚠ Water layer not found:", water_file, "\n\n")
+  cat("  WARNING Water layer not found:", water_file, "\n\n")
 } else {
   water <- st_read(water_file, quiet = TRUE)
   water <- st_transform(water, 5070)
   cat("  Raw water features:", nrow(water), "\n")
   
-  # Clip to AOI — ensures all points fall within raster coverage
+  # Clip to AOI -- ensures all points fall within raster coverage
   water_clipped <- st_intersection(water, st_union(aoi))
   water_clipped <- st_make_valid(water_clipped)
   
   # Remove tiny slivers from intersection
   water_areas <- as.numeric(st_area(water_clipped))
-  water_clipped <- water_clipped[water_areas > 100, ]  # > 100 m²
+  water_clipped <- water_clipped[water_areas > 100, ]  # > 100 m^2
   cat("  After AOI clip:", nrow(water_clipped), "features\n")
   
   if (nrow(water_clipped) == 0) {
-    cat("  ⚠ No water features within AOI!\n\n")
+    cat("  WARNING No water features within AOI!\n\n")
   } else {
     set.seed(RANDOM_SEED)
     water_points <- st_sample(water_clipped, size = N_WATER_POINTS, type = "random")
@@ -139,7 +139,7 @@ if (!file.exists(water_file)) {
       type = "water",
       point_id = paste0("WATER_", seq_len(nrow(coords_5070)))
     )
-    cat("  ✓ Sampled", nrow(water_locations), "water points\n\n")
+    cat("  ok Sampled", nrow(water_locations), "water points\n\n")
   }
 }
 
@@ -162,7 +162,7 @@ for (path in ndvi_paths) {
 }
 
 if (is.null(ndvi_file)) {
-  cat("  ⚠ NDVI not found, skipping urban\n\n")
+  cat("  WARNING NDVI not found, skipping urban\n\n")
 } else {
   cat("  Using:", basename(ndvi_file), "\n")
   
@@ -194,10 +194,10 @@ if (is.null(ndvi_file)) {
         type = "urban",
         point_id = paste0("URBAN_", seq_len(nrow(urban_coords)))
       )
-      cat("  ✓ Sampled", nrow(urban_locations), "urban points\n\n")
+      cat("  ok Sampled", nrow(urban_locations), "urban points\n\n")
     }
   }, error = function(e) {
-    cat("  ✗ Error:", e$message, "\n\n")
+    cat("  FAIL Error:", e$message, "\n\n")
   })
 }
 
@@ -217,7 +217,7 @@ cat("  Urban:", sum(all_locations$type == "urban"), "\n\n")
 # =============================================================================
 # Uses the exact same approach as PHASE4_extract_covariates.R:
 #   - File paths from COVARIATES config
-#   - WGS84 points → terra::extract handles CRS
+#   - WGS84 points -> terra::extract handles CRS
 #   - Verbose reporting per covariate
 
 cat("Step 5: Extracting covariates...\n\n")
@@ -234,7 +234,7 @@ for (key in names(active_covs)) {
   if (!col_name %in% all_cov_cols) next
   
   if (!file.exists(cov$path)) {
-    cat("  ✗", col_name, "— file not found:", basename(cov$path), "\n")
+    cat("  FAIL", col_name, "-- file not found:", basename(cov$path), "\n")
     next
   }
   
@@ -248,14 +248,14 @@ for (key in names(active_covs)) {
     n_ok <- length(vals) - n_na
     
     if (n_na == 0) {
-      cat(sprintf("  ✓ %-25s  %d/%d  [%.3f, %.3f]\n",
+      cat(sprintf("  ok %-25s  %d/%d  [%.3f, %.3f]\n",
                   col_name, n_ok, length(vals),
                   min(vals, na.rm = TRUE), max(vals, na.rm = TRUE)))
     } else {
       cat(sprintf("  ~ %-25s  %d/%d  (%d NA)\n", col_name, n_ok, length(vals), n_na))
     }
   }, error = function(e) {
-    cat(sprintf("  ✗ %-25s  ERROR: %s\n", col_name, e$message))
+    cat(sprintf("  FAIL %-25s  ERROR: %s\n", col_name, e$message))
   })
 }
 
@@ -293,7 +293,7 @@ cat("    Water:", sum(output_df$type == "water"), "\n")
 cat("    Urban:", sum(output_df$type == "urban"), "\n\n")
 
 if (nrow(output_df) < 50) {
-  cat("  ⚠ Very few complete points! Check:\n")
+  cat("  WARNING Very few complete points! Check:\n")
   cat("    - Is the AOI shapefile correct?\n")
   cat("    - Do rasters cover the AOI?\n")
   cat("    - Try increasing N_WATER_POINTS to compensate\n\n")
@@ -311,7 +311,7 @@ output_df$dataset <- output_df$type
 output_df$lat_for_extraction <- output_df$lat
 output_df$lon_for_extraction <- output_df$lon
 
-cat("  ✓ Done\n\n")
+cat("  ok Done\n\n")
 
 # =============================================================================
 # STEP 8: SPLIT TRAIN/TEST
@@ -337,7 +337,7 @@ cat("Step 9: Adding to existing train/test files...\n\n")
 
 add_and_save <- function(original_file, new_points, output_file) {
   if (!file.exists(original_file)) {
-    cat("  ⚠", basename(original_file), "not found\n")
+    cat("  WARNING", basename(original_file), "not found\n")
     return(invisible(NULL))
   }
   
@@ -358,7 +358,7 @@ add_and_save <- function(original_file, new_points, output_file) {
   enhanced <- bind_rows(original, new_aligned[, names(original)])
   write_csv(enhanced, output_file)
   
-  cat("  ✓", basename(output_file), "\n")
+  cat("  ok", basename(output_file), "\n")
   cat("    Forest:", sum(enhanced$biomass > 0, na.rm = TRUE),
       " | Water/urban:", sum(enhanced$biomass == 0, na.rm = TRUE),
       " | Total:", nrow(enhanced), "\n")
@@ -381,9 +381,9 @@ for (file in c("train_fia_only.csv", "train_nefin_only.csv",
 # STEP 10: VERIFICATION
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  VERIFICATION\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 all_pass <- TRUE
 
@@ -397,13 +397,13 @@ for (file in c("train_fia_only.csv", "train_nefin_only.csv",
   cov_check <- intersect(all_cov_cols, names(df))
   
   if (nrow(wu) == 0) {
-    cat("  ✗", basename(ef), "— no water/urban points\n")
+    cat("  FAIL", basename(ef), "-- no water/urban points\n")
     all_pass <- FALSE
     next
   }
   
   wu_complete <- sum(complete.cases(wu[, cov_check]))
-  status <- if (wu_complete == nrow(wu)) "✓ PASS" else "✗ FAIL"
+  status <- if (wu_complete == nrow(wu)) "ok PASS" else "FAIL FAIL"
   if (wu_complete != nrow(wu)) all_pass <- FALSE
   
   cat(sprintf("  %s  %-40s  wu=%d  complete=%d/%d\n",
@@ -412,16 +412,16 @@ for (file in c("train_fia_only.csv", "train_nefin_only.csv",
 
 cat("\n")
 if (all_pass) {
-  cat("  ✓ ALL PASS — ready for model training\n\n")
+  cat("  ok ALL PASS -- ready for model training\n\n")
 } else {
-  cat("  ⚠ SOME FAILED — check extraction output above\n\n")
+  cat("  WARNING SOME FAILED -- check extraction output above\n\n")
 }
 
 # =============================================================================
 # DONE
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  NEXT: Retrain models\n")
 cat("  Rscript R/phase4_modeling/PHASE4_02_spatial_cv.R\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n") 
+cat("===================================================================\n\n") 

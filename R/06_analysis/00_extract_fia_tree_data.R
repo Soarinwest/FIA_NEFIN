@@ -9,9 +9,9 @@ library(RSQLite)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  EXTRACT FIA TREE DATA FROM DATABASE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # SETTINGS
@@ -37,9 +37,9 @@ MIN_DBH <- 5.0
 cat("Database files to process:\n")
 for (db in DB_FILES) {
   if (file.exists(db)) {
-    cat("  ✓", db, "\n")
+    cat("  ok", db, "\n")
   } else {
-    cat("  ✗", db, "(not found)\n")
+    cat("  FAIL", db, "(not found)\n")
   }
 }
 cat("\n")
@@ -61,7 +61,7 @@ for (db_file in DB_FILES) {
   # required tables
   tables <- dbListTables(con)
   if (!all(c("TREE", "PLOT") %in% tables)) {
-    cat("  ⚠ Missing required tables (TREE/PLOT), skipping\n\n")
+    cat("  WARNING Missing required tables (TREE/PLOT), skipping\n\n")
     dbDisconnect(con)
     next
   }
@@ -147,9 +147,9 @@ if (file.exists(ref_species_file)) {
   fia_trees <- fia_trees %>%
     left_join(ref_species, by = "SPCD")
   
-  cat("  ✓ Species names added\n\n")
+  cat("  ok Species names added\n\n")
 } else {
-  cat("⚠ REF_SPECIES.csv not found, species codes only\n\n")
+  cat("WARNING REF_SPECIES.csv not found, species codes only\n\n")
   fia_trees$COMMON_NAME <- paste0("Species_", fia_trees$SPCD)
 }
 
@@ -164,7 +164,7 @@ output_file <- file.path(output_dir, "fia_tree.csv")
 
 write_csv(fia_trees, output_file)
 
-cat("✓ Saved FIA tree data:", output_file, "\n")
+cat("ok Saved FIA tree data:", output_file, "\n")
 cat("  Rows:", nrow(fia_trees), "\n")
 cat("  Columns:", ncol(fia_trees), "\n\n")
 
@@ -172,9 +172,9 @@ cat("  Columns:", ncol(fia_trees), "\n\n")
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  SUMMARY\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 summary_stats <- fia_trees %>%
   group_by(STATE) %>%

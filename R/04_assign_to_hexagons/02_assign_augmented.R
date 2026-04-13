@@ -11,9 +11,9 @@ library(sf)
 library(dplyr)
 library(readr)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  ASSIGN AUGMENTED TO HEXAGONS (LONG FORMAT)\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # =============================================================================
 # LOAD AUGMENTED DATA
@@ -45,7 +45,7 @@ for (scale in CONFIG$hex_scales) {
   # Load hex grid
   hex_path <- scale$path
   if (!file.exists(hex_path)) {
-    cat("  ⚠ Grid not found, skipping\n\n")
+    cat("  WARNING Grid not found, skipping\n\n")
     next
   }
   
@@ -57,7 +57,7 @@ for (scale in CONFIG$hex_scales) {
   hex_crs <- st_crs(hex_grid)
   
   if (is.na(hex_crs)) {
-    cat("  ⚠ Hex grid missing CRS, setting to match augmented\n")
+    cat("  WARNING Hex grid missing CRS, setting to match augmented\n")
     st_crs(hex_grid) <- aug_crs
   } else if (!identical(hex_crs$wkt, aug_crs$wkt)) {
     cat("  Transforming hex grid to analysis CRS\n")
@@ -66,7 +66,7 @@ for (scale in CONFIG$hex_scales) {
   
   # Verify CRS match
   if (!st_crs(hex_grid) == st_crs(augmented_sf)) {
-    cat("  ⚠ CRS still don't match, forcing alignment\n")
+    cat("  WARNING CRS still don't match, forcing alignment\n")
     st_crs(hex_grid) <- st_crs(augmented_sf)
   }
   
@@ -111,7 +111,7 @@ cat("  Unique plots:", n_distinct(augmented_hex_long$CN), "\n\n")
 output_path <- "data/processed/augmented_hex_assignments.csv"
 write_csv(augmented_hex_long, output_path)
 
-cat("✓ Saved:", output_path, "\n")
+cat("ok Saved:", output_path, "\n")
 cat("  Rows:", nrow(augmented_hex_long), "\n")
 cat("  Format: LONG (matches baseline)\n\n")
 

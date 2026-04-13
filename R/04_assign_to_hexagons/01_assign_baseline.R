@@ -22,9 +22,9 @@ library(dplyr)
 library(readr)
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE D - STEP 1: ASSIGN BASELINE TO HEXAGONS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Load baseline
 baseline <- read_csv("data/processed/baseline.csv", show_col_types = FALSE)
@@ -69,5 +69,5 @@ all_assignments <- bind_rows(assignments_list)
 output_path <- "data/processed/baseline_hex_assignments.csv"
 write_csv(all_assignments, output_path)
 
-cat("\n✓ Saved:", output_path, "\n")
+cat("\nok Saved:", output_path, "\n")
 cat("Next: R/04_assign_to_hexagons/02_assign_augmented.R\n\n")

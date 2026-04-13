@@ -23,9 +23,9 @@ library(viridis)
 library(rnaturalearth)  # For base maps
 
 cat("\n")
-cat("═══════════════════════════════════════════════════════════════════\n")
+cat("===================================================================\n")
 cat("  PHASE 4: SPATIAL VALIDATION PLOTS\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Create output directories
 dir.create(paste0(PHASE4_CONFIG$output$dir_figures, "/spatial_cv"), 
@@ -47,7 +47,7 @@ cv_files <- list.files(PHASE4_CONFIG$output$dir_cv,
 cv_summary <- read_csv(file.path(PHASE4_CONFIG$output$dir_cv, "cv_summary.csv"),
                        show_col_types = FALSE)
 
-cat("  ✓ Loaded", nrow(cv_summary), "model results\n\n")
+cat("  ok Loaded", nrow(cv_summary), "model results\n\n")
 
 # Load all fold predictions
 pred_files <- list.files(file.path(PHASE4_CONFIG$output$dir_cv, "fold_predictions"),
@@ -71,7 +71,7 @@ all_predictions <- lapply(pred_files, function(f) {
   return(df)
 }) %>% bind_rows()
 
-cat("  ✓ Loaded", nrow(all_predictions), "fold predictions\n\n")
+cat("  ok Loaded", nrow(all_predictions), "fold predictions\n\n")
 
 # =============================================================================
 # FIGURE 1: ROC CURVES (All models)
@@ -159,7 +159,7 @@ if (PHASE4_CONFIG$classification$enabled) {
     ggsave(file.path(fig_dir, paste0("ROC_curve_", scale_name, ".png")),
            p_roc, width = 8, height = 8, dpi = 300)
     
-    cat("  ✓ Saved: ROC_curve_", scale_name, ".png\n", sep = "")
+    cat("  ok Saved: ROC_curve_", scale_name, ".png\n", sep = "")
   }
   
   cat("\n")
@@ -250,7 +250,7 @@ if (PHASE4_CONFIG$classification$enabled) {
     ggsave(file.path(fig_dir, paste0("PR_curve_", scale_name, ".png")),
            p_pr, width = 8, height = 8, dpi = 300)
     
-    cat("  ✓ Saved: PR_curve_", scale_name, ".png\n", sep = "")
+    cat("  ok Saved: PR_curve_", scale_name, ".png\n", sep = "")
   }
   
   cat("\n")
@@ -308,9 +308,9 @@ p_cv_rmse <- ggplot(cv_reg_data,
 ggsave(file.path(fig_dir, "Spatial_CV_RMSE_boxplots.png"),
        p_cv_rmse, width = 10, height = 6, dpi = 300)
 
-cat("  ✓ Saved: Spatial_CV_RMSE_boxplots.png\n")
+cat("  ok Saved: Spatial_CV_RMSE_boxplots.png\n")
 
-# Plot R² by fold
+# Plot R^2 by fold
 p_cv_r2 <- ggplot(cv_reg_data,
                   aes(x = scenario, y = r2, fill = scenario)) +
   geom_boxplot(alpha = 0.7) +
@@ -322,10 +322,10 @@ p_cv_r2 <- ggplot(cv_reg_data,
     "pooled" = "#2ca02c"
   )) +
   labs(
-    title = "R² Across Spatial Folds",
+    title = "R^2 Across Spatial Folds",
     subtitle = "Shows consistency of model performance across space",
     x = "Scenario",
-    y = "R²",
+    y = "R^2",
     fill = "Scenario"
   ) +
   ylim(0, 1) +
@@ -339,7 +339,7 @@ p_cv_r2 <- ggplot(cv_reg_data,
 ggsave(file.path(fig_dir, "Spatial_CV_R2_boxplots.png"),
        p_cv_r2, width = 10, height = 6, dpi = 300)
 
-cat("  ✓ Saved: Spatial_CV_R2_boxplots.png\n\n")
+cat("  ok Saved: Spatial_CV_R2_boxplots.png\n\n")
 
 # =============================================================================
 # FIGURE 4: SPATIAL RESIDUAL PATTERNS (Maps)
@@ -383,7 +383,7 @@ for (model_id in unique(all_predictions$model_id)) {
          p_residuals, width = 10, height = 8, dpi = 300)
 }
 
-cat("  ✓ Saved residual maps for all models\n\n")
+cat("  ok Saved residual maps for all models\n\n")
 
 # =============================================================================
 # FIGURE 5: CUMULATIVE DISTRIBUTION (Probability Maps)
@@ -432,7 +432,7 @@ if (PHASE4_CONFIG$classification$enabled) {
     ggsave(file.path(fig_dir, paste0("CDF_probabilities_", scale_name, ".png")),
            p_cdf, width = 10, height = 7, dpi = 300)
     
-    cat("  ✓ Saved: CDF_probabilities_", scale_name, ".png\n", sep = "")
+    cat("  ok Saved: CDF_probabilities_", scale_name, ".png\n", sep = "")
   }
   
   cat("\n")
@@ -467,7 +467,7 @@ p_scale_rmse <- ggplot(comparison_data,
     title = "Scale-Dependent Prediction Accuracy",
     subtitle = "Does coordinate precision matter more at fine scales?",
     x = "Spatial Resolution",
-    y = "RMSE (Mg/ha) ± SD",
+    y = "RMSE (Mg/ha) +/- SD",
     fill = "Scenario"
   ) +
   theme_minimal(base_size = 12) +
@@ -479,7 +479,7 @@ p_scale_rmse <- ggplot(comparison_data,
 ggsave(file.path(fig_dir, "Scale_comparison_RMSE.png"),
        p_scale_rmse, width = 10, height = 6, dpi = 300)
 
-cat("  ✓ Saved: Scale_comparison_RMSE.png\n")
+cat("  ok Saved: Scale_comparison_RMSE.png\n")
 
 # AUC comparison (if available)
 if (PHASE4_CONFIG$classification$enabled && "auc_mean" %in% names(comparison_data)) {
@@ -506,7 +506,7 @@ if (PHASE4_CONFIG$classification$enabled && "auc_mean" %in% names(comparison_dat
       title = "Classification Performance (AUC) by Scale",
       subtitle = "Can we identify high-biomass areas despite fuzzing?",
       x = "Spatial Resolution",
-      y = "AUC (ROC) ± SD",
+      y = "AUC (ROC) +/- SD",
       fill = "Scenario"
     ) +
     theme_minimal(base_size = 12) +
@@ -518,7 +518,7 @@ if (PHASE4_CONFIG$classification$enabled && "auc_mean" %in% names(comparison_dat
   ggsave(file.path(fig_dir, "Scale_comparison_AUC.png"),
          p_scale_auc, width = 10, height = 6, dpi = 300)
   
-  cat("  ✓ Saved: Scale_comparison_AUC.png\n")
+  cat("  ok Saved: Scale_comparison_AUC.png\n")
 }
 
 cat("\n")
@@ -527,25 +527,25 @@ cat("\n")
 # SUMMARY
 # =============================================================================
 
-cat("═══════════════════════════════════════════════════════════════\n")
+cat("===============================================================\n")
 cat("  SPATIAL VALIDATION PLOTS COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════\n\n")
+cat("===============================================================\n\n")
 
 cat("Created figures:\n")
-cat("  • ROC curves (by scale)\n")
-cat("  • Precision-Recall curves (by scale)\n")
-cat("  • Spatial CV boxplots (RMSE & R²)\n")
-cat("  • Spatial residual maps\n")
-cat("  • Cumulative probability distributions\n")
-cat("  • Scale comparison summaries\n\n")
+cat("  - ROC curves (by scale)\n")
+cat("  - Precision-Recall curves (by scale)\n")
+cat("  - Spatial CV boxplots (RMSE & R^2)\n")
+cat("  - Spatial residual maps\n")
+cat("  - Cumulative probability distributions\n")
+cat("  - Scale comparison summaries\n\n")
 
 cat("Location:", fig_dir, "\n\n")
 
 cat("Key interpretations:\n")
-cat("  • AUC > 0.9: Excellent discrimination\n")
-cat("  • AUC 0.7-0.9: Good discrimination\n")
-cat("  • AUC < 0.7: Weak discrimination\n")
-cat("  • Spatial CV boxplots show regional variability\n")
-cat("  • Residual maps reveal spatial patterns in errors\n\n")
+cat("  - AUC > 0.9: Excellent discrimination\n")
+cat("  - AUC 0.7-0.9: Good discrimination\n")
+cat("  - AUC < 0.7: Weak discrimination\n")
+cat("  - Spatial CV boxplots show regional variability\n")
+cat("  - Residual maps reveal spatial patterns in errors\n\n")
 
-cat("═══════════════════════════════════════════════════════════════\n\n")
+cat("===============================================================\n\n")

@@ -13,31 +13,41 @@ distributions_ui <- function(id) {
       class = "bg-dark"
     ),
     card_body(
-      layout_columns(
-        col_widths = c(4, 4, 4),
-        selectInput(ns("dist_var"), "Variable:",
-          choices = c(
-            "Biomass (Mg/ha)"          = "biomass",
-            "NDVI -- Sentinel-2"       = "ndvi_s2",
-            "NDVI -- MODIS"            = "ndvi_modis",
-            "Mean Temperature (deg C)" = "temp_mean",
-            "Annual Precipitation"     = "precip_annual",
-            "Canopy Height (m)"        = "canopy_height",
-            "Elevation (m)"            = "elevation"
-          ),
-          selected = "biomass"
+      selectInput(ns("dist_var"), "Variable:",
+        choices = c(
+          "Biomass (Mg/ha)"          = "biomass",
+          "NDVI - Sentinel-2"        = "ndvi_s2",
+          "NDVI - MODIS"             = "ndvi_modis",
+          "Mean Temperature (deg C)" = "temp_mean",
+          "Annual Precipitation"     = "precip_annual",
+          "Canopy Height (m)"        = "canopy_height",
+          "Elevation (m)"            = "elevation"
         ),
-        checkboxInput(ns("show_overlap"), "Show histogram overlay", value = FALSE),
-        checkboxInput(ns("show_qq"), "Show Q-Q plot", value = FALSE)
+        selected = "biomass",
+        width = "400px"
       ),
       uiOutput(ns("na_warning")),
-      plotlyOutput(ns("ecdf_main"), height = "480px"),
-      conditionalPanel(
-        condition = paste0("input['", ns("show_overlap"), "']"),
-        layout_columns(
-          col_widths = c(6, 6),
-          plotOutput(ns("biomass_hist"), height = "350px"),
-          plotOutput(ns("qq_plot"), height = "350px")
+      navset_card_tab(
+        id = ns("dist_tabs"),
+        nav_panel(
+          title = tagList("ECDF ",
+            tags$span(
+              title = "Empirical cumulative distribution function. Shows the proportion of observations below each value. Useful for comparing distributional shape, spread, and tail behavior between datasets.",
+              style = "cursor:help; color:#64748b;",
+              bsicons::bs_icon("info-circle")
+            )
+          ),
+          plotlyOutput(ns("ecdf_main"), height = "480px")
+        ),
+        nav_panel(
+          title = tagList("Histogram ",
+            tags$span(
+              title = "Overlapping frequency distributions for FIA and NEFIN. Dashed lines mark dataset means. Reveals where the distributions diverge most.",
+              style = "cursor:help; color:#64748b;",
+              bsicons::bs_icon("info-circle")
+            )
+          ),
+          plotOutput(ns("biomass_hist"), height = "480px")
         )
       )
     )
@@ -75,10 +85,8 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
       var_labels[input$dist_var]
     })
 
-    # Helper function to create ECDF plot
-    create_ecdf_plot <- function(data, var, var_label, var_unit = "") {
-
-      # Prepare data based on dataset filter
+    # Helper: prepare plot data based on dataset filter
+    prepare_plot_data <- function(data, var = NULL) {
       if (dataset_filter() == "all") {
         plot_data <- bind_rows(
           data %>% filter(dataset == "FIA")   %>% mutate(dataset_label = "FIA"),
@@ -94,12 +102,20 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
       }
 
       # Remove groups where all values of the variable are NA
-      plot_data <- plot_data %>%
-        group_by(dataset_label) %>%
-        filter(any(!is.na(.data[[var]]))) %>%
-        ungroup()
+      if (!is.null(var)) {
+        plot_data <- plot_data %>%
+          group_by(dataset_label) %>%
+          filter(any(!is.na(.data[[var]]))) %>%
+          ungroup()
+      }
 
-      # If no data remains, show message
+      plot_data
+    }
+
+    # Helper function to create ECDF plot
+    create_ecdf_plot <- function(data, var, var_label, var_unit = "") {
+      plot_data <- prepare_plot_data(data, var)
+
       if (nrow(plot_data) == 0 || all(is.na(plot_data[[var]]))) {
         return(
           plotly_empty() %>%
@@ -107,7 +123,7 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
         )
       }
 
-      # Calculate quantiles for vertical lines (only for groups with data)
+      # Calculate quantiles for vertical lines
       quantiles <- plot_data %>%
         filter(!is.na(.data[[var]])) %>%
         group_by(dataset_label) %>%
@@ -117,23 +133,17 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
           .groups = "drop"
         )
 
-      # Use only colors present in the data
       colors_present <- DATASET_COLORS[unique(plot_data$dataset_label)]
 
-      # Create plot (no title — title is in card_header)
       p <- ggplot(plot_data, aes(x = .data[[var]], color = dataset_label)) +
         stat_ecdf(linewidth = 1.2) +
-        scale_color_manual(
-          values = colors_present,
-          name = "Dataset"
-        ) +
+        scale_color_manual(values = colors_present, name = "Dataset") +
         labs(
           x = paste0(var_label, if (var_unit != "") paste0(" (", var_unit, ")")),
           y = "Cumulative Proportion"
         ) +
         theme_fia_nefin()
 
-      # Add quantile lines if requested
       if (show_ci()) {
         p <- p +
           geom_vline(
@@ -144,15 +154,10 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
           )
       }
 
-      # Convert to plotly — legend below plot to avoid title overlap
       ggplotly(p, tooltip = c("x", "y")) %>%
         layout(
           hovermode = "x unified",
-          legend = list(
-            orientation = "h",
-            y = -0.15,
-            x = 0
-          )
+          legend = list(orientation = "h", y = -0.15, x = 0)
         )
     }
 
@@ -171,99 +176,51 @@ distributions_server <- function(id, filtered_data, dataset_filter, show_ci) {
       }
     })
 
-    # Main ECDF plot (reactive on dist_var)
+    # Main ECDF plot
     output$ecdf_main <- renderPlotly({
-      req(filtered_data())
-      req(input$dist_var)
+      req(filtered_data(), input$dist_var)
       var <- input$dist_var
       unit <- var_units[var]
       label <- gsub(" Distribution", "", var_labels[var])
       create_ecdf_plot(filtered_data(), var, label, unit)
     })
 
-    # Overlapping histogram (biomass only)
+    # Histogram for selected variable
     output$biomass_hist <- renderPlot({
-      req(filtered_data())
+      req(filtered_data(), input$dist_var)
       data <- filtered_data()
+      var <- input$dist_var
 
-      # Prepare data
-      if (dataset_filter() == "all") {
-        plot_data <- bind_rows(
-          data %>% filter(dataset == "FIA") %>% mutate(dataset_label = "FIA"),
-          data %>% filter(dataset == "NEFIN") %>% mutate(dataset_label = "NEFIN")
-        )
-      } else if (dataset_filter() == "pooled") {
-        plot_data <- data %>% mutate(dataset_label = "Pooled")
-      } else {
-        plot_data <- data %>%
-          filter(dataset == toupper(dataset_filter())) %>%
-          mutate(dataset_label = toupper(dataset_filter()))
-      }
+      plot_data <- prepare_plot_data(data, var)
+      req(nrow(plot_data) > 0)
 
       colors_present <- DATASET_COLORS[unique(plot_data$dataset_label)]
 
       # Calculate means
       means <- plot_data %>%
+        filter(!is.na(.data[[var]])) %>%
         group_by(dataset_label) %>%
-        summarise(mean_biomass = mean(biomass, na.rm = TRUE), .groups = "drop")
+        summarise(mean_val = mean(.data[[var]], na.rm = TRUE), .groups = "drop")
 
-      # Plot
-      ggplot(plot_data, aes(x = biomass, fill = dataset_label)) +
+      var_label <- gsub(" Distribution", "", var_labels[var])
+      var_unit  <- var_units[var]
+
+      ggplot(plot_data, aes(x = .data[[var]], fill = dataset_label)) +
         geom_histogram(alpha = 0.5, position = "identity", bins = 50) +
         geom_vline(
           data = means,
-          aes(xintercept = mean_biomass, color = dataset_label),
+          aes(xintercept = mean_val, color = dataset_label),
           linewidth = 1.5,
           linetype = "dashed"
         ) +
         scale_fill_manual(values = colors_present, name = "Dataset") +
         scale_color_manual(values = colors_present, name = "Dataset") +
         labs(
-          x = "Biomass (Mg/ha)",
+          x = paste0(var_label, " (", var_unit, ")"),
           y = "Count",
-          title = "Biomass Distribution Overlap"
+          title = paste0(var_label, " Distribution Overlap")
         ) +
         theme_fia_nefin()
-    })
-
-    # Q-Q plot (only when comparing FIA vs NEFIN)
-    output$qq_plot <- renderPlot({
-      req(filtered_data())
-
-      if (dataset_filter() != "all") {
-        # Show message
-        ggplot() +
-          annotate(
-            "text",
-            x = 0.5, y = 0.5,
-            label = "Q-Q plot only available when\ncomparing FIA and NEFIN",
-            size = 6,
-            color = "gray50"
-          ) +
-          theme_void()
-      } else {
-        data <- filtered_data()
-        fia_biomass <- data %>% filter(dataset == "FIA") %>% pull(biomass)
-        nefin_biomass <- data %>% filter(dataset == "NEFIN") %>% pull(biomass)
-
-        # Create Q-Q plot data
-        qq_data <- tibble(
-          fia = sort(fia_biomass),
-          nefin = sort(nefin_biomass)
-        ) %>%
-          slice(1:min(length(fia_biomass), length(nefin_biomass)))
-
-        # Plot
-        ggplot(qq_data, aes(x = fia, y = nefin)) +
-          geom_point(alpha = 0.3, size = 1) +
-          geom_abline(slope = 1, intercept = 0, color = "red", linewidth = 1, linetype = "dashed") +
-          labs(
-            x = "FIA Biomass Quantiles (Mg/ha)",
-            y = "NEFIN Biomass Quantiles (Mg/ha)",
-            title = "Q-Q Plot: FIA vs NEFIN Biomass"
-          ) +
-          theme_fia_nefin()
-      }
     })
 
   })

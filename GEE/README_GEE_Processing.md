@@ -1,83 +1,83 @@
-# 🛰️ Google Earth Engine Processing Scripts
+# Google Earth Engine Processing Scripts
 ## NEFIN vs FIA Biomass Modeling - Covariate Extraction
 
 This repository contains Google Earth Engine scripts to process remote sensing and topographic layers for comparing NEFIN (precise coordinates) vs FIA (fuzzed coordinates) forest biomass models.
 
 ---
 
-## 📋 **OVERVIEW**
+## **OVERVIEW**
 
 **Study Design**: Test whether coordinate fuzzing affects biomass prediction accuracy at two spatial scales:
 - **Fine scale** (10m Sentinel-2): Where fuzzing should matter
 - **Coarse scale** (250m MODIS): Where fuzzing might not matter
 
-**Time Period**: 2020–2024 (5-year mean composites)
+**Time Period**: 2020-2024 (5-year mean composites)
 
 **Study Region**: Northeastern US (ME, NH, VT, MA, CT, RI, NY)
 
 ---
 
-## 📁 **SCRIPT INVENTORY**
+## **SCRIPT INVENTORY**
 
-### 🌍 **Sentinel-2 Scripts (10m resolution)**
+### **Sentinel-2 Scripts (10m resolution)**
 
 1. **`S2_01_bands_mean_2020_2024.js`**
-   - **Purpose**: Extract individual spectral bands
-   - **Bands**: B2 (Blue), B3 (Green), B4 (Red), B8 (NIR), B11 (SWIR1)
-   - **Temporal Agg**: 5-year MEAN (2020-2024)
-   - **Output**: 5 files @ 10m
+- **Purpose**: Extract individual spectral bands
+- **Bands**: B2 (Blue), B3 (Green), B4 (Red), B8 (NIR), B11 (SWIR1)
+- **Temporal Agg**: 5-year MEAN (2020-2024)
+- **Output**: 5 files @ 10m
 
 2. **`S2_02_indices_mean_2020_2024.js`**
-   - **Purpose**: Calculate spectral indices
-   - **Indices**: EVI, NBR, NDWI
-   - **Temporal Agg**: 5-year MEAN
-   - **Output**: 3 files @ 10m
-   - **Note**: NDVI already processed separately
+- **Purpose**: Calculate spectral indices
+- **Indices**: EVI, NBR, NDWI
+- **Temporal Agg**: 5-year MEAN
+- **Output**: 3 files @ 10m
+- **Note**: NDVI already processed separately
 
 3. **`S2_03_NDVI_stdev_2020_2024.js`**
-   - **Purpose**: NDVI temporal variability
-   - **Metric**: Standard deviation (phenology/disturbance indicator)
-   - **Temporal Agg**: 5-year STDEV
-   - **Output**: 1 file @ 10m
+- **Purpose**: NDVI temporal variability
+- **Metric**: Standard deviation (phenology/disturbance indicator)
+- **Temporal Agg**: 5-year STDEV
+- **Output**: 1 file @ 10m
 
-### 🛰️ **MODIS Scripts (250m resolution)**
+### **MODIS Scripts (250m resolution)**
 
 4. **`MODIS_01_bands_mean_2020_2024.js`**
-   - **Purpose**: Extract individual spectral bands
-   - **Products**: MOD09Q1 (250m) + MOD09A1 (500m→250m)
-   - **Bands**: B1 (Red), B2 (NIR), B3 (Blue), B4 (Green), B6 (SWIR1)
-   - **Temporal Agg**: 5-year MEAN
-   - **Output**: 5 files @ 250m
+- **Purpose**: Extract individual spectral bands
+- **Products**: MOD09Q1 (250m) + MOD09A1 (500m->250m)
+- **Bands**: B1 (Red), B2 (NIR), B3 (Blue), B4 (Green), B6 (SWIR1)
+- **Temporal Agg**: 5-year MEAN
+- **Output**: 5 files @ 250m
 
 5. **`MODIS_02_indices_mean_2020_2024.js`**
-   - **Purpose**: Calculate spectral indices
-   - **Products**: MOD13Q1 (EVI) + MOD09Q1/A1 (NBR, NDWI)
-   - **Indices**: EVI, NBR, NDWI
-   - **Temporal Agg**: 5-year MEAN
-   - **Output**: 3 files @ 250m
-   - **Note**: NDVI already processed separately
+- **Purpose**: Calculate spectral indices
+- **Products**: MOD13Q1 (EVI) + MOD09Q1/A1 (NBR, NDWI)
+- **Indices**: EVI, NBR, NDWI
+- **Temporal Agg**: 5-year MEAN
+- **Output**: 3 files @ 250m
+- **Note**: NDVI already processed separately
 
-### 🏔️ **DEM Scripts (10m + 250m)**
+### **DEM Scripts (10m + 250m)**
 
 6. **`DEM_01_derivatives_10m.js`**
-   - **Purpose**: Topographic derivatives from USGS NED
-   - **Layers**: Elevation, Slope, Aspect, TPI
-   - **Resolution**: Native 10m + aggregated 250m
-   - **Output**: 4 files @ 10m + 3 files @ 250m
-   - **Special**: Circular mean for aspect aggregation
+- **Purpose**: Topographic derivatives from USGS NED
+- **Layers**: Elevation, Slope, Aspect, TPI
+- **Resolution**: Native 10m + aggregated 250m
+- **Output**: 4 files @ 10m + 3 files @ 250m
+- **Special**: Circular mean for aspect aggregation
 
-### 🌡️ **Land Surface Temperature (Optional)**
+### **Land Surface Temperature (Optional)**
 
 7. **`LST_01_day_night_mean_2020_2024.js`**
-   - **Purpose**: Microclimate variation (complements Daymet V4 climate)
-   - **Product**: MOD11A2 (8-day composite)
-   - **Layers**: LST Day, LST Night, Diurnal Range
-   - **Temporal Agg**: 5-year MEAN
-   - **Output**: 3 files @ 1km
+- **Purpose**: Microclimate variation (complements Daymet V4 climate)
+- **Product**: MOD11A2 (8-day composite)
+- **Layers**: LST Day, LST Night, Diurnal Range
+- **Temporal Agg**: 5-year MEAN
+- **Output**: 3 files @ 1km
 
 ---
 
-## 🎯 **MODELING STRATEGY**
+## **MODELING STRATEGY**
 
 ### **Model Set 1: FINE SCALE (10m)**
 **Covariates** (~13 total):
@@ -94,11 +94,11 @@ This repository contains Google Earth Engine scripts to process remote sensing a
 - Topography: elevation_250m, slope_250m, aspect_250m
 - Climate: temperature, precipitation
 
-**Hypothesis**: NEFIN ≈ FIA (fuzzing doesn't matter at coarse resolution!)
+**Hypothesis**: NEFIN ~ FIA (fuzzing doesn't matter at coarse resolution!)
 
 ---
 
-## 🚀 **HOW TO RUN**
+## **HOW TO RUN**
 
 ### **Step 1: Set Up GEE**
 1. Go to: https://code.earthengine.google.com/
@@ -119,36 +119,36 @@ All files export to your Google Drive folder: `NEFIN_FIA_Covariates/`
 Expected file structure:
 ```
 NEFIN_FIA_Covariates/
-├── S2_B2_10m_2020_2024_NE.tif
-├── S2_B3_10m_2020_2024_NE.tif
-├── S2_B4_10m_2020_2024_NE.tif
-├── S2_B8_10m_2020_2024_NE.tif
-├── S2_B11_10m_2020_2024_NE.tif
-├── S2_EVI_10m_2020_2024_NE.tif
-├── S2_NBR_10m_2020_2024_NE.tif
-├── S2_NDWI_10m_2020_2024_NE.tif
-├── S2_NDVI_SD_10m_2020_2024_NE.tif
-├── MODIS_RED_250m_2020_2024_NE.tif
-├── MODIS_NIR_250m_2020_2024_NE.tif
-├── MODIS_BLUE_250m_2020_2024_NE.tif
-├── MODIS_GREEN_250m_2020_2024_NE.tif
-├── MODIS_SWIR1_250m_2020_2024_NE.tif
-├── MODIS_EVI_250m_2020_2024_NE.tif
-├── MODIS_NBR_250m_2020_2024_NE.tif
-├── MODIS_NDWI_250m_2020_2024_NE.tif
-├── elevation_10m_NE.tif
-├── slope_10m_NE.tif
-├── aspect_10m_NE.tif
-├── tpi_10m_NE.tif
-├── elevation_250m_NE.tif
-├── slope_250m_NE.tif
-├── aspect_250m_NE.tif
-└── (LST files if processed)
+|---- S2_B2_10m_2020_2024_NE.tif
+|---- S2_B3_10m_2020_2024_NE.tif
+|---- S2_B4_10m_2020_2024_NE.tif
+|---- S2_B8_10m_2020_2024_NE.tif
+|---- S2_B11_10m_2020_2024_NE.tif
+|---- S2_EVI_10m_2020_2024_NE.tif
+|---- S2_NBR_10m_2020_2024_NE.tif
+|---- S2_NDWI_10m_2020_2024_NE.tif
+|---- S2_NDVI_SD_10m_2020_2024_NE.tif
+|---- MODIS_RED_250m_2020_2024_NE.tif
+|---- MODIS_NIR_250m_2020_2024_NE.tif
+|---- MODIS_BLUE_250m_2020_2024_NE.tif
+|---- MODIS_GREEN_250m_2020_2024_NE.tif
+|---- MODIS_SWIR1_250m_2020_2024_NE.tif
+|---- MODIS_EVI_250m_2020_2024_NE.tif
+|---- MODIS_NBR_250m_2020_2024_NE.tif
+|---- MODIS_NDWI_250m_2020_2024_NE.tif
+|---- elevation_10m_NE.tif
+|---- slope_10m_NE.tif
+|---- aspect_10m_NE.tif
+|---- tpi_10m_NE.tif
+|---- elevation_250m_NE.tif
+|---- slope_250m_NE.tif
+|---- aspect_250m_NE.tif
+`---- (LST files if processed)
 ```
 
 ---
 
-## ⏱️ **PROCESSING TIME**
+## **PROCESSING TIME**
 
 **Sentinel-2 scripts**: ~30-60 minutes each (high resolution)
 **MODIS scripts**: ~15-30 minutes each
@@ -159,7 +159,7 @@ NEFIN_FIA_Covariates/
 
 ---
 
-## 📊 **DATA SPECIFICATIONS**
+## **DATA SPECIFICATIONS**
 
 | Layer Type | Resolution | Product | Temporal |
 |------------|-----------|---------|----------|
@@ -168,26 +168,26 @@ NEFIN_FIA_Covariates/
 | S2 NDVI_SD | 10m | Calculated from S2 | StdDev 2020-2024 |
 | MODIS Bands | 250m | MOD09Q1/A1 | Mean 2020-2024 |
 | MODIS Indices | 250m | MOD13Q1 + Calculated | Mean 2020-2024 |
-| DEM | 10m → 250m | USGS/NED | Static |
+| DEM | 10m -> 250m | USGS/NED | Static |
 | LST | 1km | MOD11A2 | Mean 2020-2024 |
 
 ---
 
-## 🔬 **NEXT STEPS (R Processing)**
+## **NEXT STEPS (R Processing)**
 
 Once GEE exports complete:
 
 1. **Download** all files from Google Drive
 2. **Organize** into the external drive structure under EXTERNAL_DATA_ROOT.
-   Climate covariates use Daymet V4 (not PRISM); see data/raw/daymet/.
+ Climate covariates use Daymet V4 (not PRISM); see data/raw/daymet/.
 3. **Run extraction scripts**:
-   - `R/phase4_modeling/PHASE4_extract_covariates.R`
+- `R/phase4_modeling/PHASE4_extract_covariates.R`
 4. **Output**:
-   - training and test CSVs in `data/processed/phase4_modeling/`
+- training and test CSVs in `data/processed/phase4_modeling/`
 
 ---
 
-## 🛠️ **TROUBLESHOOTING**
+## **TROUBLESHOOTING**
 
 ### **Script won't run**
 - Check if you're signed into GEE
@@ -195,7 +195,7 @@ Once GEE exports complete:
 - Check console for error messages
 
 ### **Export fails**
-- Image might be too large → reduce region or increase `maxPixels`
+- Image might be too large -> reduce region or increase `maxPixels`
 - Check Google Drive storage space
 - Try exporting to Cloud Storage instead of Drive
 
@@ -211,7 +211,7 @@ Once GEE exports complete:
 
 ---
 
-## 📝 **NOTES**
+## **NOTES**
 
 ### **CRS / Projection**
 - All exports use **EPSG:4326 (WGS84)** for initial export; final analysis uses EPSG:5070
@@ -233,7 +233,7 @@ Once GEE exports complete:
 
 ---
 
-## ✅ **PRIORITY CHECKLIST**
+## **PRIORITY CHECKLIST**
 
 ### **Must Have** (for strong models):
 - [x] DEM derivatives (elevation, slope, aspect)
@@ -253,7 +253,7 @@ Once GEE exports complete:
 
 ---
 
-## 🎓 **MANUSCRIPT IMPLICATIONS**
+## **MANUSCRIPT IMPLICATIONS**
 
 This processing enables the key comparison:
 
@@ -264,7 +264,7 @@ This processing enables the key comparison:
 
 ---
 
-## 📧 **SUPPORT**
+## **SUPPORT**
 
 For GEE questions:
 - GEE Forum: https://groups.google.com/g/google-earth-engine-developers
@@ -277,6 +277,6 @@ For script questions:
 
 ---
 
-**Last Updated**: January 2026  
-**Author**: Soren Duvivier  
+**Last Updated**: January 2026 
+**Author**: Soren Duvivier 
 **Project**: NEFIN vs FIA Coordinate Precision Study

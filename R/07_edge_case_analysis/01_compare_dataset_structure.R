@@ -168,12 +168,12 @@ p_density <- ggplot(tree_df, aes(x = dbh_cm, fill = dataset)) +
 
 ggsave(file.path(fig_dir, "tree_dbh_density.png"), p_density, width = 7, height = 4, dpi = 200)
 
-# Tail zoom (for 30–120cm)
+# Tail zoom (for 30-120cm)
 p_tail <- ggplot(tree_df %>% filter(dbh_cm >= 30), aes(x = dbh_cm, color = dataset)) +
   stat_ecdf(linewidth = 1) +
   coord_cartesian(xlim = c(30, 120)) +
   theme_minimal() +
-  labs(title = "Tree DBH Tail (ECDF, DBH ≥ 30cm)", x = "DBH (cm)", y = "ECDF")
+  labs(title = "Tree DBH Tail (ECDF, DBH >= 30cm)", x = "DBH (cm)", y = "ECDF")
 
 ggsave(file.path(fig_dir, "tree_dbh_ecdf_tail.png"), p_tail, width = 7, height = 4, dpi = 200)
 

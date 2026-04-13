@@ -37,10 +37,10 @@ library(tidyr)
 library(randomForest)
 library(xgboost)
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  PHASE 4: FUZZING IMPACT ANALYSIS\n")
 cat("  Does coordinate precision affect biomass prediction?\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 # Output directories
 fig_dir <- "manuscript_figures/phase4/fuzzing_analysis"
@@ -73,7 +73,7 @@ cat("  Mean:", round(mean(test_forest$biomass), 1), "Mg/ha\n\n")
 # Load all RF models (focus on RF for cleaner comparison)
 model_files <- list.files(model_dir, pattern = "^rf_.*\\.rds$", full.names = TRUE)
 cat("  Found", length(model_files), "RF models:\n")
-for (f in model_files) cat("    •", basename(f), "\n")
+for (f in model_files) cat("    -", basename(f), "\n")
 cat("\n")
 
 # Parse model info and load
@@ -122,12 +122,12 @@ for (name in names(models)) {
   # Check covariate availability
   available <- intersect(covs, names(test_forest))
   if (length(available) < length(covs)) {
-    cat("  ⚠", name, ": missing", length(covs) - length(available), "covariates\n")
+    cat("  WARNING", name, ": missing", length(covs) - length(available), "covariates\n")
     covs <- available
   }
   
   if (length(covs) == 0) {
-    cat("  ✗", name, ": no covariates available, skipping\n")
+    cat("  FAIL", name, ": no covariates available, skipping\n")
     next
   }
   
@@ -144,7 +144,7 @@ for (name in names(models)) {
   test_complete <- test_scaled[complete_idx, ]
   
   if (nrow(test_complete) < 10) {
-    cat("  ✗", name, ": too few complete cases (", nrow(test_complete), ")\n")
+    cat("  FAIL", name, ": too few complete cases (", nrow(test_complete), ")\n")
     next
   }
   
@@ -163,7 +163,7 @@ for (name in names(models)) {
   r2 <- 1 - ss_res / ss_tot
   bias <- mean(preds - observed)
   
-  cat(sprintf("  %-40s  RMSE=%.1f  R²=%.3f  MAE=%.1f  Bias=%.1f  (n=%d)\n",
+  cat(sprintf("  %-40s  RMSE=%.1f  R^2=%.3f  MAE=%.1f  Bias=%.1f  (n=%d)\n",
               name, rmse, r2, mae, bias, nrow(test_complete)))
   
   # Store per-plot predictions
@@ -218,7 +218,7 @@ p_obs_pred <- ggplot(all_predictions, aes(x = observed, y = predicted)) +
   geom_text(
     data = all_predictions %>% 
       distinct(scale, scenario, rmse, r2) %>%
-      mutate(label = paste0("RMSE = ", round(rmse, 1), "\nR² = ", round(r2, 3))),
+      mutate(label = paste0("RMSE = ", round(rmse, 1), "\nR^2 = ", round(r2, 3))),
     aes(label = label),
     x = max_val * 0.05, y = max_val * 0.92,
     hjust = 0, size = 3, fontface = "bold"
@@ -238,7 +238,7 @@ p_obs_pred <- ggplot(all_predictions, aes(x = observed, y = predicted)) +
 
 ggsave(file.path(fig_dir, "obs_vs_pred_all_models.png"), p_obs_pred,
        width = 11, height = 7, dpi = 300)
-cat("  ✓ obs_vs_pred_all_models.png\n")
+cat("  ok obs_vs_pred_all_models.png\n")
 
 # =============================================================================
 # STEP 4: ERROR BY BIOMASS CLASS
@@ -295,7 +295,7 @@ p_error_class <- ggplot(error_by_class,
 
 ggsave(file.path(fig_dir, "error_by_biomass_class.png"), p_error_class,
        width = 10, height = 6, dpi = 300)
-cat("  ✓ error_by_biomass_class.png\n")
+cat("  ok error_by_biomass_class.png\n")
 
 # Bias by class (does FIA systematically over/under-predict?)
 p_bias_class <- ggplot(error_by_class, 
@@ -320,7 +320,7 @@ p_bias_class <- ggplot(error_by_class,
 
 ggsave(file.path(fig_dir, "bias_by_biomass_class.png"), p_bias_class,
        width = 10, height = 6, dpi = 300)
-cat("  ✓ bias_by_biomass_class.png\n")
+cat("  ok bias_by_biomass_class.png\n")
 
 # =============================================================================
 # STEP 5: ERROR BY TERRAIN COMPLEXITY
@@ -387,19 +387,19 @@ if (length(slope_col) > 0) {
   
   ggsave(file.path(fig_dir, "error_by_terrain.png"), p_error_terrain,
          width = 10, height = 6, dpi = 300)
-  cat("  ✓ error_by_terrain.png\n")
+  cat("  ok error_by_terrain.png\n")
   
 } else {
-  cat("  ⚠ No slope/terrain covariates found in test data — skipping\n")
+  cat("  WARNING No slope/terrain covariates found in test data -- skipping\n")
 }
 
 # =============================================================================
-# STEP 6: SCALE INTERACTION — THE KEY PLOT
+# STEP 6: SCALE INTERACTION -- THE KEY PLOT
 # =============================================================================
 
-cat("\nStep 6: Scale × Scenario interaction (key finding)...\n\n")
+cat("\nStep 6: Scale x Scenario interaction (key finding)...\n\n")
 
-# Summary table: RMSE and R² by scale × scenario
+# Summary table: RMSE and R^2 by scale x scenario
 interaction_summary <- all_predictions %>%
   group_by(scale, scenario) %>%
   summarise(
@@ -415,7 +415,7 @@ interaction_summary <- all_predictions %>%
     .groups = "drop"
   )
 
-cat("  Scale × Scenario summary:\n\n")
+cat("  Scale x Scenario summary:\n\n")
 print(interaction_summary, n = 20)
 cat("\n")
 
@@ -438,7 +438,7 @@ cat("\n")
 p_interaction <- ggplot(interaction_summary, 
                         aes(x = scenario, y = rmse, fill = scenario)) +
   geom_col(width = 0.6) +
-  geom_text(aes(label = paste0(round(rmse, 1), "\n(R²=", round(r2, 3), ")")),
+  geom_text(aes(label = paste0(round(rmse, 1), "\n(R^2=", round(r2, 3), ")")),
             vjust = -0.3, size = 3.2, fontface = "bold") +
   facet_wrap(~ scale, scales = "free_y") +
   scale_fill_manual(values = c("FIA Only" = "#E74C3C", 
@@ -460,7 +460,7 @@ p_interaction <- ggplot(interaction_summary,
 
 ggsave(file.path(fig_dir, "scale_interaction_rmse.png"), p_interaction,
        width = 9, height = 5.5, dpi = 300)
-cat("  ✓ scale_interaction_rmse.png\n")
+cat("  ok scale_interaction_rmse.png\n")
 
 # Paired comparison: improvement at each scale
 improvement_long <- improvement %>%
@@ -488,7 +488,7 @@ p_improvement <- ggplot(improvement_long,
 
 ggsave(file.path(fig_dir, "rmse_improvement_by_scale.png"), p_improvement,
        width = 7, height = 5, dpi = 300)
-cat("  ✓ rmse_improvement_by_scale.png\n")
+cat("  ok rmse_improvement_by_scale.png\n")
 
 # =============================================================================
 # STEP 7: STATISTICAL SIGNIFICANCE (PAIRED TESTS)
@@ -531,7 +531,7 @@ for (s in c("10m", "250m")) {
                 mean(paired_fn$fia_abs_error), mean(paired_fn$nefin_abs_error)))
     cat(sprintf("    Wilcoxon p = %.4f  %s\n\n",
                 test_fn$p.value,
-                ifelse(test_fn$p.value < 0.05, "★ SIGNIFICANT", "(not significant)")))
+                ifelse(test_fn$p.value < 0.05, "* SIGNIFICANT", "(not significant)")))
     
     stat_results <- bind_rows(stat_results, data.frame(
       scale = s, comparison = "FIA vs NEFIN",
@@ -552,7 +552,7 @@ for (s in c("10m", "250m")) {
                 mean(paired_fp$fia_abs_error), mean(paired_fp$pooled_abs_error)))
     cat(sprintf("    Wilcoxon p = %.4f  %s\n\n",
                 test_fp$p.value,
-                ifelse(test_fp$p.value < 0.05, "★ SIGNIFICANT", "(not significant)")))
+                ifelse(test_fp$p.value < 0.05, "* SIGNIFICANT", "(not significant)")))
     
     stat_results <- bind_rows(stat_results, data.frame(
       scale = s, comparison = "FIA vs Pooled",
@@ -588,7 +588,7 @@ p_paired <- all_predictions %>%
 
 ggsave(file.path(fig_dir, "paired_error_distributions.png"), p_paired,
        width = 9, height = 5.5, dpi = 300)
-cat("  ✓ paired_error_distributions.png\n")
+cat("  ok paired_error_distributions.png\n")
 
 # =============================================================================
 # STEP 8: RESIDUAL MAP (SPATIAL PATTERNS)
@@ -627,7 +627,7 @@ if ("lon" %in% names(test_forest) && "lat" %in% names(test_forest)) {
   
   ggsave(file.path(fig_dir, "residual_spatial_map.png"), p_resid_map,
          width = 12, height = 7, dpi = 300)
-  cat("  ✓ residual_spatial_map.png\n")
+  cat("  ok residual_spatial_map.png\n")
 }
 
 # =============================================================================
@@ -660,7 +660,7 @@ if (file.exists(fold_file)) {
                                    "Pooled" = "#3498DB")) +
       labs(
         title = "Cross-Validation RMSE Across Folds",
-        subtitle = "10 spatial folds per model — shows variance in performance",
+        subtitle = "10 spatial folds per model -- shows variance in performance",
         x = NULL, y = "Fold RMSE (Mg/ha)"
       ) +
       theme_minimal() +
@@ -672,9 +672,9 @@ if (file.exists(fold_file)) {
     
     ggsave(file.path(fig_dir, "cv_fold_rmse_by_scenario.png"), p_cv_folds,
            width = 9, height = 5.5, dpi = 300)
-    cat("  ✓ cv_fold_rmse_by_scenario.png\n")
+    cat("  ok cv_fold_rmse_by_scenario.png\n")
     
-    # Same for R²
+    # Same for R^2
     p_cv_r2 <- ggplot(fold_rf, aes(x = scenario, y = r2, fill = scenario)) +
       geom_boxplot(outlier.shape = 21) +
       geom_jitter(width = 0.15, alpha = 0.4, size = 1.5) +
@@ -683,9 +683,9 @@ if (file.exists(fold_file)) {
                                    "NEFIN Only" = "#2ECC71", 
                                    "Pooled" = "#3498DB")) +
       labs(
-        title = "Cross-Validation R² Across Folds",
-        subtitle = "Higher is better — precision should help more at 10m",
-        x = NULL, y = "Fold R²"
+        title = "Cross-Validation R^2 Across Folds",
+        subtitle = "Higher is better -- precision should help more at 10m",
+        x = NULL, y = "Fold R^2"
       ) +
       theme_minimal() +
       theme(
@@ -696,10 +696,10 @@ if (file.exists(fold_file)) {
     
     ggsave(file.path(fig_dir, "cv_fold_r2_by_scenario.png"), p_cv_r2,
            width = 9, height = 5.5, dpi = 300)
-    cat("  ✓ cv_fold_r2_by_scenario.png\n")
+    cat("  ok cv_fold_r2_by_scenario.png\n")
   }
 } else {
-  cat("  ⚠ fold_results.csv not found, skipping\n")
+  cat("  WARNING fold_results.csv not found, skipping\n")
 }
 
 # =============================================================================
@@ -711,32 +711,32 @@ cat("\nStep 10: Saving summaries...\n\n")
 # Save interaction summary
 write_csv(interaction_summary, 
           "data/processed/phase4_cv_results/fuzzing_impact_summary.csv")
-cat("  ✓ fuzzing_impact_summary.csv\n")
+cat("  ok fuzzing_impact_summary.csv\n")
 
 # Save statistical test results
 if (nrow(stat_results) > 0) {
   write_csv(stat_results, 
             "data/processed/phase4_cv_results/fuzzing_significance_tests.csv")
-  cat("  ✓ fuzzing_significance_tests.csv\n")
+  cat("  ok fuzzing_significance_tests.csv\n")
 }
 
 # Save plot-level predictions
 write_csv(all_predictions,
           "data/processed/phase4_cv_results/test_predictions_all_models.csv")
-cat("  ✓ test_predictions_all_models.csv\n")
+cat("  ok test_predictions_all_models.csv\n")
 
 # Save improvement summary
 write_csv(improvement,
           "data/processed/phase4_cv_results/fuzzing_rmse_improvement.csv")
-cat("  ✓ fuzzing_rmse_improvement.csv\n")
+cat("  ok fuzzing_rmse_improvement.csv\n")
 
 # =============================================================================
 # SUMMARY
 # =============================================================================
 
-cat("\n═══════════════════════════════════════════════════════════════════\n")
+cat("\n===================================================================\n")
 cat("  FUZZING IMPACT ANALYSIS COMPLETE\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")
 
 cat("KEY RESULTS:\n\n")
 
@@ -758,18 +758,18 @@ if (nrow(stat_results) > 0) {
     cat(sprintf("  %s %s: p = %.4f %s\n",
                 stat_results$scale[i], stat_results$comparison[i],
                 stat_results$p_value[i],
-                ifelse(stat_results$significant[i], "★", "")))
+                ifelse(stat_results$significant[i], "*", "")))
   }
 }
 
 cat("\nFIGURES:\n")
 figs <- list.files(fig_dir, pattern = "\\.png$")
-for (f in figs) cat("  •", f, "\n")
+for (f in figs) cat("  -", f, "\n")
 
 cat("\nDATA:\n")
-cat("  • data/processed/phase4_cv_results/fuzzing_impact_summary.csv\n")
-cat("  • data/processed/phase4_cv_results/fuzzing_significance_tests.csv\n")
-cat("  • data/processed/phase4_cv_results/fuzzing_rmse_improvement.csv\n")
-cat("  • data/processed/phase4_cv_results/test_predictions_all_models.csv\n\n")
+cat("  - data/processed/phase4_cv_results/fuzzing_impact_summary.csv\n")
+cat("  - data/processed/phase4_cv_results/fuzzing_significance_tests.csv\n")
+cat("  - data/processed/phase4_cv_results/fuzzing_rmse_improvement.csv\n")
+cat("  - data/processed/phase4_cv_results/test_predictions_all_models.csv\n\n")
 
-cat("═══════════════════════════════════════════════════════════════════\n\n")
+cat("===================================================================\n\n")

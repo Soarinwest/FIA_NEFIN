@@ -326,7 +326,7 @@ cat("  OK", out_2p, "\n\n")
 
 cat("=================================================================\n")
 cat("Output directory:", fig_dir, "\n")
-cat("  aerial_size_test.png           <- check this first\n")
+cat("  aerial_size_test.png\n")
 cat("  fig5_scenario_comparison_4panel.png\n")
 cat("  fig5b_aerial_difference_2panel.png\n")
 cat("  difference_fia_vs_nefin.png\n")
