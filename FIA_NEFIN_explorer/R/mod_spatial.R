@@ -67,15 +67,15 @@ spatial_ui <- function(id) {
               "64 kha"                 = "hex_64kha.geojson",
               "100 kha"                = "hex_100kha.geojson"
             ),
-            selected = "hex_1kha.geojson"
+            selected = "hex_64kha.geojson"
           ),
           hr(),
           h5("Display Layer", class = "text-primary mt-0 mb-2"),
           radioButtons(ns("hex_layer"), NULL,
             choices = c(
-              "Biomass \u2014 FIA (Mg/ha)"       = "fia_biomass_mean",
-              "Biomass \u2014 Augmented (Mg/ha)"  = "aug_biomass_mean",
-              "Difference (Aug \u2212 FIA)"       = "biomass_change",
+              "Biomass  - FIA (Mg/ha)"       = "fia_biomass_mean",
+              "Biomass  - Augmented (Mg/ha)"  = "aug_biomass_mean",
+              "Difference (Aug  - FIA)"       = "biomass_change",
               "NEFIN % of plots"                 = "pct_nefin",
               "Total plot density"               = "n_plots_total"
             ),
@@ -103,24 +103,41 @@ spatial_ui <- function(id) {
       layout_sidebar(
         sidebar = sidebar(
           width = 260,
-          h5("Left Map", class = "text-primary mt-0 mb-2"),
-          selectInput(ns("scenario_a"), "Scenario:",
+          h5("Prediction Panels", class = "text-primary mt-0 mb-2"),
+          selectInput(ns("scenario_a"), "Top-Left:",
             choices  = c("FIA Only" = "fia_only",
                          "NEFIN Only" = "nefin_only",
                          "Pooled (FIA+NEFIN)" = "pooled"),
             selected = "fia_only"
           ),
-          sliderInput(ns("opacity_a"), "Opacity:",
-                      min = 0.1, max = 1.0, value = 0.8, step = 0.1),
-          hr(),
-          h5("Right Map", class = "text-primary mt-0 mb-2"),
-          selectInput(ns("scenario_b"), "Scenario:",
+          selectInput(ns("scenario_b"), "Top-Right:",
             choices  = c("FIA Only" = "fia_only",
                          "NEFIN Only" = "nefin_only",
                          "Pooled (FIA+NEFIN)" = "pooled"),
             selected = "pooled"
           ),
-          sliderInput(ns("opacity_b"), "Opacity:",
+          sliderInput(ns("opacity_pred"), "Prediction Opacity:",
+                      min = 0.1, max = 1.0, value = 0.8, step = 0.1),
+          hr(),
+          h5("Covariate Layer", class = "text-primary mt-0 mb-2"),
+          selectInput(ns("covariate_layer"), "Variable:",
+            choices = c(
+              "Canopy Height"       = "fine_canopy_height_chittenden_display.tif",
+              "Elevation"           = "fine_elevation_chittenden_display.tif",
+              "Slope"               = "fine_slope_chittenden_display.tif",
+              "Aspect"              = "fine_aspect_chittenden_display.tif",
+              "NDVI (Sentinel-2)"   = "fine_ndvi_chittenden_display.tif",
+              "NDWI (Sentinel-2)"   = "fine_ndwi_chittenden_display.tif",
+              "EVI (Sentinel-2)"    = "fine_evi_chittenden_display.tif",
+              "NBR (Sentinel-2)"    = "fine_nbr_chittenden_display.tif",
+              "Mean Temperature"    = "fine_tmean_chittenden_display.tif",
+              "Min Temperature"     = "fine_tmin_chittenden_display.tif",
+              "Max Temperature"     = "fine_tmax_chittenden_display.tif",
+              "Precipitation"       = "fine_ppt_chittenden_display.tif"
+            ),
+            selected = "fine_canopy_height_chittenden_display.tif"
+          ),
+          sliderInput(ns("opacity_cov"), "Covariate Opacity:",
                       min = 0.1, max = 1.0, value = 0.8, step = 0.1),
           hr(),
           h5("Display", class = "text-primary mt-0 mb-2"),
@@ -133,13 +150,12 @@ spatial_ui <- function(id) {
             selected = "CartoDB.Positron"
           ),
           tags$small(class = "text-muted",
-            "Maps are synchronized: pan/zoom one to move both."
+            "All 4 panels are synchronized: pan/zoom one to move all."
           ),
           hr(),
-          # RMSE stats in sidebar so they're always visible
           uiOutput(ns("chittenden_stats"))
         ),
-        # Main content: synced maps with loading spinner
+        # Main content: 4-panel synced maps
         div(
           class = "position-relative",
           div(
@@ -151,8 +167,7 @@ spatial_ui <- function(id) {
             tags$p("Loading rasters...", class = "mt-2 text-muted")
           ),
           uiOutput(ns("sync_maps"))
-        ),
-        uiOutput(ns("raster_distributions"))
+        )
       )
     )
   )
@@ -310,7 +325,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       }
 
       card(
-        card_header(paste0("Monte Carlo Coordinate Uncertainty \u2014 ", plot_label)),
+        card_header(paste0("Monte Carlo Coordinate Uncertainty  - ", plot_label)),
         card_body(
           layout_columns(
             col_widths = c(6, 6),
@@ -538,7 +553,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           tags$small(
             bsicons::bs_icon("info-circle"), " ",
             strong(scales::comma(n_shown)), " hexagons shown at this scale. ",
-            "Mean biomass difference (Aug \u2212 FIA): ",
+            "Mean biomass difference (Aug  - FIA): ",
             strong(mean_diff, " Mg/ha"), ". ",
             strong(pct_aug_higher, "%"), " of hexagons show Augmented > FIA biomass."
           )
@@ -549,33 +564,35 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
     # ── Sub-tab C: Chittenden Detail ──────────────────────────────────────────
 
-    # Debounced opacity inputs to avoid re-rendering on every slider tick
-    opacity_a_d <- debounce(reactive(input$opacity_a), 400)
-    opacity_b_d <- debounce(reactive(input$opacity_b), 400)
+    # Debounced opacity inputs
+    opacity_pred_d <- debounce(reactive(input$opacity_pred), 400)
+    opacity_cov_d  <- debounce(reactive(input$opacity_cov), 400)
 
-    # Re-show spinner when scenario/basemap changes
-    observeEvent(list(input$scenario_a, input$scenario_b, input$basemap), {
+    # Re-show spinner when inputs change
+    observeEvent(list(input$scenario_a, input$scenario_b,
+                      input$covariate_layer, input$basemap), {
       session$sendCustomMessage("show-spinner", ns("map_spinner"))
     }, ignoreInit = TRUE)
 
     output$sync_maps <- renderUI({
-      req(input$scenario_a, input$scenario_b, input$basemap)
+      req(input$scenario_a, input$scenario_b, input$basemap, input$covariate_layer)
 
-      # Build TIF paths (relative to app working directory)
+      # Build TIF paths
       tif_a_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_a, "_chittenden.tif"))
       tif_b_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_b, "_chittenden.tif"))
+      tif_cov_path <- file.path("data/rasters/covariates", input$covariate_layer)
 
       if (!file.exists(tif_a_path) || !file.exists(tif_b_path)) {
         return(card(card_body(
           tags$p(class = "text-warning",
             bsicons::bs_icon("exclamation-triangle"), " ",
             "Chittenden TIF files not found. Run ",
-            tags$code("prep_app_data.R"), " first to clip prediction rasters."
+            tags$code("prep_app_data.R"), " first."
           )
         )))
       }
 
-      # Compute shared color domain from full-res rasters for legend
+      # Shared biomass color domain
       r_a_tmp <- terra::rast(tif_a_path)
       r_b_tmp <- terra::rast(tif_b_path)
       raster_domain <- unname(range(
@@ -585,12 +602,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       ))
       rm(r_a_tmp, r_b_tmp)
 
-      # Legend palette
-      pal <- leaflet::colorNumeric(
-        "viridis",
-        domain   = raster_domain,
-        na.color = "transparent"
-      )
+      pal <- leaflet::colorNumeric("viridis", domain = raster_domain, na.color = "transparent")
 
       scenario_labels <- c(
         "fia_only"   = "FIA Only",
@@ -600,14 +612,14 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
       chitt <- sf::st_read("data/rasters/chittenden_boundary.geojson", quiet = TRUE)
 
-      make_map <- function(tif_path, opacity_val, scenario_key,
-                           show_legend = FALSE) {
+      # Helper: biomass prediction map
+      make_pred_map <- function(tif_path, scenario_key, show_legend = FALSE) {
         m <- leaflet::leaflet(options = leaflet::leafletOptions(zoomControl = FALSE)) |>
           leaflet::addProviderTiles(input$basemap) |>
           leafem::addGeotiff(
             file         = normalizePath(tif_path, winslash = "/"),
             project      = FALSE,
-            opacity      = opacity_val,
+            opacity      = opacity_pred_d(),
             autozoom     = TRUE,
             colorOptions = leafem::colorOptions(
               palette  = hcl.colors(100, "viridis"),
@@ -615,48 +627,109 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
               domain   = raster_domain
             )
           ) |>
-          leaflet::addPolylines(
-            data    = chitt,
-            color   = "black",
-            weight  = 1.5,
-            opacity = 0.7
-          ) |>
+          leaflet::addPolylines(data = chitt, color = "black", weight = 1.5, opacity = 0.7) |>
           leaflet::addControl(
-            html     = paste0(
-              "<div style='background:white;padding:4px 8px;border-radius:4px;",
-              "font-size:12px;font-weight:bold;'>",
+            html = paste0(
+              "<div style='background:rgba(0,0,0,0.7);color:white;padding:4px 8px;",
+              "border-radius:4px;font-size:12px;font-weight:bold;'>",
               scenario_labels[scenario_key], "</div>"
             ),
             position = "topright"
           )
-
-        # Single shared legend on right map only
         if (show_legend) {
-          m <- m |>
-            leaflet::addLegend(
-              position = "bottomright",
-              pal      = pal,
-              values   = seq(raster_domain[1], raster_domain[2], length.out = 100),
-              title    = "Biomass<br>(Mg/ha)",
-              opacity  = 0.9
-            )
+          m <- m |> leaflet::addLegend(
+            position = "bottomright", pal = pal,
+            values = seq(raster_domain[1], raster_domain[2], length.out = 100),
+            title = "Biomass<br>(Mg/ha)", opacity = 0.9
+          )
         }
-
         m
       }
 
-      map_a <- make_map(tif_a_path, opacity_a_d(), input$scenario_a,
-                         show_legend = FALSE)
-      map_b <- make_map(tif_b_path, opacity_b_d(), input$scenario_b,
-                         show_legend = TRUE)
+      # Helper: satellite reference map (bottom-left)
+      make_satellite_map <- function() {
+        bb <- as.numeric(sf::st_bbox(chitt))  # xmin, ymin, xmax, ymax
+        leaflet::leaflet(options = leaflet::leafletOptions(zoomControl = FALSE)) |>
+          leaflet::addProviderTiles("Esri.WorldImagery") |>
+          leaflet::addPolylines(data = chitt, color = "white", weight = 1.5, opacity = 0.8) |>
+          leaflet::addControl(
+            html = "<div style='background:rgba(0,0,0,0.7);color:white;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:bold;'>Satellite Reference</div>",
+            position = "topright"
+          ) |>
+          leaflet::fitBounds(lng1 = bb[1], lat1 = bb[2], lng2 = bb[3], lat2 = bb[4])
+      }
 
-      # Wrap in a fixed-height div to ensure side-by-side rendering
+      # Helper: covariate map (bottom-right)
+      make_covariate_map <- function() {
+        cov_label <- names(which(c(
+          "Canopy Height"       = "fine_canopy_height_chittenden_display.tif",
+          "Elevation"           = "fine_elevation_chittenden_display.tif",
+          "Slope"               = "fine_slope_chittenden_display.tif",
+          "Aspect"              = "fine_aspect_chittenden_display.tif",
+          "NDVI (Sentinel-2)"   = "fine_ndvi_chittenden_display.tif",
+          "NDWI (Sentinel-2)"   = "fine_ndwi_chittenden_display.tif",
+          "EVI (Sentinel-2)"    = "fine_evi_chittenden_display.tif",
+          "NBR (Sentinel-2)"    = "fine_nbr_chittenden_display.tif",
+          "Mean Temperature"    = "fine_tmean_chittenden_display.tif",
+          "Min Temperature"     = "fine_tmin_chittenden_display.tif",
+          "Max Temperature"     = "fine_tmax_chittenden_display.tif",
+          "Precipitation"       = "fine_ppt_chittenden_display.tif"
+        ) == input$covariate_layer))
+
+        m <- leaflet::leaflet(options = leaflet::leafletOptions(zoomControl = FALSE)) |>
+          leaflet::addProviderTiles(input$basemap)
+
+        if (file.exists(tif_cov_path)) {
+          # Get covariate color domain
+          r_cov <- terra::rast(tif_cov_path)
+          cov_domain <- unname(range(terra::values(r_cov, na.rm = TRUE), na.rm = TRUE))
+          rm(r_cov)
+
+          cov_pal <- leaflet::colorNumeric(viridis::magma(256), domain = cov_domain, na.color = "transparent")
+
+          m <- m |>
+            leafem::addGeotiff(
+              file = normalizePath(tif_cov_path, winslash = "/"),
+              project = FALSE,
+              opacity = opacity_cov_d(),
+              autozoom = TRUE,
+              colorOptions = leafem::colorOptions(
+                palette = viridis::magma(100),
+                na.color = "transparent",
+                domain = cov_domain
+              )
+            ) |>
+            leaflet::addLegend(
+              position = "bottomright", pal = cov_pal,
+              values = seq(cov_domain[1], cov_domain[2], length.out = 50),
+              title = cov_label, opacity = 0.9
+            )
+        }
+
+        m |>
+          leaflet::addPolylines(data = chitt, color = "black", weight = 1.5, opacity = 0.7) |>
+          leaflet::addControl(
+            html = paste0(
+              "<div style='background:rgba(0,0,0,0.7);color:white;padding:4px 8px;",
+              "border-radius:4px;font-size:12px;font-weight:bold;'>",
+              cov_label, "</div>"
+            ),
+            position = "topright"
+          )
+      }
+
+      # Build 4 maps
+      map_tl <- make_pred_map(tif_a_path, input$scenario_a, show_legend = FALSE)
+      map_tr <- make_pred_map(tif_b_path, input$scenario_b, show_legend = TRUE)
+      map_bl <- make_satellite_map()
+      map_br <- make_covariate_map()
+
       tagList(
         tags$div(
-          style = "width:100%; height:550px;",
-          leafsync::sync(map_a, map_b, ncol = 2, sync = "all")
+          style = "width:100%; height:700px;",
+          leafsync::sync(map_tl, map_tr, map_bl, map_br,
+                         ncol = 2, sync = "all")
         ),
-        # Hide spinner once maps render
         tags$script(HTML(sprintf(
           "$('#%s').fadeOut(400);", ns("map_spinner")
         )))
@@ -688,8 +761,8 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       rmse_b <- get_rmse(sc_b)
 
       tags$div(
-        style = "font-size: 0.85em; color: #555;",
-        strong("Test RMSE (10m)"), br(),
+        style = "font-size: 0.85em; color: #94a3b8;",
+        strong(style = "color: #e2e8f0;", "Test RMSE (10m)"), br(),
         tags$span(
           style = paste0("color:", DATASET_COLORS["FIA"], ";"),
           bsicons::bs_icon("square-fill")
@@ -706,88 +779,6 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       )
     })
 
-    # Raster value distributions
-    output$raster_distributions <- renderUI({
-      req(input$scenario_a, input$scenario_b)
-
-      card(
-        class = "mt-3",
-        card_header("Biomass Distribution (Raster Values)"),
-        card_body(
-          layout_columns(
-            col_widths = c(6, 6),
-            div(
-              plotly::plotlyOutput(ns("dist_a"), height = "350px")
-            ),
-            div(
-              plotly::plotlyOutput(ns("dist_b"), height = "350px")
-            )
-          )
-        )
-      )
-    })
-
-    # Distribution plot for left scenario
-    output$dist_a <- plotly::renderPlotly({
-      req(input$scenario_a)
-      tif_a_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_a, "_chittenden.tif"))
-      if (!file.exists(tif_a_path)) return(NULL)
-
-      r_a <- terra::rast(tif_a_path)
-      vals_a <- terra::values(r_a, na.rm = TRUE)
-
-      scenario_labels <- c(
-        "fia_only"   = "FIA Only",
-        "nefin_only" = "NEFIN Only",
-        "pooled"     = "Pooled (FIA+NEFIN)"
-      )
-
-      df_a <- data.frame(biomass = as.numeric(vals_a))
-
-      p <- ggplot2::ggplot(df_a, ggplot2::aes(x = biomass)) +
-        ggplot2::geom_histogram(bins = 50, fill = "#E69F00", alpha = 0.7) +
-        ggplot2::geom_density(ggplot2::aes(y = ggplot2::after_stat(count)),
-                              color = "#D55E00", linewidth = 1) +
-        ggplot2::labs(
-          x = "Biomass (Mg/ha)",
-          y = "Count",
-          title = paste0("Left: ", scenario_labels[input$scenario_a])
-        ) +
-        theme_fia_nefin()
-
-      plotly::ggplotly(p, tooltip = c("x", "y"))
-    })
-
-    # Distribution plot for right scenario
-    output$dist_b <- plotly::renderPlotly({
-      req(input$scenario_b)
-      tif_b_path <- file.path("data/rasters", paste0("biomass_10m_", input$scenario_b, "_chittenden.tif"))
-      if (!file.exists(tif_b_path)) return(NULL)
-
-      r_b <- terra::rast(tif_b_path)
-      vals_b <- terra::values(r_b, na.rm = TRUE)
-
-      scenario_labels <- c(
-        "fia_only"   = "FIA Only",
-        "nefin_only" = "NEFIN Only",
-        "pooled"     = "Pooled (FIA+NEFIN)"
-      )
-
-      df_b <- data.frame(biomass = as.numeric(vals_b))
-
-      p <- ggplot2::ggplot(df_b, ggplot2::aes(x = biomass)) +
-        ggplot2::geom_histogram(bins = 50, fill = "#56B4E9", alpha = 0.7) +
-        ggplot2::geom_density(ggplot2::aes(y = ggplot2::after_stat(count)),
-                              color = "#0B5B9D", linewidth = 1) +
-        ggplot2::labs(
-          x = "Biomass (Mg/ha)",
-          y = "Count",
-          title = paste0("Right: ", scenario_labels[input$scenario_b])
-        ) +
-        theme_fia_nefin()
-
-      plotly::ggplotly(p, tooltip = c("x", "y"))
-    })
 
   })
 }

@@ -14,7 +14,7 @@
 # =============================================================================
 # PRODUCTION CONFIG — used in final analysis pipeline
 # Sources: data/raw/daymet/ (Daymet V4, 4 variables: tmean, tmin, tmax, ppt)
-# ETH Global canopy height 2020 — confirmed predictor, 100% variable importance
+# ETH Global canopy height 2020 — confirmed predictor
 
 # =============================================================================
 # COVARIATE DEFINITIONS
@@ -40,7 +40,7 @@ COVARIATES <- list(
   canopy_height_fine = list(
     name = "canopy_height",
     display_name = "Canopy Height",
-    path = file.path(.cov_fine_raw, "canopy_height_10m_2020_NE.tif",
+    path = file.path(.cov_fine_raw, "canopy_height_10m_2020_NE.tif"),
     resolution = "10m",
     type = "structure",
     category = "canopy",
@@ -56,7 +56,7 @@ COVARIATES <- list(
   ndvi_s2 = list(
     name = "ndvi_s2",
     display_name = "NDVI (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_NDVI_10m_2020_2024.tif",  
+    path = file.path(.cov_fine_raw, "S2_NDVI_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
@@ -68,7 +68,7 @@ COVARIATES <- list(
   evi_s2 = list(
     name = "evi_s2",
     display_name = "EVI (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_EVI_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_EVI_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
@@ -80,7 +80,7 @@ COVARIATES <- list(
   nbr_s2 = list(
     name = "nbr_s2",
     display_name = "NBR (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_NBR_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_NBR_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
@@ -92,7 +92,7 @@ COVARIATES <- list(
   ndwi_s2 = list(
     name = "ndwi_s2",
     display_name = "NDWI (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_NDWI_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_NDWI_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "vegetation_index",
@@ -105,7 +105,7 @@ COVARIATES <- list(
   red_s2 = list(
     name = "red_s2",
     display_name = "Red Band (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_B4_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_B4_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "band",
@@ -117,7 +117,7 @@ COVARIATES <- list(
   green_s2 = list(
     name = "green_s2",
     display_name = "Green Band (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_B3_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_B3_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "band",
@@ -129,7 +129,7 @@ COVARIATES <- list(
   blue_s2 = list(
     name = "blue_s2",
     display_name = "Blue Band (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_B2_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_B2_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "band",
@@ -141,7 +141,7 @@ COVARIATES <- list(
   swir1_s2 = list(
     name = "swir1_s2",
     display_name = "SWIR1 Band (Sentinel-2)",
-    path = file.path(.cov_fine_raw, "S2_B11_10m_2020_2024.tif",
+    path = file.path(.cov_fine_raw, "S2_B11_10m_2020_2024.tif"),
     resolution = "10m",
     type = "spectral",
     category = "band",
@@ -157,7 +157,7 @@ COVARIATES <- list(
   elevation_fine = list(
     name = "elevation",
     display_name = "Elevation",
-    path = file.path(.cov_fine_raw, "Elevation10m.tif",  # In raw, will copy
+    path = file.path(.cov_fine_raw, "Elevation10m.tif"),  # In raw, will copy
     resolution = "10m",
     type = "topographic",
     category = "terrain",
@@ -169,7 +169,7 @@ COVARIATES <- list(
   slope_fine = list(
     name = "slope",
     display_name = "Slope",
-    path = file.path(.cov_fine_raw, "Slope10m.tif",  # In raw, will copy
+    path = file.path(.cov_fine_raw, "Slope10m.tif"),  # In raw, will copy
     resolution = "10m",
     type = "topographic",
     category = "terrain",
@@ -181,7 +181,7 @@ COVARIATES <- list(
   aspect_fine = list(
     name = "aspect",
     display_name = "Aspect",
-    path = file.path(.cov_fine_raw, "Aspect10m.tif",  # In raw, will copy
+    path = file.path(.cov_fine_raw, "Aspect10m.tif"),  # In raw, will copy
     resolution = "10m",
     type = "topographic",
     category = "terrain",
@@ -197,7 +197,7 @@ COVARIATES <- list(
   tmean_fine = list(
     name = "tmean",
     display_name = "Mean Temperature",
-    path = file.path(.cov_fine_raw, "tmean.tif",
+    path = file.path(.cov_fine_raw, "tmean.tif"),
     resolution = "10m",
     type = "climate",
     category = "temperature",
@@ -210,7 +210,7 @@ COVARIATES <- list(
   tmin_fine = list(
     name = "tmin",
     display_name = "Minimum Temperature",
-    path = file.path(.cov_fine_raw, "tmin.tif",
+    path = file.path(.cov_fine_raw, "tmin.tif"),
     resolution = "10m",
     type = "climate",
     category = "temperature",
@@ -222,7 +222,7 @@ COVARIATES <- list(
   tmax_fine = list(
     name = "tmax",
     display_name = "Maximum Temperature",
-    path = file.path(.cov_fine_raw, "tmax.tif",
+    path = file.path(.cov_fine_raw, "tmax.tif"),
     resolution = "10m",
     type = "climate",
     category = "temperature",
@@ -235,7 +235,7 @@ COVARIATES <- list(
   ppt_fine = list(
     name = "ppt",
     display_name = "Precipitation",
-    path = file.path(.cov_fine_raw, "ppt.tif",
+    path = file.path(.cov_fine_raw, "ppt.tif"),
     resolution = "10m",
     type = "climate",
     category = "precipitation",
@@ -255,7 +255,7 @@ COVARIATES <- list(
   canopy_height_coarse = list(
     name = "canopy_height",
     display_name = "Canopy Height",
-    path = file.path(.cov_coarse_raw, "canopy_height_250m_2020_NE.tif",
+    path = file.path(.cov_coarse_raw, "canopy_height_250m_2020_NE.tif"),
     resolution = "250m",
     type = "structure",
     category = "canopy",
@@ -271,7 +271,7 @@ COVARIATES <- list(
   ndvi_modis = list(
     name = "ndvi_modis",
     display_name = "NDVI (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_NDVI_250m_2020_2024_NE.tif",  # In raw, will copy
+    path = file.path(.cov_coarse_raw, "MODIS_NDVI_250m_2020_2024_NE.tif"),  # In raw, will copy
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
@@ -283,7 +283,7 @@ COVARIATES <- list(
   evi_modis = list(
     name = "evi_modis",
     display_name = "EVI (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_EVI_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_EVI_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
@@ -295,7 +295,7 @@ COVARIATES <- list(
   nbr_modis = list(
     name = "nbr_modis",
     display_name = "NBR (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_NBR_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_NBR_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
@@ -307,7 +307,7 @@ COVARIATES <- list(
   ndwi_modis = list(
     name = "ndwi_modis",
     display_name = "NDWI (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_NDWI_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_NDWI_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "vegetation_index",
@@ -320,7 +320,7 @@ COVARIATES <- list(
   red_modis = list(
     name = "red_modis",
     display_name = "Red Band (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_RED_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_RED_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "band",
@@ -332,7 +332,7 @@ COVARIATES <- list(
   nir_modis = list(
     name = "nir_modis",
     display_name = "NIR Band (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_NIR_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_NIR_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "band",
@@ -344,7 +344,7 @@ COVARIATES <- list(
   blue_modis = list(
     name = "blue_modis",
     display_name = "Blue Band (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_BLUE_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_BLUE_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "band",
@@ -356,7 +356,7 @@ COVARIATES <- list(
   green_modis = list(
     name = "green_modis",
     display_name = "Green Band (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_GREEN_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_GREEN_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "band",
@@ -368,7 +368,7 @@ COVARIATES <- list(
   swir1_modis = list(
     name = "swir1_modis",
     display_name = "SWIR1 Band (MODIS)",
-    path = file.path(.cov_coarse_raw, "MODIS_SWIR1_250m_2020_2024_NE.tif",
+    path = file.path(.cov_coarse_raw, "MODIS_SWIR1_250m_2020_2024_NE.tif"),
     resolution = "250m",
     type = "spectral",
     category = "band",
@@ -379,12 +379,12 @@ COVARIATES <- list(
   
   # ---------------------------------------------------------------------------
   # TOPOGRAPHY (aggregated from 10m to 250m - already done!)
-a  # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   
   elevation_coarse = list(
     name = "elevation",
     display_name = "Elevation",
-    path = file.path(.cov_coarse_raw, "elevation_250m_NE.tif",
+    path = file.path(.cov_coarse_raw, "elevation_250m_NE.tif"),
     resolution = "250m",
     type = "topographic",
     category = "terrain",
@@ -396,7 +396,7 @@ a  # ---------------------------------------------------------------------------
   slope_coarse = list(
     name = "slope",
     display_name = "Slope",
-    path = file.path(.cov_coarse_raw, "slope_250m_NE.tif",
+    path = file.path(.cov_coarse_raw, "slope_250m_NE.tif"),
     resolution = "250m",
     type = "topographic",
     category = "terrain",
@@ -408,7 +408,7 @@ a  # ---------------------------------------------------------------------------
   aspect_coarse = list(
     name = "aspect",
     display_name = "Aspect",
-    path = file.path(.cov_coarse_raw, "aspect_250m_NE.tif",
+    path = file.path(.cov_coarse_raw, "aspect_250m_NE.tif"),
     resolution = "250m",
     type = "topographic",
     category = "terrain",
@@ -424,7 +424,7 @@ a  # ---------------------------------------------------------------------------
   tmean_coarse = list(
     name = "tmean",
     display_name = "Mean Temperature",
-    path = file.path(.cov_coarse_raw, "tmean.tif",
+    path = file.path(.cov_coarse_raw, "tmean.tif"),
     resolution = "250m",
     type = "climate",
     category = "temperature",
@@ -437,7 +437,7 @@ a  # ---------------------------------------------------------------------------
   tmin_coarse = list(
     name = "tmin",
     display_name = "Minimum Temperature",
-    path = file.path(.cov_coarse_raw, "tmin.tif",
+    path = file.path(.cov_coarse_raw, "tmin.tif"),
     resolution = "250m",
     type = "climate",
     category = "temperature",
@@ -449,7 +449,7 @@ a  # ---------------------------------------------------------------------------
   tmax_coarse = list(
     name = "tmax",
     display_name = "Maximum Temperature",
-    path = file.path(.cov_coarse_raw, "tmax.tif",
+    path = file.path(.cov_coarse_raw, "tmax.tif"),
     resolution = "250m",
     type = "climate",
     category = "temperature",
@@ -462,14 +462,14 @@ a  # ---------------------------------------------------------------------------
   ppt_coarse = list(
     name = "ppt",
     display_name = "Precipitation",
-    path = file.path(.cov_coarse_raw, "ppt.tif",
+    path = file.path(.cov_coarse_raw, "ppt.tif"),
     resolution = "250m",
     type = "climate",
     category = "precipitation",
     scale = "coarse",
     active = TRUE,
-    notes = "Daymet V4 resampled to 250m"  # ← Updated note
-  )  
+    notes = "Daymet V4 resampled to 250m"  # Updated note
+  )
 )
 
 # =============================================================================

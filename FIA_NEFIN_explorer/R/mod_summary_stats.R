@@ -9,7 +9,7 @@ summary_stats_ui <- function(id) {
   card(
     card_header(
       "Summary Statistics",
-      class = "bg-primary"
+      class = "bg-dark"
     ),
     card_body(
       DTOutput(ns("summary_table"))

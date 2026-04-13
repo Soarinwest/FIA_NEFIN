@@ -16,9 +16,118 @@ ui <- page_navbar(
   title = "FIA-NEFIN Explorer",
   id    = "main_navbar",
   theme = bs_theme(
-    bootswatch = "flatly",
-    primary    = "#E69F00",
-    base_font  = font_google("Open Sans")
+    bootswatch = NULL,  # Use custom theme
+    # Dark slate foundation
+    bg = "#0f172a",           # Deep slate background
+    fg = "#e2e8f0",           # Light text
+    primary = "#3b82f6",      # Soft blue for accents/buttons
+    secondary = "#64748b",    # Medium slate
+    success = "#10b981",      # Green for success
+    danger = "#ef4444",       # Red for errors
+    warning = "#f59e0b",      # Amber for warnings
+    info = "#06b6d4",         # Cyan for info
+    light = "#1e293b",        # Slate for light backgrounds
+    dark = "#0f172a",         # Navy for dark backgrounds
+    base_font = font_google("Inter"),
+    heading_font = font_google("Inter")
+  ),
+
+  # Custom CSS for dark theme refinement
+  tags$head(
+    tags$style(HTML("
+      :root {
+        --bs-body-bg: #0f172a;
+        --bs-body-color: #e2e8f0;
+        --bs-border-color: #334155;
+        --bs-emphasis-color: #94a3b8;
+      }
+
+      /* Navbar styling */
+      .navbar {
+        background-color: #1e293b !important;
+        border-bottom: 2px solid #3b82f6;
+      }
+
+      .nav-link {
+        color: #cbd5e1 !important;
+        transition: all 0.2s ease;
+      }
+
+      .nav-link:hover,
+      .nav-link.active {
+        color: #3b82f6 !important;
+        border-bottom: 3px solid #3b82f6;
+      }
+
+      /* Card styling */
+      .card {
+        background-color: #1e293b;
+        border-color: #334155;
+        border: 1px solid #334155;
+      }
+
+      .card-header {
+        background-color: #0f172a;
+        border-bottom-color: #334155;
+        color: #e2e8f0;
+      }
+
+      .card-body {
+        color: #e2e8f0;
+      }
+
+      /* Sidebar styling */
+      .sidebar {
+        background-color: #1e293b;
+        border-right: 1px solid #334155;
+      }
+
+      /* Form controls */
+      .form-control, .form-select {
+        background-color: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+      }
+
+      .form-control:focus, .form-select:focus {
+        background-color: #0f172a;
+        border-color: #3b82f6;
+        color: #e2e8f0;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+      }
+
+      /* Button styling */
+      .btn-primary {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+      }
+
+      .btn-primary:hover {
+        background-color: #1e40af;
+        border-color: #1e40af;
+      }
+
+      /* Text colors */
+      .text-muted {
+        color: #94a3b8 !important;
+      }
+
+      /* Table styling */
+      .table {
+        color: #e2e8f0;
+        border-color: #334155;
+      }
+
+      .table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: rgba(51, 65, 85, 0.2);
+      }
+
+      /* Value boxes */
+      .value-box {
+        background-color: #1e293b;
+        border-left: 4px solid #3b82f6;
+      }
+    "))
   ),
 
   # Loading screen overlay — fades out when Shiny connects
@@ -27,7 +136,7 @@ ui <- page_navbar(
       id = "loading-screen",
       style = paste0(
         "position:fixed; top:0; left:0; width:100%; height:100%;",
-        "background:white; z-index:9999; display:flex;",
+        "background:#0f172a; z-index:9999; display:flex;",
         "align-items:center; justify-content:center; flex-direction:column;"
       ),
       tags$div(
@@ -35,8 +144,9 @@ ui <- page_navbar(
         style = "width:3rem; height:3rem;",
         tags$span(class = "visually-hidden", "Loading...")
       ),
-      tags$h4("Loading FIA-NEFIN Explorer...", class = "mt-3 text-muted"),
-      tags$p("Preparing data and map tiles", class = "text-muted small")
+      tags$h4("Loading FIA-NEFIN Explorer...", class = "mt-3", style = "color: #94a3b8;"),
+      tags$p("Preparing data and map tiles", class = "small", style = "color: #64748b;")
+
     ),
     tags$script(HTML("
       $(document).on('shiny:connected', function() {
@@ -108,20 +218,13 @@ ui <- page_navbar(
         checkboxInput("show_tests", "Show statistical tests",    value = TRUE),
 
         hr(),
-        uiOutput("data_summary_text"),
-
-        hr(),
-        downloadButton(
-          "download_data",
-          "Export Filtered Data",
-          class = "btn-primary btn-sm"
-        )
+        uiOutput("data_summary_text")
       ),
 
       # Main content
       card(
         card_body(
-          class = "bg-light",
+          class = "bg-dark",
           h4("Compositional Differences Between FIA and NEFIN"),
           p(
             "This tab explores fundamental differences between the Forest Inventory",
@@ -194,14 +297,14 @@ ui <- page_navbar(
           p(
             "Forest Inventory and Analysis (FIA) data downloaded from the USDA Forest",
             "Service FIA DataMart. Plots from 7 northeastern states (ME, NH, VT, MA,",
-            "CT, RI, NY), measurement years 2020\u20132024. Above-ground live biomass",
+            "CT, RI, NY), measurement years 2020-2024. Above-ground live biomass",
             "calculated from component ratio method (DRYBIO_AG field, converted from",
             "lb/acre to Mg/ha using factor 0.001121)."
           ),
           h5("FIA Coordinate Handling"),
           p(
             "FIA plot coordinates are ", strong("pre-fuzzed"), " by the USDA Forest",
-            "Service \u2014 displaced up to 1 mile (1.6 km) from the true location to",
+            "Service  - displaced up to 1 mile (1.6 km) from the true location to",
             "protect landowner privacy. All 7,345 plots in this dataset have",
             tags$code("coord_source = 'fuzzed'"), ". Coordinates shown on the Spatial",
             "Explorer map are these fuzzed positions. Uncertainty circles depict the",
@@ -230,10 +333,10 @@ ui <- page_navbar(
             tags$dt("ETH Global Canopy Height 2020"),
             tags$dd("Lang et al. (2023), 10 m resolution. Top predictor in all models (100% normalized importance)."),
             tags$dt("Sentinel-2 (10m)"),
-            tags$dd("NDVI, EVI, NBR, NDWI, and spectral bands. Median composite 2020\u20132022."),
+            tags$dd("NDVI, EVI, NBR, NDWI, and spectral bands. Median composite 2020-2022."),
             tags$dt("MODIS (250m)"),
             tags$dd("NDVI, EVI, NBR, NDWI, and spectral bands. Annual median composites."),
-            tags$dt("Climate \u2014 Daymet V4"),
+            tags$dt("Climate  - Daymet V4"),
             tags$dd("Daily surface weather interpolated at 1 km. Mean annual temperature (tmean) and total annual precipitation (ppt). NOT PRISM."),
             tags$dt("Topography"),
             tags$dd("Elevation, slope, aspect from 10m and 250m DEMs.")
@@ -306,24 +409,14 @@ server <- function(input, output, session) {
     n_nefin <- sum(data$dataset == "NEFIN", na.rm = TRUE)
 
     HTML(paste0(
-      "<div style='font-size: 0.85em; color: #555;'>",
-      "<strong>Current Selection:</strong><br/>",
+      "<div style='font-size: 0.85em; color: #94a3b8;'>",
+      "<strong style='color: #e2e8f0;'>Current Selection:</strong><br/>",
       "Total: ", scales::comma(n_total), " plots<br/>",
       "FIA: ", scales::comma(n_fia), "<br/>",
       "NEFIN: ", scales::comma(n_nefin), "<br/>",
       "</div>"
     ))
   })
-
-  # Download handler ---------------------------------------------------------
-  output$download_data <- downloadHandler(
-    filename = function() {
-      paste0("fia_nefin_filtered_", Sys.Date(), ".csv")
-    },
-    content = function(file) {
-      write.csv(filtered_data(), file, row.names = FALSE)
-    }
-  )
 
   # Module servers -----------------------------------------------------------
 

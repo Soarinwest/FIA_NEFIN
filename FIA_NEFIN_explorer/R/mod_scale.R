@@ -119,14 +119,22 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
         )
     })
 
-    # React to plotly click → update selected_scale
+    # React to plotly click - update selected_scale
     observeEvent(plotly::event_data("plotly_click", source = "scale_curve"), {
       click <- plotly::event_data("plotly_click", source = "scale_curve")
       req(!is.null(click))
-      # ggplotly with log scale returns the actual x value (not log)
-      # Match to nearest area_ha_num
       x_val <- click$x
-      idx   <- which.min(abs(scale_metrics$area_ha_num - x_val))
+      message("[scale] Click x_val: ", x_val,
+              " | area_ha_num values: ",
+              paste(scale_metrics$area_ha_num, collapse = ", "))
+      # plotly log axis may return log10 value; try both raw and 10^x
+      idx_raw <- which.min(abs(scale_metrics$area_ha_num - x_val))
+      idx_log <- which.min(abs(scale_metrics$area_ha_num - 10^x_val))
+      # Use whichever is a closer match
+      err_raw <- abs(scale_metrics$area_ha_num[idx_raw] - x_val)
+      err_log <- abs(scale_metrics$area_ha_num[idx_log] - 10^x_val)
+      idx <- if (err_log < err_raw) idx_log else idx_raw
+      message("[scale] Matched scale: ", scale_metrics$scale[idx])
       if (length(idx) > 0) selected_scale(scale_metrics$scale[idx])
     })
 
@@ -219,7 +227,15 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
 
     # ── Bootstrap variance ────────────────────────────────────────────────────
     output$bootstrap_table <- renderTable({
-      req(!is.null(bootstrap_variance))
+      if (is.null(bootstrap_variance)) {
+        return(data.frame(
+          Dataset = "No data",
+          `Bootstrap Variance` = NA,
+          `Change from Baseline` = NA,
+          `Change (%)` = NA,
+          check.names = FALSE
+        ))
+      }
       bootstrap_variance |>
         dplyr::mutate(
           `Bootstrap Variance` = round(var_bootstrap, 4),

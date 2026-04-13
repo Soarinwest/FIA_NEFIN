@@ -10,7 +10,7 @@ species_ui <- function(id) {
     full_screen = TRUE,
     card_header(
       "Species-Level Analysis",
-      class = "bg-primary"
+      class = "bg-dark"
     ),
     layout_sidebar(
       sidebar = sidebar(

@@ -54,3 +54,5 @@ FIA_NEFIN.Rproj
 ArcProject
 CLAUDE.md
 .claude 
+*.docx
+papers/*

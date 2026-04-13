@@ -55,6 +55,15 @@ if (extent_type == "chittenden_county") {
     bbox <- c(xmin = -73.3, xmax = -72.9, ymin = 44.35, ymax = 44.65)
     county_boundary <- st_as_sfc(st_bbox(bbox, crs = 4326))
   }
+  # Apply buffer to ensure full coverage (matches main prediction script)
+  buffer_km <- PHASE4_CONFIG$prediction$extent$county$buffer_km
+  if (!is.null(buffer_km) && buffer_km > 0) {
+    county_boundary <- county_boundary %>%
+      st_transform(5070) %>%
+      st_buffer(buffer_km * 1000) %>%
+      st_transform(4326)
+    cat("  Buffer:", buffer_km, "km\n")
+  }
   prediction_extent <- county_boundary
 }
 
@@ -76,24 +85,37 @@ fine_covs <- Filter(function(x) x$scale == "fine", active_covs)
 covariate_rasters <- list()
 target_crs <- NULL
 extent_transformed <- NULL
+template_rast <- NULL
 
 for (cov_key in names(fine_covs)) {
   cov_info <- fine_covs[[cov_key]]
-  
+
   if (!file.exists(cov_info$path)) next
-  
+
+  cat("  Loading ", cov_info$display_name, "...", sep = "")
+
   r <- rast(cov_info$path)
-  
+
   if (is.null(target_crs)) {
     target_crs <- crs(r)
     extent_transformed <- project(extent_vect, target_crs)
   }
-  
+
   r_cropped <- crop(r, extent_transformed)
-  
+
+  # Use first raster as template; resample others to match
+  if (is.null(template_rast)) {
+    template_rast <- r_cropped
+    cat(" [template]")
+  } else if (!identical(ext(r_cropped), ext(template_rast))) {
+    r_cropped <- resample(r_cropped, template_rast, method = "bilinear")
+    cat(" [aligned]")
+  }
+
   # Store with resolution suffix
   covariate_name <- paste0(cov_info$name, "_10m")
   covariate_rasters[[covariate_name]] <- r_cropped
+  cat(" ok\n")
 }
 
 cat("  ✓ Loaded", length(covariate_rasters), "covariates\n\n")

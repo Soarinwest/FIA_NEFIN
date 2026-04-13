@@ -141,11 +141,11 @@ fuzzing_rmse     <- cv_results_list$fuzzing
 
 # Global variables ------------------------------------------------------------
 
-# Dataset colors (colorblind-safe)
+# Dataset colors (colorblind-safe, data-focused palette)
 DATASET_COLORS <- c(
-  "FIA"    = "#E69F00",  # Orange
-  "NEFIN"  = "#56B4E9",  # Sky blue
-  "Pooled" = "#009E73"   # Green
+  "FIA"    = "#3b82f6",  # Soft blue
+  "NEFIN"  = "#f59e0b",  # Soft orange/amber
+  "Pooled" = "#14b8a6"   # Teal
 )
 
 # State list for filter dropdown

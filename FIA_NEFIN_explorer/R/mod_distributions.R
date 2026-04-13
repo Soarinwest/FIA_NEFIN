@@ -10,7 +10,7 @@ distributions_ui <- function(id) {
     full_screen = TRUE,
     card_header(
       textOutput(ns("dist_header")),
-      class = "bg-primary"
+      class = "bg-dark"
     ),
     card_body(
       layout_columns(
