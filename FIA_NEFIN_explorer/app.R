@@ -368,7 +368,7 @@ ui <- page_navbar(
     tags$a(
       icon("github"),
       "GitHub",
-      href   = "https://github.com/your-repo/fia-nefin-explorer",
+      href   = "https://github.com/Soarinwest/FIA_NEFIN/",
       target = "_blank"
     )
   ),
