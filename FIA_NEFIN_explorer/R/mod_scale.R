@@ -6,28 +6,31 @@ scale_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    # Row 1: Scale dependency curve (left) + selected scale info (right)
+    # Row 1: Scale dependency curve (large) + compact selected scale info
     layout_columns(
-      col_widths = c(7, 5),
+      col_widths = c(8, 4),
       card(
         full_screen  = TRUE,
         card_header("Scale-Dependent Augmentation Performance"),
         card_body(
           p(class = "text-muted small",
-            "Click any point to explore the biomass distribution at that hexagon scale.",
-            " Larger hexagons contain more FIA plots, reducing sampling noise;",
-            " NEFIN's influence is most visible at fine scales."
+            "Click any point to explore metrics at that hexagon scale."
           ),
-          plotly::plotlyOutput(ns("scale_curve"), height = "420px")
+          plotly::plotlyOutput(ns("scale_curve"), height = "450px")
         )
       ),
-      card(
-        full_screen = TRUE,
-        card_header(uiOutput(ns("scale_panel_header"))),
-        card_body(
-          uiOutput(ns("scale_info_boxes")),
-          hr(),
-          plotly::plotlyOutput(ns("scale_metric_bars"), height = "280px")
+      tagList(
+        card(
+          card_header(uiOutput(ns("scale_panel_header"))),
+          card_body(
+            style = "padding:8px;",
+            uiOutput(ns("scale_info_boxes"))
+          )
+        ),
+        card(
+          card_body(
+            plotly::plotlyOutput(ns("scale_metric_bars"), height = "200px")
+          )
         )
       )
     ),
@@ -144,34 +147,23 @@ scale_server <- function(id, scale_metrics, bootstrap_variance) {
     output$scale_info_boxes <- renderUI({
       sc <- selected_scale()
       if (is.null(sc)) {
-        return(tags$p(class = "text-muted",
-          "Click a point on the scale curve to see metrics for that scale."))
+        return(tags$p(class = "text-muted small",
+          "Click a point on the scale curve."))
       }
       row <- dplyr::filter(scale_metrics, scale == sc)
       if (nrow(row) == 0) return(NULL)
 
-      layout_columns(
-        col_widths = c(6, 6, 6, 6),
-        value_box("RMSE",
-          paste0(round(row$rmse, 1), " Mg/ha"),
-          showcase = bsicons::bs_icon("bullseye"),
-          theme    = "secondary"
-        ),
-        value_box("MAE",
-          paste0(round(row$mae, 1), " Mg/ha"),
-          showcase = bsicons::bs_icon("rulers"),
-          theme    = "secondary"
-        ),
-        value_box("% Hexagons Improved",
-          paste0(round(row$pct_improved, 1), "%"),
-          showcase = bsicons::bs_icon("arrow-up"),
-          theme    = "success"
-        ),
-        value_box("N Hexagons",
-          scales::comma(row$n_hexes),
-          showcase = bsicons::bs_icon("grid"),
-          theme    = "secondary"
-        )
+      tags$table(
+        class = "table table-sm mb-0",
+        style = "font-size:0.85em; color:#e2e8f0;",
+        tags$tr(tags$td("RMSE"), tags$td(style = "text-align:right; font-weight:bold;",
+          paste0(round(row$rmse, 1), " Mg/ha"))),
+        tags$tr(tags$td("MAE"), tags$td(style = "text-align:right; font-weight:bold;",
+          paste0(round(row$mae, 1), " Mg/ha"))),
+        tags$tr(tags$td("% Improved"), tags$td(style = "text-align:right; font-weight:bold; color:#10b981;",
+          paste0(round(row$pct_improved, 1), "%"))),
+        tags$tr(tags$td("N Hexagons"), tags$td(style = "text-align:right; font-weight:bold;",
+          scales::comma(row$n_hexes)))
       )
     })
 

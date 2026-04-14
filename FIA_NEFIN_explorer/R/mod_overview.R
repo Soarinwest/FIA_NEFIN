@@ -35,40 +35,26 @@ overview_ui <- function(id) {
       )
     ),
 
-    # Row 2: Research framing (left) + study area map (right)
+    # Row 2: About + Datasets + Map (3 balanced columns)
     layout_columns(
-      col_widths = c(7, 5),
+      col_widths = c(4, 4, 4),
       card(
-        card_header("Training Data Composition and Spatial Biomass Estimation"),
+        card_header("About"),
         card_body(
-          p(
-            "This project investigates how training data composition",
-            " influences model performance and inference in spatial biomass estimation.",
-            " We compare two fundamentally different forest inventory datasets",
-            " - not as interchangeable data sources, but as",
-            " distinct sampling distributions over the same landscape."
+          tags$p(class = "small",
+            "This project investigates how training data composition influences",
+            " model performance in spatial biomass estimation. We compare two",
+            " fundamentally different forest inventory datasets - not as",
+            " interchangeable data sources, but as distinct sampling distributions",
+            " over the same landscape."
           ),
-          tags$dl(
-            tags$dt(style = "color:#3b82f6;", "FIA (Forest Inventory and Analysis)"),
-            tags$dd(class = "small mb-2",
-              "Probability-sampled, spatially representative. 7,345 plots across 7 NE states.",
-              " Coordinates administratively fuzzed up to 1 mile."
-            ),
-            tags$dt(style = "color:#f59e0b;", "NEFIN (Northeast Forest Inventory Network)"),
-            tags$dd(class = "small mb-2",
-              "Targeted dataset with high structural fidelity in rare, high-biomass forests.",
-              " 457 plots, 93.7% measured in 2024. True GPS coordinates, no fuzzing."
-            )
-          ),
-          h6("Core Question"),
-          p(
-            "How does the distribution of training data affect",
-            " model bias, error structure, and ability to generalize across feature space",
+          tags$p(class = "small", style = "color:#94a3b8;",
+            "How does the distribution of training data affect model bias,",
+            " error structure, and ability to generalize across feature space",
             " - particularly for rare but ecologically important conditions?"
           ),
-          h6("Key Hypothesis"),
           tags$blockquote(
-            class = "small",
+            class = "small mb-0",
             style = "border-left:3px solid #3b82f6; padding-left:12px; color:#94a3b8; font-style:italic;",
             "Model performance is governed more by structural representativeness",
             " of training data than by coordinate precision or spatial resolution."
@@ -76,13 +62,37 @@ overview_ui <- function(id) {
         )
       ),
       card(
-        full_screen = TRUE,
-        card_header("Study Area - Northeastern US"),
+        card_header("Datasets"),
         card_body(
-          style = "padding:8px; text-align:center; aspect-ratio:4/3; overflow:hidden;",
+          tags$dl(
+            class = "mb-0",
+            tags$dt(style = "color:#3b82f6;", "FIA (Forest Inventory and Analysis)"),
+            tags$dd(class = "small mb-2",
+              "A systematic, probability-based survey covering all US forest land.",
+              " 7,345 northeastern plots (ME, NH, VT, MA, CT, RI, NY),",
+              " measurement years 2020-2024. Fixed-radius nested design with",
+              " four 7.3 m subplots. Coordinates are administratively fuzzed",
+              " up to 1 mile (1.6 km) to protect landowner privacy."
+            ),
+            tags$dt(style = "color:#f59e0b;", "NEFIN (NE Forest Inventory Network)"),
+            tags$dd(class = "small mb-0",
+              "A collaborative research network targeting unmanaged,",
+              " late-successional, and old-growth forests. 457 plots, 93.7%",
+              " measured in 2024, with origins in the 1960s. Not probability-sampled",
+              " - plots are in forests of ecological interest, introducing",
+              " compositional bias toward large trees. True GPS coordinates."
+            )
+          )
+        )
+      ),
+      card(
+        full_screen = TRUE,
+        card_header("Study Area"),
+        card_body(
+          style = "padding:8px; text-align:center; overflow:hidden;",
           tags$img(
             src   = "figures/Fig1_Study_Area.png",
-            style = "width:100%; height:100%; object-fit:contain; border-radius:4px;"
+            style = "width:100%; height:auto; border-radius:4px;"
           )
         )
       )
@@ -90,34 +100,24 @@ overview_ui <- function(id) {
 
     # Row 3: Key findings + analytical approach
     layout_columns(
-      col_widths = c(6, 6),
+      col_widths = c(5, 7),
       card(
         card_header(
           tags$span(bsicons::bs_icon("graph-up"), " Key Findings")
         ),
         card_body(
-          tags$dl(
-            tags$dt("Sampling design defines model bias"),
-            tags$dd(class = "small",
-              "FIA underpredicts high-biomass stands (Q4);",
-              " NEFIN overpredicts low-biomass stands (Q1).",
-              " Each dataset's bias mirrors its training distribution."
-            ),
-            tags$dt("Pooling improves performance with tradeoffs"),
-            tags$dd(class = "small",
-              "Combining FIA + NEFIN reduces test-set RMSE by ~12-15%",
-              " vs FIA alone, but introduces a compromise bias structure."
-            ),
-            tags$dt("Coordinate fuzzing is not the dominant error source"),
-            tags$dd(class = "small",
-              "Monte Carlo simulation of FIA's 1-mile fuzz radius shows",
-              " training data distribution matters more than coordinate precision."
-            ),
-            tags$dt("Bias increases with spatial aggregation"),
-            tags$dd(class = "small",
-              "FIA-NEFIN agreement improves at coarser hexagon scales,",
-              " but systematic bias persists across all scales."
-            )
+          tags$ul(
+            class = "small mb-0",
+            tags$li("Sampling design defines model bias: FIA underpredicts high-biomass",
+                    " stands (Q4), NEFIN overpredicts low-biomass stands (Q1)"),
+            tags$li("Pooling FIA + NEFIN reduces test-set RMSE by ~12-15% vs FIA alone,",
+                    " but introduces a compromise bias structure"),
+            tags$li("Coordinate fuzzing (1-mile displacement) is not the dominant error",
+                    " source - training data distribution is"),
+            tags$li("Bias structure persists across spatial aggregation scales",
+                    " (100 ha to 100,000 ha hexagons)"),
+            tags$li("ETH Global Canopy Height 2020 is the top predictor at 100%",
+                    " normalized importance in all 6 models")
           )
         )
       ),
@@ -127,25 +127,21 @@ overview_ui <- function(id) {
         ),
         card_body(
           tags$ul(
-            class = "small",
-            tags$li("Multi-scale aggregation from 100 ha to 100,000 ha hexagon grids (DGGRID H3)"),
-            tags$li("Controlled experiments with FIA-only, NEFIN-only, and Pooled training scenarios"),
-            tags$li("Spatial cross-validation with 25 km blocks, 10 km buffer, 10 folds, seed 42"),
-            tags$li("Distributional analysis including quantile comparisons, tail enrichment, and ECDFs"),
-            tags$li("Monte Carlo uncertainty simulation with 100 jittered coordinate draws per FIA plot"),
-            tags$li("Random Forest and XGBoost models at fine (10m) and coarse (250m) scales"),
-            tags$li("ETH Global Canopy Height 2020 is the top predictor at 100% importance in all models")
-          ),
-          h6("Takeaway", class = "mt-3"),
-          tags$blockquote(
-            style = "border-left:3px solid #14b8a6; padding-left:12px; color:#94a3b8; font-style:italic;",
-            "In spatial modeling, what your data represent matters more",
-            " than how precisely they are located."
-          ),
-          tags$p(class = "text-muted small mt-2",
-            "Applications: carbon accounting, biomass mapping, remote sensing model design,",
-            " data integration across sampling frameworks,",
-            " and any ML system trained on non-representative data."
+            class = "small mb-0",
+            tags$li("Three controlled training scenarios: FIA-only (7,345 plots),",
+                    " NEFIN-only (317 plots), Pooled (7,662 plots)"),
+            tags$li("Independent test set: 140 held-out NEFIN plots,",
+                    " stratified by biomass quartile"),
+            tags$li("Random Forest (mtry = floor(p/3)) and XGBoost at fine (10m)",
+                    " and coarse (250m) spatial scales"),
+            tags$li("Spatial block CV: 25 km blocks, 10 km buffer, 10 folds, seed 42"),
+            tags$li("Multi-scale hexagon aggregation: 100 ha to 100,000 ha (DGGRID H3)"),
+            tags$li("Monte Carlo coordinate uncertainty: 100 jittered draws within",
+                    " 1-mile (1.609 km) FIA fuzz radius per plot"),
+            tags$li("Covariates: ETH Canopy Height, Sentinel-2 spectral (10m),",
+                    " MODIS spectral (250m), Daymet V4 climate, topography"),
+            tags$li("Applications: carbon accounting, biomass mapping, remote sensing",
+                    " model design, data integration across sampling frameworks")
           )
         )
       )

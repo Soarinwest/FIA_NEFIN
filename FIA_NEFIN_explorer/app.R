@@ -165,7 +165,130 @@ ui <- page_navbar(
     overview_ui("overview")
   ),
 
-  # Tab 2: Dataset Comparison -------------------------------------------------
+  # Tab 2: Methods ------------------------------------------------------------
+  nav_panel(
+    title = "Methods",
+    icon  = icon("book"),
+    value = "tab_methods",
+    layout_columns(
+      col_widths = c(6, 6),
+      card(
+        card_header("Data Sources"),
+        card_body(
+          h6("FIA (Forest Inventory and Analysis)"),
+          p(class = "small",
+            "Downloaded from USDA Forest Service FIA DataMart. 7,345 plots from",
+            " 7 northeastern states (ME, NH, VT, MA, CT, RI, NY), measurement",
+            " years 2020-2024. Above-ground live biomass calculated from the",
+            " component ratio method (DRYBIO_AG field, converted from lb/acre to",
+            " Mg/ha using factor 0.001121). Each plot uses a fixed-radius nested",
+            " design with four 7.3 m subplots."
+          ),
+          p(class = "small",
+            "FIA plot coordinates are administratively fuzzed by the USDA Forest",
+            " Service - displaced up to 1 mile (1.609 km) from the true location",
+            " to protect landowner privacy. All 7,345 plots in this analysis have",
+            " coord_source = 'fuzzed'. This spatial uncertainty propagates to all",
+            " remote sensing covariate extractions."
+          ),
+          h6("NEFIN (Northeast Forest Inventory Network)"),
+          p(class = "small",
+            "Plot data provided by the Forest Ecosystem Monitoring Cooperative",
+            " (FEMC) at the University of Vermont. 457 plots; 93.7% remeasured in",
+            " 2024, with network origins in the 1960s. Plots target unmanaged,",
+            " late-successional, and old-growth forests. Not probability-sampled -",
+            " this introduces compositional bias toward large trees and high",
+            " biomass stands. True GPS coordinates (no administrative fuzzing)."
+          ),
+          h6("Training and Test Sets"),
+          p(class = "small",
+            "Three training scenarios: FIA-only (7,345 plots), NEFIN-only (317",
+            " plots), and Pooled (7,662 plots). Independent test set: 140 held-out",
+            " NEFIN plots, stratified by biomass quartile to ensure balanced",
+            " evaluation across the biomass distribution."
+          )
+        )
+      ),
+      card(
+        card_header("Modeling & Validation"),
+        card_body(
+          h6("Covariates"),
+          tags$dl(
+            class = "small",
+            tags$dt("ETH Global Canopy Height 2020"),
+            tags$dd("Lang et al. (2023). 10 m resolution. Confirmed as the top predictor",
+                    " in all 6 models at 100% normalized variable importance."),
+            tags$dt("Sentinel-2 Spectral (10m)"),
+            tags$dd("NDVI, EVI, NBR, NDWI, and raw bands (B2, B3, B4). Median composite 2020-2022."),
+            tags$dt("MODIS Spectral (250m)"),
+            tags$dd("NDVI, EVI, NBR, NDWI, NIR, Red, Green, Blue, SWIR1. Annual median composites."),
+            tags$dt("Climate - Daymet V4"),
+            tags$dd("Mean temperature (tmean), min/max temperature (tmin, tmax), and total",
+                    " annual precipitation (ppt). Daily surface weather interpolated at 1 km. Not PRISM."),
+            tags$dt("Topography"),
+            tags$dd("Elevation, slope, aspect from 10m and 250m DEMs.")
+          ),
+          h6("Models"),
+          p(class = "small",
+            "Random Forest (ranger, mtry = floor(p/3), regression default) and",
+            " XGBoost trained on each of three scenarios at two spatial scales:",
+            " fine (10m covariates) and coarse (250m covariates). 6 models total."
+          ),
+          h6("Spatial Cross-Validation"),
+          p(class = "small",
+            "Spatial leave-one-block-out CV with 25 km x 25 km blocks, 10 km",
+            " buffer between training and test folds, 10 folds, seed 42.",
+            " Prevents spatial autocorrelation from inflating performance estimates."
+          ),
+          h6("Monte Carlo Coordinate Uncertainty"),
+          p(class = "small",
+            "For each FIA plot, 100 random locations drawn uniformly within the",
+            " 1-mile (1.609 km) fuzz radius. Remote sensing covariates extracted",
+            " at each jittered location. Standard deviation across replicates",
+            " quantifies covariate extraction uncertainty due to coordinate fuzzing."
+          ),
+          h6("Reproducibility"),
+          p(class = "small",
+            "Random seed: 42 for all subsampling, CV, and Monte Carlo operations.",
+            " Raster CRS: EPSG:5070 (NAD83 Conus Albers). Display CRS: EPSG:4326.",
+            " Predictions at 10m (fine) and 250m (coarse) over Chittenden County, VT."
+          )
+        )
+      )
+    ),
+    card(
+      card_header("References"),
+      card_body(
+        tags$ul(
+          class = "small",
+          tags$li("Bechtold, W.A. & Patterson, P.L. (2005). The enhanced Forest Inventory",
+                  " and Analysis program - national sampling design and estimation",
+                  " procedures. USDA Forest Service, SRS-GTR-80."),
+          tags$li("Lang, N., Jetz, W., Schindler, K., & Wegner, J.D. (2023). A",
+                  " high-resolution canopy height model of the Earth. Nature Ecology",
+                  " & Evolution, 7, 1778-1789."),
+          tags$li("Thornton, P.E., et al. (2022). Daymet: Daily surface weather data",
+                  " on a 1-km grid for North America, Version 4 R1. ORNL DAAC."),
+          tags$li("Breiman, L. (2001). Random forests. Machine Learning, 45(1), 5-32."),
+          tags$li("Chen, T. & Guestrin, C. (2016). XGBoost: A scalable tree boosting",
+                  " system. Proceedings of KDD 2016."),
+          tags$li("Roberts, D.R., et al. (2017). Cross-validation strategies for data",
+                  " with temporal, spatial, hierarchical, or phylogenetic structure.",
+                  " Ecography, 40(8), 913-929."),
+          tags$li("Drusch, M., et al. (2012). Sentinel-2: ESA's optical high-resolution",
+                  " mission for GMES operational services. Remote Sensing of",
+                  " Environment, 120, 25-36."),
+          tags$li("FEMC (2024). Northeast Forest Inventory Network (NEFIN) plot data.",
+                  " Forest Ecosystem Monitoring Cooperative, University of Vermont."),
+          tags$li("Wright, M.N. & Ziegler, A. (2017). ranger: A fast implementation",
+                  " of random forests for high dimensional data in C++ and R.",
+                  " Journal of Statistical Software, 77(1), 1-17.")
+        )
+      )
+    )
+  ),
+
+  # Tab 3: Dataset Comparison -------------------------------------------------
   nav_panel(
     title = "Dataset Comparison",
     icon  = icon("chart-bar"),
@@ -283,83 +406,6 @@ ui <- page_navbar(
     modeling_ui("modeling")
   ),
 
-  # Tab 6: Methods ------------------------------------------------------------
-  nav_panel(
-    title = "Methods",
-    icon  = icon("book"),
-    value = "tab_methods",
-    layout_columns(
-      col_widths = c(6, 6),
-      card(
-        card_header("Data Sources & Processing"),
-        card_body(
-          h5("FIA Data"),
-          p(
-            "Forest Inventory and Analysis (FIA) data downloaded from the USDA Forest",
-            "Service FIA DataMart. Plots from 7 northeastern states (ME, NH, VT, MA,",
-            "CT, RI, NY), measurement years 2020-2024. Above-ground live biomass",
-            "calculated from component ratio method (DRYBIO_AG field, converted from",
-            "lb/acre to Mg/ha using factor 0.001121)."
-          ),
-          h5("FIA Coordinate Handling"),
-          p(
-            "FIA plot coordinates are ", strong("pre-fuzzed"), " by the USDA Forest",
-            "Service  - displaced up to 1 mile (1.6 km) from the true location to",
-            "protect landowner privacy. All 7,345 plots in this dataset have",
-            tags$code("coord_source = 'fuzzed'"), ". Coordinates shown on the Spatial",
-            "Explorer map are these fuzzed positions. Uncertainty circles depict the",
-            "covariate extraction radius used in the Monte Carlo analysis."
-          ),
-          h5("NEFIN Data"),
-          p(
-            "Northeast Forest Inventory Network (NEFIN) plot data provided by FEMC.",
-            "457 plots; 93.7% measured in 2024, with historical remeasurements back",
-            "to the 1960s. True GPS coordinates (no administrative fuzzing)."
-          ),
-          h5("Monte Carlo Uncertainty"),
-          p(
-            "For each FIA plot, 100 random locations were drawn uniformly within the",
-            "1-mile fuzz radius. Remote sensing covariates were extracted at each",
-            "jittered location. The standard deviation of extracted values across 100",
-            "replicates is reported as covariate uncertainty."
-          )
-        )
-      ),
-      card(
-        card_header("Remote Sensing & Modeling"),
-        card_body(
-          h5("Covariates"),
-          tags$dl(
-            tags$dt("ETH Global Canopy Height 2020"),
-            tags$dd("Lang et al. (2023), 10 m resolution. Top predictor in all models (100% normalized importance)."),
-            tags$dt("Sentinel-2 (10m)"),
-            tags$dd("NDVI, EVI, NBR, NDWI, and spectral bands. Median composite 2020-2022."),
-            tags$dt("MODIS (250m)"),
-            tags$dd("NDVI, EVI, NBR, NDWI, and spectral bands. Annual median composites."),
-            tags$dt("Climate  - Daymet V4"),
-            tags$dd("Daily surface weather interpolated at 1 km. Mean annual temperature (tmean) and total annual precipitation (ppt). NOT PRISM."),
-            tags$dt("Topography"),
-            tags$dd("Elevation, slope, aspect from 10m and 250m DEMs.")
-          ),
-          h5("Modeling Framework"),
-          p(
-            "Random Forest and XGBoost models trained on FIA-only, NEFIN-only, and",
-            "Pooled (FIA+NEFIN) training sets at two spatial scales: fine (10m covariates)",
-            "and coarse (250m covariates). Spatial leave-one-block-out cross-validation",
-            "(5 folds) used to estimate generalization error."
-          ),
-          h5("Hexagon Aggregation"),
-          p(
-            "Plots aggregated into DGGRID H3 hexagons at 9 spatial scales from 100 ha",
-            "to 100,000 ha. All area calculations use EPSG:5070 (Albers Equal Area Conic,",
-            "NAD83). Leaflet maps display in WGS84 (EPSG:4326)."
-          ),
-          h5("Reproducibility"),
-          p("Random seed: 42 for all subsampling and Monte Carlo operations.")
-        )
-      )
-    )
-  ),
 
   # Footer -------------------------------------------------------------------
   nav_spacer(),
