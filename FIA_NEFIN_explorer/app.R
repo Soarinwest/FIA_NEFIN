@@ -7,7 +7,6 @@
 # Author: Soren Donisvitch
 # Date: February 2025 (updated 2026-04)
 # ============================================================================
-
 # Load global environment (packages, data, functions)
 source("global.R")
 
@@ -32,106 +31,65 @@ ui <- page_navbar(
     heading_font = font_google("Inter")
   ),
 
-  # Custom CSS for dark theme refinement
-  tags$head(
-    tags$style(HTML("
-      :root {
-        --bs-body-bg: #0f172a;
-        --bs-body-color: #e2e8f0;
-        --bs-border-color: #334155;
-        --bs-emphasis-color: #94a3b8;
-      }
-
-      /* Navbar styling */
-      .navbar {
-        background-color: #1e293b !important;
-        border-bottom: 2px solid #3b82f6;
-      }
-
-      .nav-link {
-        color: #cbd5e1 !important;
-        transition: all 0.2s ease;
-      }
-
-      .nav-link:hover,
-      .nav-link.active {
-        color: #3b82f6 !important;
-        border-bottom: 3px solid #3b82f6;
-      }
-
-      /* Card styling */
-      .card {
-        background-color: #1e293b;
-        border-color: #334155;
-        border: 1px solid #334155;
-      }
-
-      .card-header {
-        background-color: #0f172a;
-        border-bottom-color: #334155;
-        color: #e2e8f0;
-      }
-
-      .card-body {
-        color: #e2e8f0;
-      }
-
-      /* Sidebar styling */
-      .sidebar {
-        background-color: #1e293b;
-        border-right: 1px solid #334155;
-      }
-
-      /* Form controls */
-      .form-control, .form-select {
-        background-color: #0f172a;
-        border-color: #334155;
-        color: #e2e8f0;
-      }
-
-      .form-control:focus, .form-select:focus {
-        background-color: #0f172a;
-        border-color: #3b82f6;
-        color: #e2e8f0;
-        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
-      }
-
-      /* Button styling */
-      .btn-primary {
-        background-color: #3b82f6;
-        border-color: #3b82f6;
-      }
-
-      .btn-primary:hover {
-        background-color: #1e40af;
-        border-color: #1e40af;
-      }
-
-      /* Text colors */
-      .text-muted {
-        color: #94a3b8 !important;
-      }
-
-      /* Table styling */
-      .table {
-        color: #e2e8f0;
-        border-color: #334155;
-      }
-
-      .table-striped > tbody > tr:nth-of-type(odd) {
-        background-color: rgba(51, 65, 85, 0.2);
-      }
-
-      /* Value boxes */
-      .value-box {
-        background-color: #1e293b;
-        border-left: 4px solid #3b82f6;
-      }
-    "))
-  ),
-
-  # Loading screen overlay — fades out when Shiny connects
   header = tagList(
+    tags$head(
+      tags$style(HTML("
+        :root {
+          --bs-body-bg: #0f172a;
+          --bs-body-color: #e2e8f0;
+          --bs-border-color: #334155;
+          --bs-emphasis-color: #94a3b8;
+        }
+        .navbar {
+          background-color: #1e293b !important;
+          border-bottom: 2px solid #3b82f6;
+        }
+        .nav-link {
+          color: #cbd5e1 !important;
+          transition: all 0.2s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+          color: #3b82f6 !important;
+          border-bottom: 3px solid #3b82f6;
+        }
+        .card {
+          background-color: #1e293b;
+          border: 1px solid #334155;
+        }
+        .card-header {
+          background-color: #0f172a;
+          border-bottom-color: #334155;
+          color: #e2e8f0;
+        }
+        .card-body { color: #e2e8f0; }
+        .sidebar {
+          background-color: #1e293b;
+          border-right: 1px solid #334155;
+        }
+        .form-control, .form-select {
+          background-color: #0f172a;
+          border-color: #334155;
+          color: #e2e8f0;
+        }
+        .form-control:focus, .form-select:focus {
+          background-color: #0f172a;
+          border-color: #3b82f6;
+          color: #e2e8f0;
+          box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+        }
+        .btn-primary { background-color: #3b82f6; border-color: #3b82f6; }
+        .btn-primary:hover { background-color: #1e40af; border-color: #1e40af; }
+        .text-muted { color: #94a3b8 !important; }
+        .table { color: #e2e8f0; border-color: #334155; }
+        .table-striped > tbody > tr:nth-of-type(odd) {
+          background-color: rgba(51, 65, 85, 0.2);
+        }
+        .value-box {
+          background-color: #1e293b;
+          border-left: 4px solid #3b82f6;
+        }
+      "))
+    ),
     tags$div(
       id = "loading-screen",
       style = paste0(
@@ -362,9 +320,7 @@ ui <- page_navbar(
         )
       ),
 
-      layout_columns(
-        col_widths = c(12, 12, 12),
-        navset_card_tab(
+      navset_card_tab(
           nav_panel(
             "Summary Statistics",
             summary_stats_ui("summary")
@@ -378,7 +334,6 @@ ui <- page_navbar(
             species_ui("species")
           )
         )
-      )
     )
   ),
 

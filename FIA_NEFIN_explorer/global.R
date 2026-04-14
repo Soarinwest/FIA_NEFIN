@@ -7,19 +7,12 @@
 # ============================================================================
 
 # PROJ fix — must be before any library() call --------------------------------
-Sys.setenv(PROJ_DATA    = "")
-Sys.setenv(PROJ_LIB     = "")
-Sys.setenv(PROJ_NETWORK = "OFF")
+#Sys.setenv(PROJ_DATA    = "")
+#Sys.setenv(PROJ_LIB     = "")
+#Sys.setenv(PROJ_NETWORK = "OFF")
 
-# Suppress jsonlite named-vector deprecation warning (triggered by plotly
-# serialization internals — harmless, will be resolved in a future plotly release)
-globalCallingHandlers(
-  warning = function(w) {
-    if (grepl("keep_vec_names", conditionMessage(w))) {
-      invokeRestart("muffleWarning")
-    }
-  }
-)
+# jsonlite keep_vec_names warnings are suppressed locally where needed
+# (not globally, as globalCallingHandlers breaks Shiny Server init)
 
 # Packages --------------------------------------------------------------------
 library(shiny)
@@ -35,6 +28,9 @@ library(glue)
 library(stringr)
 library(readr)
 library(tibble)
+library(rsconnect)
+library(httr2)
+
 
 # Spatial / mapping
 library(leaflet)

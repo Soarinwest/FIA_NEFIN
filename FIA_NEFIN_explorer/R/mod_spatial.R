@@ -23,16 +23,6 @@ spatial_ui <- function(id) {
           sliderInput(ns("fuzz_radius"), "Uncertainty radius (km):",
                       min = 0.5, max = 1.6, value = 1.0, step = 0.1),
           hr(),
-          h5("NEFIN Color", class = "text-primary mt-0 mb-2"),
-          radioButtons(ns("nefin_color"), NULL,
-            choices = c(
-              "Measurement Year" = "measyear",
-              "Biomass (Mg/ha)"  = "biomass",
-              "State"            = "state"
-            ),
-            selected = "measyear"
-          ),
-          hr(),
           tags$small(class = "text-muted",
             "FIA coordinates are pre-fuzzed up to 1 mile. Circles show the",
             "covariate extraction uncertainty radius, not the displacement itself."
@@ -77,11 +67,7 @@ spatial_ui <- function(id) {
               "Total plot density"               = "n_plots_total"
             ),
             selected = "aug_biomass_mean"
-          ),
-          hr(),
-          sliderInput(ns("min_plots"), "Min. plots per hex:",
-                      min = 1, max = 20, value = 1, step = 1),
-          checkboxInput(ns("show_states"), "Show state boundaries", value = TRUE)
+          )
         ),
         leafletOutput(ns("hex_map"), height = "520px"),
         uiOutput(ns("hex_summary_strip"))
@@ -229,7 +215,6 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
             popup        = ~paste0(
               "<b>FIA Plot</b> (pre-fuzzed)<br>",
               "CN: ", CN, "<br>",
-              "State: ", state, "<br>",
               "Year: ", MEASYEAR, "<br>",
               "Biomass: ", round(biomass, 1), " Mg/ha<br>",
               "<i>Click for Monte Carlo uncertainty</i>"
@@ -243,22 +228,8 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
       proxy <- leafletProxy("plot_map", session)
       proxy |> clearGroup("nefin_points")
 
-      color_col <- input$nefin_color
-      pal <- switch(color_col,
-        measyear = colorNumeric("viridis", domain = unname(nefin_plots$MEASYEAR), reverse = FALSE),
-        biomass  = colorNumeric("viridis", domain = unname(nefin_plots$biomass),  na.color = "#ccc"),
-        state    = colorFactor("Set1",     levels = unique(nefin_plots$state))
-      )
-      colors <- switch(color_col,
-        measyear = pal(nefin_plots$MEASYEAR),
-        biomass  = pal(nefin_plots$biomass),
-        state    = pal(nefin_plots$state)
-      )
-      legend_title <- switch(color_col,
-        measyear = "Meas. Year",
-        biomass  = "Biomass",
-        state    = "State"
-      )
+      pal <- colorNumeric("viridis", domain = unname(nefin_plots$MEASYEAR), reverse = FALSE)
+      colors <- pal(nefin_plots$MEASYEAR)
 
       proxy |>
         addCircleMarkers(
@@ -274,7 +245,6 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           popup       = ~paste0(
             "<b>NEFIN Plot</b><br>",
             "CN: ", CN, "<br>",
-            "State: ", state, "<br>",
             "Year: ", MEASYEAR, "<br>",
             "Biomass: ", round(biomass, 1), " Mg/ha"
           )
@@ -283,16 +253,12 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
         addLegend(
           position = "bottomright",
           pal      = pal,
-          values   = switch(color_col,
-            measyear = nefin_plots$MEASYEAR,
-            biomass  = nefin_plots$biomass,
-            state    = nefin_plots$state
-          ),
-          title    = paste0("NEFIN\n", legend_title),
+          values   = nefin_plots$MEASYEAR,
+          title    = "NEFIN\nMeas. Year",
           opacity  = 0.85
         )
     }) |>
-      bindEvent(input$nefin_color, ignoreInit = FALSE)
+      bindEvent(ignoreInit = FALSE)
 
     # Monte Carlo panel -- triggered by FIA marker click
     selected_cn <- reactiveVal(NULL)
@@ -311,7 +277,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
       plot_info <- dplyr::filter(fia_plots, CN == cn)
       plot_label <- if (nrow(plot_info) > 0) {
-        paste0("Plot CN ", cn, " -- ", plot_info$state[1], ", Year ", plot_info$MEASYEAR[1])
+        paste0("Plot CN ", cn, " -- Year ", plot_info$MEASYEAR[1])
       } else {
         paste0("Plot CN ", cn)
       }
