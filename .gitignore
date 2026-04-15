@@ -56,3 +56,4 @@ CLAUDE.md
 .claude 
 *.docx
 papers/*
+presentation_figures/*

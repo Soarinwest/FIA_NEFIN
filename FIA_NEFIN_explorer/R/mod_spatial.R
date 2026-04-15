@@ -67,7 +67,10 @@ spatial_ui <- function(id) {
               "Total plot density"               = "n_plots_total"
             ),
             selected = "aug_biomass_mean"
-          )
+          ),
+          hr(),
+          sliderInput(ns("min_plots"), "Min. plots per hex:",
+                      min = 1, max = 20, value = 1, step = 1)
         ),
         leafletOutput(ns("hex_map"), height = "520px"),
         uiOutput(ns("hex_summary_strip"))
@@ -481,7 +484,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           opacity  = 0.85
         )
 
-      if (isTRUE(input$show_states) && !is.null(states_sf)) {
+      if (!is.null(states_sf)) {
         proxy |>
           addPolylines(
             data    = states_sf,
@@ -491,7 +494,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           )
       }
     }) |>
-      bindEvent(filtered_hex(), input$hex_layer, input$show_states)
+      bindEvent(filtered_hex(), input$hex_layer)
 
     # Summary strip below hex map
     output$hex_summary_strip <- renderUI({

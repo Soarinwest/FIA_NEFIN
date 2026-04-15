@@ -100,7 +100,7 @@ plot_uncertainty <- uncertainty_data  # Alias for backward compatibility
 
 # Hex data (tabular, all scales)
 hex_data <- readRDS("data/hex_data.rds")
-# Default hex for Spatial Explorer — must be sf with geometry
+# Default hex for Spatial Explorer — pre-cache 1kha sf for when user selects it
 hex_1kha <- sf::st_read("data/hex_geojsons/hex_1kha.geojson", quiet = TRUE)
 
 # State boundaries for spatial overlay (HTTP call — wrapped for offline safety)
