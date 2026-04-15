@@ -28,8 +28,6 @@ library(glue)
 library(stringr)
 library(readr)
 library(tibble)
-library(rsconnect)
-library(httr2)
 
 
 # Spatial / mapping

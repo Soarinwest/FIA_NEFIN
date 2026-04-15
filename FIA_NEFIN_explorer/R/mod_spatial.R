@@ -257,8 +257,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
           title    = "NEFIN\nMeas. Year",
           opacity  = 0.85
         )
-    }) |>
-      bindEvent(ignoreInit = FALSE)
+    })
 
     # Monte Carlo panel -- triggered by FIA marker click
     selected_cn <- reactiveVal(NULL)
@@ -401,7 +400,7 @@ spatial_server <- function(id, fia_plots, nefin_plots, plot_uncertainty,
 
     # Filtered hexagons
     filtered_hex <- reactive({
-      req(hex_data())
+      req(hex_data(), input$min_plots)
       hex_data() |> dplyr::filter(n_plots_total >= input$min_plots)
     })
 
